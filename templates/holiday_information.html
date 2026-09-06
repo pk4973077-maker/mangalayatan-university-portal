@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Holiday Information</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #7c3aed;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #7c3aed;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .holiday {
+            border-left: 5px solid #7c3aed;
+            background: #f8fafc;
+            padding: 18px;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+
+        .holiday h3 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            margin: 4px 4px 4px 0;
+            border-radius: 6px;
+            background: #ede9fe;
+            color: #6d28d9;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 9px 14px;
+            background: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .no-holiday {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>📅 Faculty Portal</h1>
+
+    <p>Holiday Information</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/faculty-dashboard" class="back">
+
+        ← Back to Faculty Dashboard
+
+    </a>
+
+
+    <!-- =========================
+         ADD HOLIDAY
+    ========================== -->
+
+    <div class="box">
+
+        <h2>📅 Add Holiday</h2>
+
+
+        <form
+            action="/holiday-information"
+            method="POST"
+        >
+
+
+            <!-- FACULTY NAME -->
+
+            <label>
+                Faculty Name
+            </label>
+
+            <input
+                type="text"
+                name="faculty_name"
+                value="{{ faculty_name }}"
+                readonly
+            >
+
+
+            <!-- COURSE -->
+
+            <label>
+                Course
+            </label>
+
+            <select
+                name="course"
+                required
+            >
+
+                <option value="">
+                    Select Course
+                </option>
+
+
+                {% for course in courses %}
+
+                    <option value="{{ course }}">
+
+                        {{ course }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+
+            <!-- SEMESTER -->
+
+            <label>
+                Semester
+            </label>
+
+            <select
+                name="semester"
+                required
+            >
+
+                <option value="">
+                    Select Semester
+                </option>
+
+                <option value="1">
+                    Semester 1
+                </option>
+
+                <option value="2">
+                    Semester 2
+                </option>
+
+                <option value="3">
+                    Semester 3
+                </option>
+
+                <option value="4">
+                    Semester 4
+                </option>
+
+                <option value="5">
+                    Semester 5
+                </option>
+
+                <option value="6">
+                    Semester 6
+                </option>
+
+                <option value="7">
+                    Semester 7
+                </option>
+
+                <option value="8">
+                    Semester 8
+                </option>
+
+            </select>
+
+
+            <!-- SECTION -->
+
+            <label>
+                Section
+            </label>
+
+            <select
+                name="section"
+                required
+            >
+
+                <option value="">
+                    Select Section
+                </option>
+
+                <option value="A">
+                    Section A
+                </option>
+
+                <option value="B">
+                    Section B
+                </option>
+
+                <option value="C">
+                    Section C
+                </option>
+
+                <option value="D">
+                    Section D
+                </option>
+
+            </select>
+
+
+            <!-- HOLIDAY DATE -->
+
+            <label>
+                Holiday Date
+            </label>
+
+            <input
+                type="date"
+                name="holiday_date"
+                required
+            >
+
+
+            <!-- HOLIDAY NAME -->
+
+            <label>
+                Holiday Name
+            </label>
+
+            <input
+                type="text"
+                name="holiday_name"
+                placeholder="Enter holiday name"
+                required
+            >
+
+
+            <!-- DESCRIPTION -->
+
+            <label>
+                Description
+            </label>
+
+            <textarea
+                name="description"
+                placeholder="Enter holiday details"
+            ></textarea>
+
+
+            <button type="submit">
+
+                📅 Add Holiday
+
+            </button>
+
+
+        </form>
+
+    </div>
+
+
+    <!-- =========================
+         ADDED HOLIDAYS
+    ========================== -->
+
+    <div class="box">
+
+        <h2>📋 Added Holidays</h2>
+
+
+        {% if holidays %}
+
+
+            {% for holiday in holidays %}
+
+                <div class="holiday">
+
+
+                    <h3>
+
+                        📅
+                        {{ holiday.get('name', '-') }}
+
+                    </h3>
+
+
+                    <!-- FACULTY -->
+
+                    <span class="badge">
+
+                        Faculty:
+                        {{ holiday.get('faculty_name', '-') }}
+
+                    </span>
+
+
+                    <!-- COURSE -->
+
+                    <span class="badge">
+
+                        Course:
+                        {{ holiday.get('course', '-') }}
+
+                    </span>
+
+
+                    <!-- SEMESTER -->
+
+                    <span class="badge">
+
+                        Semester:
+                        {{ holiday.get('semester', '-') }}
+
+                    </span>
+
+
+                    <!-- SECTION -->
+
+                    <span class="badge">
+
+                        Section:
+                        {{ holiday.get('section', '-') }}
+
+                    </span>
+
+
+                    <p>
+
+                        <strong>Date:</strong>
+
+                        {{ holiday.get('date', '-') }}
+
+                    </p>
+
+
+                    {% if holiday.get('description') %}
+
+                        <p>
+
+                            {{ holiday.get('description') }}
+
+                        </p>
+
+                    {% endif %}
+
+
+                    <!-- DELETE -->
+
+                    <a
+                        href="/delete-holiday/{{ holiday.get('_index') }}"
+                        class="delete-btn"
+                        onclick="return confirm('Kya aap is holiday ko delete karna chahte hain?');"
+                    >
+
+                        🗑️ Delete
+
+                    </a>
+
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="no-holiday">
+
+                <p>
+                    अभी कोई holiday add नहीं हुई है।
+                </p>
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

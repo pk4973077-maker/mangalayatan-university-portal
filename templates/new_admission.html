@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>New Admission</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h1 {
+            color: #1e40af;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 17px;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        textarea {
+            height: 90px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>🎓 Admission Portal</h2>
+</div>
+
+<div class="container">
+
+    <a href="/admission-dashboard" class="back">
+        ← Back to Admission Dashboard
+    </a>
+
+    <div class="box">
+
+        <h1>📝 New Student Admission</h1>
+
+        <form action="/new-admission" method="POST">
+
+            <label>Student Name</label>
+
+            <input
+                type="text"
+                name="student_name"
+                placeholder="Enter student name"
+                required
+            >
+
+            <label>Father's Name</label>
+
+            <input
+                type="text"
+                name="father_name"
+                placeholder="Enter father's name"
+                required
+            >
+
+            <label>Date of Birth</label>
+
+            <input
+                type="date"
+                name="dob"
+                required
+            >
+
+            <label>Gender</label>
+
+            <select name="gender" required>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label>Course</label>
+
+            <select name="course" required>
+                <option value="">Select Course</option>
+                <option value="B.Tech CSE">B.Tech CSE</option>
+                <option value="B.Tech ECE">B.Tech ECE</option>
+                <option value="BCA">BCA</option>
+                <option value="MCA">MCA</option>
+                <option value="BBA">BBA</option>
+            </select>
+
+            <label>Mobile Number</label>
+
+            <input
+                type="tel"
+                name="mobile"
+                placeholder="Enter mobile number"
+                required
+            >
+
+            <label>Email</label>
+
+            <input
+                type="email"
+                name="email"
+                placeholder="Enter email"
+                required
+            >
+
+            <label>Address</label>
+
+            <textarea
+                name="address"
+                placeholder="Enter complete address"
+                required
+            ></textarea>
+
+            <label>10th Percentage</label>
+
+            <input
+                type="number"
+                name="tenth"
+                step="0.01"
+                placeholder="Example: 78.50"
+                required
+            >
+
+            <label>12th Percentage</label>
+
+            <input
+                type="number"
+                name="twelfth"
+                step="0.01"
+                placeholder="Example: 75.20"
+                required
+            >
+
+            <button type="submit">
+                Submit Admission
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

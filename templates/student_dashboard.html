@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Dashboard</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        /* =========================
+           TOP BAR
+           ========================= */
+
+        .topbar {
+            background: #2563eb;
+            color: white;
+            padding: 18px 30px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .logout {
+            background: white;
+            color: #2563eb;
+            padding: 9px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* =========================
+           STUDENT PROFILE
+           ========================= */
+
+        .profile-header {
+
+            max-width: 1000px;
+
+            margin: 25px auto;
+
+            padding: 25px;
+
+            background: white;
+
+            border-radius: 15px;
+
+            box-shadow: 0 5px 15px #cbd5e1;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 25px;
+        }
+
+        .profile-photo {
+
+            width: 100px;
+            height: 100px;
+
+            border-radius: 50%;
+
+            background: #dbeafe;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            font-size: 50px;
+        }
+
+        .profile-info h2 {
+
+            margin: 0 0 10px 0;
+
+            color: #1e40af;
+        }
+
+        .profile-info p {
+
+            margin: 5px 0;
+
+            color: #475569;
+        }
+
+        /* =========================
+           MAIN CONTAINER
+           ========================= */
+
+        .container {
+
+            max-width: 1100px;
+
+            margin: 35px auto;
+
+            padding: 20px;
+        }
+
+        /* =========================
+           WELCOME
+           ========================= */
+
+        .welcome {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 15px;
+
+            margin-bottom: 25px;
+
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .welcome h1 {
+
+            margin: 0 0 8px;
+        }
+
+        .welcome p {
+
+            color: #64748b;
+        }
+
+        /* =========================
+           CARDS
+           ========================= */
+
+        .grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 20px;
+        }
+
+        .card {
+
+            background: white;
+
+            padding: 30px 20px;
+
+            border-radius: 15px;
+
+            text-align: center;
+
+            text-decoration: none;
+
+            color: #1e293b;
+
+            box-shadow:
+                0 5px 15px #cbd5e1;
+
+            transition: 0.3s;
+        }
+
+        .card:hover {
+
+            transform:
+                translateY(-5px);
+
+            background: #eff6ff;
+        }
+
+        .icon {
+
+            font-size: 42px;
+        }
+
+        .card h3 {
+
+            margin:
+                15px 0 8px;
+        }
+
+        .card p {
+
+            margin: 0;
+
+            color: #64748b;
+
+            font-size: 14px;
+        }
+
+        /* =========================
+           MOBILE
+           ========================= */
+
+        @media (max-width: 750px) {
+
+            .grid {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .profile-header {
+
+                flex-direction: column;
+
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 500px) {
+
+            .grid {
+
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+
+                padding: 15px;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         STUDENT PROFILE
+         ========================= -->
+
+    <div class="profile-header">
+
+        <div class="profile-photo">
+            👨‍🎓
+        </div>
+
+        <div class="profile-info">
+
+            <h2>
+                {{ student.name }}
+            </h2>
+
+            <p>
+                <strong>Student ID:</strong>
+                {{ student.student_id }}
+            </p>
+
+            <p>
+                <strong>Enrollment Number:</strong>
+                {{ student.enrollment }}
+            </p>
+
+            <p>
+                <strong>Course:</strong>
+                {{ student.course }}
+            </p>
+
+            <p>
+                <strong>Semester:</strong>
+                {{ student.semester }}
+            </p>
+
+            <p>
+                <strong>Section:</strong>
+                {{ student.section }}
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         TOP BAR
+         ========================= -->
+
+    <div class="topbar">
+
+        <h2>
+            🎓 Student Portal
+        </h2>
+
+        <a
+            href="/student-login"
+            class="logout"
+        >
+            Logout
+        </a>
+
+    </div>
+
+
+    <!-- =========================
+         MAIN
+         ========================= -->
+
+    <div class="container">
+
+
+        <!-- WELCOME -->
+
+        <div class="welcome">
+
+            <h1>
+                Welcome, {{ student.name }} 👋
+            </h1>
+
+            <p>
+                Welcome to your University Student Dashboard.
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             DASHBOARD CARDS
+             ========================= -->
+
+        <div class="grid">
+
+
+            <!-- NOTES -->
+
+            <a
+                href="/notes"
+                class="card"
+            >
+
+                <div class="icon">
+                    📚
+                </div>
+
+                <h3>
+                    Notes
+                </h3>
+
+                <p>
+                    View and download study notes
+                </p>
+
+            </a>
+
+
+            <!-- SYLLABUS -->
+
+            <a
+                href="/syllabus"
+                class="card"
+            >
+
+                <div class="icon">
+                    📖
+                </div>
+
+                <h3>
+                    Syllabus
+                </h3>
+
+                <p>
+                    View your course syllabus
+                </p>
+
+            </a>
+
+
+            <!-- ATTENDANCE -->
+
+            <a
+                href="/attendance"
+                class="card"
+            >
+
+                <div class="icon">
+                    📊
+                </div>
+
+                <h3>
+                    Attendance
+                </h3>
+
+                <p>
+                    Check your attendance
+                </p>
+
+            </a>
+
+
+            <!-- HOLIDAY -->
+
+            <a
+                href="/holidays"
+                class="card"
+            >
+
+                <div class="icon">
+                    📅
+                </div>
+
+                <h3>
+                    Holiday Information
+                </h3>
+
+                <p>
+                    View holidays and notices
+                </p>
+
+            </a>
+
+
+            <!-- NOTICE BOARD -->
+
+            <a
+                href="/notices"
+                class="card"
+            >
+
+                <div class="icon">
+                    📢
+                </div>
+
+                <h3>
+                    Notice Board
+                </h3>
+
+                <p>
+                    Latest university notices
+                </p>
+
+            </a>
+
+
+            <!-- CHANGE PASSWORD -->
+
+            <a
+                href="/student-change-password"
+                class="card"
+            >
+
+                <div class="icon">
+                    🔐
+                </div>
+
+                <h3>
+                    Change Password
+                </h3>
+
+                <p>
+                    Change your student portal password
+                </p>
+
+            </a>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,44 @@
+[
+    {
+        "faculty_id": "FAC001",
+        "name": "MRS. UPMA",
+        "department": "DCEA",
+        "password_hash": "scrypt:32768:8:1$koaPoNCUJsm0Eeg2$85ae251ea5ef01f86666d1e37bd356d521aa69f8f66d719c716f3f8175586a16e260155956fe6aae5112b3eb566efda59c17ccc59f2ad87abf4ddb18f5f6e219"
+    },
+    {
+        "faculty_id": "FAC002",
+        "name": "MRS. DIVYA MAHESHWARI",
+        "department": "DCEA",
+        "password_hash": "scrypt:32768:8:1$Oj4hMQwmTfxiP0e2$07af7831ee71acbb8edf6504ebe4811e8c646571eb105e9f6ddd286de20be3f10ff25cc7699f7dc4b0640f3a0173d1f0b93a623807403bf323285e589dcfb59e"
+    },
+    {
+        "faculty_id": "FAC003",
+        "name": "MR. PRAVEEN KUMAR",
+        "department": "DCEA",
+        "password": "FAC003"
+    },
+    {
+        "faculty_id": "FAC004",
+        "name": "MRS. SONI GAUR",
+        "department": "DCEA",
+        "password": "FAC004"
+    },
+    {
+        "faculty_id": "FAC005",
+        "name": "MR. SUMIT SINGH TOMAR",
+        "department": "DCEA",
+        "password_hash": "scrypt:32768:8:1$QIBXEHe5qc1u1Ap6$a857e27aab09a48bc115e5369a58b6da46c0a48b6b07778851b71511e484a7094150827aa23e62a59510a38b799fc4a395866005089390cae8b6d78b06c4038f"
+    },
+    {
+        "faculty_id": "FAC006",
+        "name": "MR. DAYASHANKAR SHARMA",
+        "department": "DCEA",
+        "password": "FAC006"
+    },
+    {
+        "faculty_id": "FAC007",
+        "name": "MR. ARJUN SINGH",
+        "department": "DCEA",
+        "password": "FAC007"
+    }
+]

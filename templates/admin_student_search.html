@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student Search</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .topbar {
+            background: #1e3a8a;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .back {
+            background: white;
+            color: #1e3a8a;
+            padding: 9px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .search-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #1e3a8a;
+        }
+
+        .search-btn {
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .search-btn:hover {
+            background: #172554;
+        }
+
+        .student {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .student h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .student p {
+            margin: 10px 0;
+        }
+
+        .password-set {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .password-initial {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .edit-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+        }
+
+        .reset-btn {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.85;
+        }
+
+        .not-found {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .result-heading {
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 600px) {
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .container {
+                margin-top: 20px;
+                padding: 15px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                text-align: center;
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+    <div class="topbar">
+
+        <h2>👨‍🎓 Student Search</h2>
+
+        <a href="/admin-dashboard"
+           class="back">
+
+            ← Admin Dashboard
+
+        </a>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- SEARCH -->
+
+        <div class="search-box">
+
+            <h2>🔎 Search Student</h2>
+
+
+            <form
+                action="/admin-search-student"
+                method="GET"
+                class="search-form"
+            >
+
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ search }}"
+                    placeholder="Enter Name, Enrollment or Student ID"
+                    required
+                >
+
+
+                <button
+                    type="submit"
+                    class="search-btn"
+                >
+
+                    Search
+
+                </button>
+
+            </form>
+
+        </div>
+
+
+        {% if search %}
+
+
+            {% if results %}
+
+
+                <h2 class="result-heading">
+
+                    Search Results ({{ results|length }})
+
+                </h2>
+
+
+                {% for student in results %}
+
+
+                    <div class="student">
+
+
+                        <h2>
+
+                            👨‍🎓 {{ student.name }}
+
+                        </h2>
+
+
+                        <p>
+
+                            <strong>Student ID:</strong>
+
+                            {{ student.student_id }}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Enrollment:</strong>
+
+                            {{ student.enrollment }}
+
+                        </p>
+
+
+                        <!-- COURSE -->
+
+                        <p>
+
+                            <strong>Course:</strong>
+
+                            {{ student.course or student.department }}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Semester:</strong>
+
+                            {{ student.semester }}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Section:</strong>
+
+                            {{ student.section }}
+
+                        </p>
+
+
+                        <p>
+
+                            <strong>Password Status:</strong>
+
+
+                            {% if student.password_hash %}
+
+                                <span class="password-set">
+
+                                    🔒 Password Set
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="password-initial">
+
+                                    ⚠️ Initial Password
+
+                                </span>
+
+                            {% endif %}
+
+
+                        </p>
+
+
+                        <!-- ACTION BUTTONS -->
+
+                        <div class="actions">
+
+
+                            <!-- EDIT -->
+
+                            <a
+                                href="/edit-student/{{ student.student_id }}"
+                                class="action-btn edit-btn"
+                            >
+
+                                ✏️ Edit
+
+                            </a>
+
+
+                            <!-- DELETE -->
+
+                            <a
+                                href="/delete-student/{{ student.student_id }}"
+                                class="action-btn delete-btn"
+                                onclick="return confirm('Are you sure you want to delete this student?');"
+                            >
+
+                                🗑️ Delete
+
+                            </a>
+
+
+                            <!-- RESET PASSWORD -->
+
+                            <a
+                                href="/reset-student-password/{{ student.student_id }}"
+                                class="action-btn reset-btn"
+                                onclick="return confirm('Reset password for this student? The password will become the Student ID.');"
+                            >
+
+                                🔄 Reset Password
+
+                            </a>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="not-found">
+
+                    <h2>
+                        ❌ Student Not Found
+                    </h2>
+
+                    <p>
+                        "{{ search }}" se koi student nahi mila.
+                    </p>
+
+                </div>
+
+
+            {% endif %}
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,58 @@
+[
+    {
+        "application_id": "APP001",
+        "student_name": "prince kumar",
+        "father_name": "manoj kumar",
+        "dob": "2026-08-26",
+        "gender": "Male",
+        "course": "B.Tech CSE",
+        "mobile": "7417680342",
+        "email": "pk4973077@gmail.com",
+        "address": "mohalla mandir wala sasni hathras",
+        "tenth": "68.4",
+        "twelfth": "68.38",
+        "status": "Approved"
+    },
+    {
+        "application_id": "APP002",
+        "student_name": "asxa",
+        "father_name": "aa",
+        "dob": "2026-08-26",
+        "gender": "Male",
+        "course": "B.Tech CSE",
+        "mobile": "646616656565656",
+        "email": "khhiuhhuhuhiuhiuhuh@gmail.com",
+        "address": "hxbshjxgsauy",
+        "tenth": "32.98",
+        "twelfth": "33",
+        "status": "Rejected"
+    },
+    {
+        "application_id": "APP003",
+        "student_name": "dwd",
+        "father_name": "ssc",
+        "dob": "2026-08-14",
+        "gender": "Male",
+        "course": "MCA",
+        "mobile": "545155454",
+        "email": "ss@gmail.com",
+        "address": "gyf",
+        "tenth": "44",
+        "twelfth": "43.98",
+        "status": "Rejected"
+    },
+    {
+        "application_id": "APP004",
+        "student_name": "hvg",
+        "father_name": "hg",
+        "dob": "2026-08-07",
+        "gender": "Male",
+        "course": "B.Tech ECE",
+        "mobile": "5263635241",
+        "email": "yghhgg@gmail.com",
+        "address": "gvgfgf",
+        "tenth": "44",
+        "twelfth": "43.98",
+        "status": "Rejected"
+    }
+]

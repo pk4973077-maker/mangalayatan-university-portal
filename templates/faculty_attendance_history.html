@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Attendance History</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .header h2 {
+            margin: 0 0 8px 0;
+        }
+
+        .faculty-name {
+            color: #555;
+        }
+
+        .filter-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(200px, 1fr));
+
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        .show-btn {
+            margin-top: 18px;
+            padding: 12px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 10px 18px;
+            background: #555;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .result-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .summary-card {
+            padding: 12px 20px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+        }
+
+        .present {
+            color: green;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: red;
+            font-weight: bold;
+        }
+
+        .no-data {
+            padding: 20px;
+            text-align: center;
+            background: #fff7ed;
+            border-radius: 8px;
+            color: #9a3412;
+            margin-top: 15px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- BACK -->
+
+    <a href="/manage-attendance"
+       class="back-btn">
+
+        ← Back to Attendance
+
+    </a>
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h2>
+            📋 Attendance History
+        </h2>
+
+        <div class="faculty-name">
+
+            Faculty Name:
+            <strong>
+                {{ faculty_name }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <!-- FILTER -->
+
+    <div class="filter-box">
+
+        <form method="POST">
+
+            <div class="filter-grid">
+
+
+                <!-- DATE -->
+
+                <div>
+
+                    <label>
+                        Date
+                    </label>
+
+                    <input
+                        type="date"
+                        name="date"
+                        value="{{ selected_date }}"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- SECTION -->
+
+                <div>
+
+                    <label>
+                        Section
+                    </label>
+
+                    <select
+                        name="section"
+                        required
+                    >
+
+                        <option value="">
+                            Choose Section
+                        </option>
+
+                        {% for section in faculty_sections %}
+
+                            <option
+                                value="{{ section }}"
+                                {% if selected_section == section %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                Section {{ section }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- SUBJECT -->
+
+                <div>
+
+                    <label>
+                        Subject
+                    </label>
+
+                    <select
+                        name="subject"
+                        required
+                    >
+
+                        <option value="">
+                            Choose Subject
+                        </option>
+
+                        {% for subject in faculty_subjects %}
+
+                            <option
+                                value="{{ subject }}"
+                                {% if selected_subject == subject %}
+                                    selected
+                                {% endif %}
+                            >
+
+                                {{ subject }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="show-btn"
+            >
+
+                Show Attendance
+
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if selected_date
+          and selected_section
+          and selected_subject %}
+
+
+        <!-- RESULT -->
+
+        <div class="result-box">
+
+            <h3>
+                Attendance Result
+            </h3>
+
+            <p>
+
+                <strong>Date:</strong>
+                {{ selected_date }}
+
+                &nbsp; | &nbsp;
+
+                <strong>Section:</strong>
+                {{ selected_section }}
+
+                &nbsp; | &nbsp;
+
+                <strong>Subject:</strong>
+                {{ selected_subject }}
+
+            </p>
+
+
+            {% if attendance_records %}
+
+
+                <!-- SUMMARY -->
+
+                <div class="summary">
+
+                    <div class="summary-card">
+
+                        Total:
+                        {{ attendance_records|length }}
+
+                    </div>
+
+
+                    <div class="summary-card">
+
+                        Present:
+                        {{
+                            attendance_records
+                            |selectattr("status", "equalto", "Present")
+                            |list
+                            |length
+                        }}
+
+                    </div>
+
+
+                    <div class="summary-card">
+
+                        Absent:
+                        {{
+                            attendance_records
+                            |selectattr("status", "equalto", "Absent")
+                            |list
+                            |length
+                        }}
+
+                    </div>
+
+                </div>
+
+
+                <!-- TABLE -->
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    S.No.
+                                </th>
+
+                                <th>
+                                    Enrollment
+                                </th>
+
+                                <th>
+                                    Student Name
+                                </th>
+
+                                <th>
+                                    Course
+                                </th>
+
+                                <th>
+                                    Semester
+                                </th>
+
+                                <th>
+                                    Section
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for record in attendance_records %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ loop.index }}
+                                    </td>
+
+                                    <td>
+                                        {{ record.get("student_id", "-") }}
+                                    </td>
+
+                                    <td>
+                                        {{ record.get("student_name", "-") }}
+                                    </td>
+
+                                    <td>
+                                        {{ record.get("course", "-") }}
+                                    </td>
+
+                                    <td>
+                                        {{ record.get("semester", "-") }}
+                                    </td>
+
+                                    <td>
+                                        {{ record.get("section", "-") }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if record.get("status") == "Present" %}
+
+                                            <span class="present">
+                                                Present
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="absent">
+                                                Absent
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="no-data">
+
+                    ❌ No attendance found for this
+                    <strong>
+                        Date + Section + Subject
+                    </strong>.
+
+                    <br><br>
+
+                    Only your own faculty attendance is shown here.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+
+</div>
+
+</body>
+
+</html>

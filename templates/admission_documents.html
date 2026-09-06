@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admission Documents</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h1 {
+            color: #1e40af;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eff6ff;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📄 Admission Documents</h2>
+</div>
+
+<div class="container">
+
+    <a href="/admission-dashboard" class="back">
+        ← Back to Admission Dashboard
+    </a>
+
+    <div class="box">
+
+        <h1>Upload Documents</h1>
+
+        <form action="/admission-documents" method="POST" enctype="multipart/form-data">
+
+            <label>Application ID</label>
+
+            <input
+                type="text"
+                name="application_id"
+                placeholder="Example: APP001"
+                required
+            >
+
+            <label>10th Marksheet</label>
+
+            <input
+                type="file"
+                name="tenth_marksheet"
+                required
+            >
+
+            <label>12th Marksheet</label>
+
+            <input
+                type="file"
+                name="twelfth_marksheet"
+                required
+            >
+
+            <label>Identity Document</label>
+
+            <input
+                type="file"
+                name="identity_document"
+                required
+            >
+
+            <button type="submit">
+                Upload Documents
+            </button>
+
+        </form>
+
+        <div class="note">
+            Upload clear and valid documents for the admission application.
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+[
+    {
+        "faculty_id": "FAC001",
+        "faculty_name": "MRS. UPMA",
+        "course": "B.TECH CSE",
+        "semester": "5",
+        "section": "A",
+        "date": "2026-09-06",
+        "name": "PRINCE KUMAR",
+        "description": "HELLO PRINCE"
+    },
+    {
+        "faculty_id": "FAC001",
+        "faculty_name": "MRS. UPMA",
+        "course": "B.TECH CSE",
+        "semester": "5",
+        "section": "B",
+        "date": "2026-09-08",
+        "name": "RUDRA PRATAP",
+        "description": ""
+    }
+]

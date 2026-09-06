@@ -1,0 +1,32 @@
+[
+    {
+        "subject_id": "SUB001",
+        "subject_name": "SOFTWARE ENGINEERING (MOOCS) (CSL-3101)",
+        "course": "B.TECH CSE",
+        "semester": "5"
+    },
+    {
+        "subject_id": "SUB002",
+        "subject_name": "CORE JAVA (CSL-3102)",
+        "course": "B.TECH CSE",
+        "semester": "5"
+    },
+    {
+        "subject_id": "SUB003",
+        "subject_name": "COMPUTER NETWORK (CSL-3103)",
+        "course": "B.TECH CSE",
+        "semester": "5"
+    },
+    {
+        "subject_id": "SUB004",
+        "subject_name": "COMPILER DESIGN & ARCHITECTURE",
+        "course": "B.TECH CSE",
+        "semester": "5"
+    },
+    {
+        "subject_id": "SUB005",
+        "subject_name": "SYSTEM PROGRAMMING (CSL-3110)",
+        "course": "B.TECH CSE",
+        "semester": "5"
+    }
+]

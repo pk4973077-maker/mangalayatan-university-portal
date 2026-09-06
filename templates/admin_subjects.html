@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Subject Management</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #7c3aed;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .subject {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 15px;
+            background: #f8fafc;
+        }
+
+        .subject h3 {
+            margin: 0 0 10px;
+            color: #7c3aed;
+        }
+
+        .subject p {
+            margin: 6px 0;
+            color: #475569;
+        }
+
+        .delete-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 9px 15px;
+            background: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .empty {
+            color: #64748b;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .info {
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="header">
+
+    <h1>⚙️ Admin Portal</h1>
+
+    <p>Subject Management</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/admin-dashboard" class="back">
+        ← Back to Admin Dashboard
+    </a>
+
+
+    <!-- ADD SUBJECT -->
+
+    <div class="box">
+
+        <h2>📚 Add New Subject</h2>
+
+
+        <div class="info">
+
+            Subject ko sirf <strong>Course</strong> aur
+            <strong>Semester</strong> ke saath add karein.
+            Yeh subject automatically
+            <strong>Section A, B, C aur D</strong> sabke liye
+            available rahega.
+
+        </div>
+
+
+        <form action="/admin-subjects" method="POST">
+
+
+            <!-- SUBJECT NAME -->
+
+            <label>Subject Name</label>
+
+            <input
+                type="text"
+                name="subject_name"
+                placeholder="Enter Subject Name"
+                required
+            >
+
+
+            <!-- COURSE -->
+
+            <label>Course</label>
+
+            <select name="course" required>
+
+                <option value="">
+                    Select Course
+                </option>
+
+                {% for course in courses %}
+
+                    {% if course is mapping %}
+
+                        <option value="{{ course.name }}">
+                            {{ course.name }}
+                        </option>
+
+                    {% else %}
+
+                        <option value="{{ course }}">
+                            {{ course }}
+                        </option>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </select>
+
+
+            <!-- SEMESTER -->
+
+            <label>Semester</label>
+
+            <select name="semester" required>
+
+                <option value="">
+                    Select Semester
+                </option>
+
+                <option value="1">
+                    1st Semester
+                </option>
+
+                <option value="2">
+                    2nd Semester
+                </option>
+
+                <option value="3">
+                    3rd Semester
+                </option>
+
+                <option value="4">
+                    4th Semester
+                </option>
+
+                <option value="5">
+                    5th Semester
+                </option>
+
+                <option value="6">
+                    6th Semester
+                </option>
+
+                <option value="7">
+                    7th Semester
+                </option>
+
+                <option value="8">
+                    8th Semester
+                </option>
+
+            </select>
+
+
+            <button type="submit">
+                ➕ Add Subject
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- SUBJECT LIST -->
+
+    <div class="box">
+
+        <h2>📋 All Subjects</h2>
+
+
+        {% if subjects %}
+
+            {% for subject in subjects %}
+
+                <div class="subject">
+
+                    <h3>
+                        📚 {{ subject.subject_name }}
+                    </h3>
+
+
+                    <p>
+                        <strong>Subject ID:</strong>
+                        {{ subject.subject_id }}
+                    </p>
+
+
+                    <p>
+                        <strong>Course:</strong>
+                        {{ subject.course or subject.department }}
+                    </p>
+
+
+                    <p>
+                        <strong>Semester:</strong>
+                        {{ subject.semester }}
+                    </p>
+
+
+                    <p>
+                        <strong>Available For:</strong>
+                        Section A, B, C, D
+                    </p>
+
+
+                    <a
+                        href="/delete-subject/{{ subject.subject_id }}"
+                        class="delete-btn"
+                        onclick="return confirm('Kya aap is subject ko delete karna chahte hain?');"
+                    >
+                        🗑️ Delete
+                    </a>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty">
+
+                अभी तक कोई subject add नहीं हुआ है।
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+</div>
+
+</body>
+</html>

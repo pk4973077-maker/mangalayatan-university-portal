@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Send Notice - Faculty Portal</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #7c3aed;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select {
+
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+
+            font-size: 15px;
+            background: white;
+        }
+
+        input[readonly] {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        button {
+
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+
+            background: #7c3aed;
+            color: white;
+
+            border: none;
+            border-radius: 8px;
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .notice {
+
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+
+            padding: 18px;
+            margin-top: 15px;
+
+            background: #f8fafc;
+        }
+
+        .notice h3 {
+
+            margin: 0 0 10px;
+            color: #7c3aed;
+        }
+
+        .notice p {
+
+            margin: 6px 0;
+            color: #475569;
+
+            white-space: pre-wrap;
+        }
+
+        .notice-info {
+
+            font-size: 14px;
+            color: #64748b;
+
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+
+        .delete-btn {
+
+            display: inline-block;
+
+            margin-top: 12px;
+            padding: 9px 15px;
+
+            background: #dc2626;
+            color: white;
+
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .empty {
+
+            text-align: center;
+            color: #64748b;
+
+            padding: 20px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h1>📢 Faculty Portal</h1>
+
+        <p>Send Notice</p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- BACK -->
+
+        <a href="/faculty-dashboard"
+           class="back">
+
+            ← Back to Faculty Dashboard
+
+        </a>
+
+
+        <!-- CREATE NOTICE -->
+
+        <div class="box">
+
+            <h2>
+                📢 Create New Notice
+            </h2>
+
+
+            <form
+                action="/send-notice"
+                method="POST"
+            >
+
+
+                <!-- FACULTY NAME -->
+
+                <label>
+                    Faculty Name
+                </label>
+
+                <input
+                    type="text"
+                    value="{{ faculty_name }}"
+                    readonly
+                >
+
+
+                <!-- COURSE -->
+
+                <label>
+                    Course
+                </label>
+
+                <select
+                    name="course"
+                    required
+                >
+
+                    <option value="">
+                        Select Course
+                    </option>
+
+                    {% for course in courses %}
+
+                        <option value="{{ course }}">
+
+                            {{ course }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <!-- SEMESTER -->
+
+                <label>
+                    Semester
+                </label>
+
+                <select
+                    name="semester"
+                    required
+                >
+
+                    <option value="">
+                        Select Semester
+                    </option>
+
+                    <option value="1">
+                        Semester 1
+                    </option>
+
+                    <option value="2">
+                        Semester 2
+                    </option>
+
+                    <option value="3">
+                        Semester 3
+                    </option>
+
+                    <option value="4">
+                        Semester 4
+                    </option>
+
+                    <option value="5">
+                        Semester 5
+                    </option>
+
+                    <option value="6">
+                        Semester 6
+                    </option>
+
+                    <option value="7">
+                        Semester 7
+                    </option>
+
+                    <option value="8">
+                        Semester 8
+                    </option>
+
+                </select>
+
+
+                <!-- SECTION -->
+
+                <label>
+                    Section
+                </label>
+
+                <select
+                    name="section"
+                    required
+                >
+
+                    <option value="">
+                        Select Section
+                    </option>
+
+                    <option value="A">
+                        Section A
+                    </option>
+
+                    <option value="B">
+                        Section B
+                    </option>
+
+                    <option value="C">
+                        Section C
+                    </option>
+
+                    <option value="D">
+                        Section D
+                    </option>
+
+                </select>
+
+
+                <!-- TITLE -->
+
+                <label>
+                    Notice Title
+                </label>
+
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Enter notice title"
+                    required
+                >
+
+
+                <!-- MESSAGE -->
+
+                <label>
+                    Notice Message
+                </label>
+
+                <textarea
+                    name="message"
+                    placeholder="Enter notice message"
+                    required
+                ></textarea>
+
+
+                <!-- SEND -->
+
+                <button type="submit">
+
+                    📤 Send Notice
+
+                </button>
+
+
+            </form>
+
+        </div>
+
+
+        <!-- SENT NOTICES -->
+
+        <div class="box">
+
+            <h2>
+                📋 My Sent Notices
+            </h2>
+
+
+            {% if notices %}
+
+
+                {% for notice in notices %}
+
+
+                    <div class="notice">
+
+
+                        <h3>
+
+                            📢
+                            {{ notice.get('title', '') }}
+
+                        </h3>
+
+
+                        <div class="notice-info">
+
+
+                            <strong>
+                                Faculty:
+                            </strong>
+
+                            {{ notice.get(
+                                'faculty_name',
+                                '-'
+                            ) }}
+
+                            <br>
+
+
+                            <strong>
+                                Course:
+                            </strong>
+
+                            {{ notice.get(
+                                'course',
+                                '-'
+                            ) }}
+
+                            <br>
+
+
+                            <strong>
+                                Semester:
+                            </strong>
+
+                            {{ notice.get(
+                                'semester',
+                                '-'
+                            ) }}
+
+                            <br>
+
+
+                            <strong>
+                                Section:
+                            </strong>
+
+                            {{ notice.get(
+                                'section',
+                                '-'
+                            ) }}
+
+
+                        </div>
+
+
+                        <p>
+
+                            {{ notice.get(
+                                'message',
+                                ''
+                            ) }}
+
+                        </p>
+
+
+                        <a
+                            href="/delete-notice/{{ notice.get('_index') }}"
+                            class="delete-btn"
+
+                            onclick="return confirm(
+                                'Kya aap is notice ko delete karna chahte hain?'
+                            );"
+                        >
+
+                            🗑️ Delete
+
+                        </a>
+
+
+                    </div>
+
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="empty">
+
+                    अभी तक कोई notice send नहीं किया गया है।
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>

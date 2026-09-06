@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student Information</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #7c3aed;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #7c3aed;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .student {
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+
+        .student h3 {
+            margin-top: 0;
+            color: #7c3aed;
+            font-size: 22px;
+        }
+
+        .student p {
+            margin: 9px 0;
+        }
+
+        .success {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f3ff;
+            border-radius: 10px;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 10px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="header">
+
+        <h1>👨‍🎓 Student Information</h1>
+
+        <p>Search Student by Enrollment Number</p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <a
+            href="/faculty-dashboard"
+            class="back"
+        >
+            ← Back to Faculty Dashboard
+        </a>
+
+
+        <!-- SEARCH STUDENT -->
+
+        <div class="box">
+
+            <h2>🔍 Search Student</h2>
+
+            <form
+                action="/student-information"
+                method="GET"
+            >
+
+                <label>
+                    Enrollment Number
+                </label>
+
+                <input
+                    type="text"
+                    name="enrollment"
+                    placeholder="Enter Student Enrollment Number"
+                    value="{{ search_enrollment or '' }}"
+                    required
+                >
+
+                <button type="submit">
+                    🔍 Search Student
+                </button>
+
+            </form>
+
+
+            {% if searched and not student %}
+
+                <div class="error">
+
+                    ❌ Student not found.
+
+                    <br><br>
+
+                    Please check the enrollment number
+                    and try again.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- STUDENT INFORMATION -->
+
+        {% if student %}
+
+            <div class="box">
+
+                <h2>👨‍🎓 Student Information</h2>
+
+
+                <div class="success">
+
+                    Student Found Successfully ✅
+
+                </div>
+
+
+                <div class="student">
+
+                    <h3>
+                        👤 {{ student.name }}
+                    </h3>
+
+
+                    <p>
+                        <strong>
+                            Student ID:
+                        </strong>
+
+                        {{ student.student_id }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Enrollment Number:
+                        </strong>
+
+                        {{ student.enrollment }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Course:
+                        </strong>
+
+                        {{ student.course }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Semester:
+                        </strong>
+
+                        {{ student.semester }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Section:
+                        </strong>
+
+                        {{ student.section }}
+                    </p>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+
+    </div>
+
+
+</body>
+
+</html>

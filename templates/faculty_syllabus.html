@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Faculty Syllabus</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 30px auto;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 13px;
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #162d6b;
+        }
+
+        .syllabus-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 18px;
+            margin-top: 15px;
+            background: #f8fafc;
+        }
+
+        .syllabus-card h3 {
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+
+        .file-name {
+            color: #64748b;
+            margin: 8px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            margin: 5px 5px 5px 0;
+            border-radius: 6px;
+            background: #dbeafe;
+            color: #1e40af;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .open-btn,
+        .delete-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 16px;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .open-btn {
+            background: #2563eb;
+        }
+
+        .open-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            margin-left: 8px;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .no-file {
+            color: #64748b;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>👨‍🏫 Faculty Portal</h1>
+
+    <p>Syllabus Management</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/faculty-dashboard"
+       class="back">
+
+        ← Back to Faculty Dashboard
+
+    </a>
+
+
+    <!-- =========================
+         UPLOAD SYLLABUS
+    ========================== -->
+
+    <div class="box">
+
+        <h2>📚 Add Syllabus</h2>
+
+
+        <form
+            action="/faculty-syllabus"
+            method="POST"
+            enctype="multipart/form-data"
+        >
+
+
+            <!-- FACULTY NAME -->
+
+            <label>
+                Faculty Name
+            </label>
+
+            <input
+                type="text"
+                name="faculty_name"
+                value="{{ faculty_name }}"
+                readonly
+            >
+
+
+            <!-- COURSE -->
+
+            <label>
+                Course
+            </label>
+
+            <select
+                name="course"
+                id="course"
+                required
+            >
+
+                <option value="">
+                    Select Course
+                </option>
+
+
+               {% for course in courses %}
+<option value="{{ course.name }}">{{ course.name }}</option>
+{% endfor %}
+
+            </select>
+
+
+            <!-- SEMESTER -->
+
+            <label>
+                Semester
+            </label>
+
+            <select
+                name="semester"
+                id="semester"
+                required
+            >
+
+                <option value="">
+                    Select Semester
+                </option>
+
+                <option value="1">
+                    1st Semester
+                </option>
+
+                <option value="2">
+                    2nd Semester
+                </option>
+
+                <option value="3">
+                    3rd Semester
+                </option>
+
+                <option value="4">
+                    4th Semester
+                </option>
+
+                <option value="5">
+                    5th Semester
+                </option>
+
+                <option value="6">
+                    6th Semester
+                </option>
+
+                <option value="7">
+                    7th Semester
+                </option>
+
+                <option value="8">
+                    8th Semester
+                </option>
+
+            </select>
+
+
+            <!-- SECTION -->
+
+            <label>
+                Section
+            </label>
+
+            <select
+                name="section"
+                id="section"
+                required
+            >
+
+                <option value="">
+                    Select Section
+                </option>
+
+                <option value="A">
+                    Section A
+                </option>
+
+                <option value="B">
+                    Section B
+                </option>
+
+                <option value="C">
+                    Section C
+                </option>
+
+                <option value="D">
+                    Section D
+                </option>
+
+            </select>
+
+
+            <!-- SUBJECT -->
+
+            <label>
+                Subject Name
+            </label>
+
+            <select
+                name="subject"
+                id="subjectSelect"
+                required
+            >
+
+                <option value="">
+                    Select Course and Semester first
+                </option>
+
+
+                {% for subject in subjects %}
+
+                    <option
+                        value="{{ subject.get('subject_name', '') }}"
+                        data-course="{{ subject.get('course', '') }}"
+                        data-semester="{{ subject.get('semester', '') }}"
+                        style="display: none;"
+                    >
+
+                        {{ subject.get('subject_name', '') }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+
+            <!-- SYLLABUS FILE -->
+
+            <label>
+                Syllabus File
+            </label>
+
+            <input
+                type="file"
+                name="syllabus_file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+            >
+
+
+            <button type="submit">
+
+                📤 Upload Syllabus
+
+            </button>
+
+
+        </form>
+
+    </div>
+
+
+    <!-- =========================
+         UPLOADED SYLLABUS
+    ========================== -->
+
+    <div class="box">
+
+        <h2>📂 Uploaded Syllabus</h2>
+
+
+        {% if syllabuses %}
+
+
+            {% for syllabus in syllabuses %}
+
+                <div class="syllabus-card">
+
+
+                    <h3>
+
+                        📘
+                        {{ syllabus.get('subject', '-') }}
+
+                    </h3>
+
+
+                    <!-- FACULTY -->
+
+                    <span class="badge">
+
+                        Faculty:
+                        {{ syllabus.get('faculty_name', '-') }}
+
+                    </span>
+
+
+                    <!-- COURSE -->
+
+                    <span class="badge">
+
+                        Course:
+                        {{ syllabus.get('course', '-') }}
+
+                    </span>
+
+
+                    <!-- SEMESTER -->
+
+                    <span class="badge">
+
+                        Semester:
+                        {{ syllabus.get('semester', '-') }}
+
+                    </span>
+
+
+                    <!-- SECTION -->
+
+                    <span class="badge">
+
+                        Section:
+                        {{ syllabus.get('section', '-') }}
+
+                    </span>
+
+
+                    <!-- FILE -->
+
+                    <div class="file-name">
+
+                        📄
+                        {{ syllabus.get('filename', '-') }}
+
+                    </div>
+
+
+                    <!-- OPEN -->
+
+                    <a
+                        href="{{ url_for('syllabus_file', filename=syllabus.get('filename')) }}"
+                        target="_blank"
+                        class="open-btn"
+                    >
+
+                        👁️ Open Syllabus
+
+                    </a>
+
+
+                    <!-- DELETE -->
+
+                    <a
+                        href="/delete-syllabus/{{ syllabus.get('_index') }}"
+                        class="delete-btn"
+                        onclick="return confirm('Kya aap is syllabus ko delete karna chahte hain?');"
+                    >
+
+                        🗑️ Delete
+
+                    </a>
+
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="no-file">
+
+                <p>
+                    अभी कोई syllabus upload नहीं हुआ है।
+                </p>
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</div>
+
+
+<!-- =========================
+     SUBJECT FILTER
+========================== -->
+
+<script>
+
+function filterSubjects() {
+
+    const course =
+        document.getElementById("course").value;
+
+    const semester =
+        document.getElementById("semester").value;
+
+    const subjectSelect =
+        document.getElementById("subjectSelect");
+
+
+    // Subject reset
+
+    subjectSelect.value = "";
+
+
+    // Agar Course ya Semester select nahi hai
+
+    if (!course || !semester) {
+
+        subjectSelect.options[0].text =
+            "Select Course and Semester first";
+
+
+        for (
+            let i = 1;
+            i < subjectSelect.options.length;
+            i++
+        ) {
+
+            subjectSelect.options[i].style.display =
+                "none";
+
+        }
+
+        return;
+
+    }
+
+
+    // Default text
+
+    subjectSelect.options[0].text =
+        "Select Subject";
+
+
+    // Subjects filter
+
+    for (
+        let i = 1;
+        i < subjectSelect.options.length;
+        i++
+    ) {
+
+        const option =
+            subjectSelect.options[i];
+
+
+        const optionCourse =
+            option.getAttribute("data-course");
+
+
+        const optionSemester =
+            option.getAttribute("data-semester");
+
+
+        if (
+            optionCourse.toLowerCase() === course.toLowerCase()
+            &&
+            optionSemester === semester
+        ) {
+
+            option.style.display = "";
+
+        }
+
+        else {
+
+            option.style.display = "none";
+
+        }
+
+    }
+
+}
+
+
+// Course change
+
+document
+    .getElementById("course")
+    .addEventListener(
+        "change",
+        filterSubjects
+    );
+
+
+// Semester change
+
+document
+    .getElementById("semester")
+    .addEventListener(
+        "change",
+        filterSubjects
+    );
+
+</script>
+
+
+</body>
+
+</html>

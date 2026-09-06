@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Faculty Profile</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h1 {
+            color: #1e40af;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .photo {
+            text-align: center;
+            font-size: 70px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>👨‍🏫 Faculty Profile</h2>
+</div>
+
+<div class="container">
+
+    <a href="/faculty-dashboard" class="back">
+        ← Back to Faculty Dashboard
+    </a>
+
+    <div class="box">
+
+        <div class="photo">
+            👨‍🏫
+        </div>
+
+        <h1>Edit Profile</h1>
+
+        <form action="/faculty-profile" method="POST">
+
+            <label>Faculty ID</label>
+
+            <input
+                type="text"
+                name="faculty_id"
+                value="FAC001"
+                readonly
+            >
+
+            <label>Name</label>
+
+            <input
+                type="text"
+                name="name"
+                value="Faculty Member"
+                required
+            >
+
+            <label>Department</label>
+
+            <input
+                type="text"
+                name="department"
+                value="Computer Science & Engineering"
+                required
+            >
+
+            <label>Email</label>
+
+            <input
+                type="email"
+                name="email"
+                value="faculty@university.com"
+                required
+            >
+
+            <label>Designation</label>
+
+            <input
+                type="text"
+                name="designation"
+                value="Assistant Professor"
+                required
+            >
+
+            <button type="submit">
+                💾 Save Changes
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

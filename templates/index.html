@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>University Management</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            text-align: center;
+            padding: 35px 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .header p {
+            margin-top: 10px;
+        }
+
+        .main {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+
+        .portals {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .card {
+            width: 170px;
+            height: 170px;
+            background: white;
+            border-radius: 15px;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 5px 15px #cbd5e1;
+            text-decoration: none;
+            color: #1e293b;
+        }
+
+        .card:hover {
+            background: #dbeafe;
+            transform: translateY(-5px);
+        }
+
+        .icon {
+            font-size: 45px;
+            margin-top: 15px;
+        }
+
+        .card h3 {
+            margin: 15px 0 5px;
+        }
+
+        .card p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>University Management</h1>
+        <p>Complete University Management System</p>
+    </div>
+
+    <div class="main">
+
+        <h2 class="title">Select Your Portal</h2>
+
+        <div class="portals">
+
+            <a href="/student-login" class="card">
+                <div class="icon">🎓</div>
+                <h3>Student Login</h3>
+                <p>Student Portal</p>
+            </a>
+
+           
+
+            <a href="/faculty-login" class="card">
+                <div class="icon">👨‍🏫</div>
+                <h3>Faculty Login</h3>
+                <p>Faculty Portal</p>
+            </a>
+
+           <a href="/admission-login" class="card">
+    <div class="card-icon">🎓</div>
+    <h3>Admission Portal</h3>
+    <p>Admission and application management</p>
+</a>
+
+<a href="/admin-login" class="card">
+
+    <div class="icon">🏫</div>
+
+    <h3>Admin Portal</h3>
+
+    <p>
+        University administration
+    </p>
+
+</a>
+
+            <a href="#" class="card">
+                <div class="icon">📚</div>
+                <h3>Library Login</h3>
+                <p>Library Portal</p>
+            </a>
+
+            <a href="#" class="card">
+                <div class="icon">💰</div>
+                <h3>Account Login</h3>
+                <p>Account Portal</p>
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

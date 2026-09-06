@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Notes</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .note {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 18px;
+            background: #f8fafc;
+        }
+
+        .note h3 {
+            margin: 0 0 10px;
+            color: #1e293b;
+        }
+
+        .note p {
+            color: #64748b;
+            margin: 7px 0;
+        }
+
+        .view {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 9px 16px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .view:hover {
+            background: #1d4ed8;
+        }
+
+        .empty {
+            color: #64748b;
+            padding: 20px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            margin-right: 6px;
+            border-radius: 6px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 13px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📚 Student Notes</h2>
+</div>
+
+<div class="container">
+
+    <a href="/student-dashboard" class="back">
+        ← Back to Student Dashboard
+    </a>
+
+    <div class="box">
+
+        <h2>Available Notes</h2>
+
+        {% if notes %}
+
+            {% for note in notes %}
+
+                <div class="note">
+
+                    <h3>
+                        📚 {{ note.title }}
+                    </h3>
+
+                    <p>
+                        <span class="badge">
+                            Department: {{ note.department }}
+                        </span>
+
+                        <span class="badge">
+                            Section: {{ note.section }}
+                        </span>
+                    </p>
+
+                    <p>
+                        📖 Subject:
+                        {{ note.subject }}
+                    </p>
+
+                    <p>
+                        📄 File:
+                        {{ note.filename }}
+                    </p>
+
+                    <a
+                        href="/uploads/{{ note.filename }}"
+                        target="_blank"
+                        class="view"
+                    >
+                        👁️ View / Download Notes
+                    </a>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="empty">
+                अभी आपके department और section के लिए कोई notes upload नहीं किए गए हैं।
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

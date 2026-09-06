@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Notices - Student Portal</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .notice {
+            border-left: 5px solid #2563eb;
+            background: #f8fafc;
+            padding: 18px;
+            margin-top: 18px;
+            border-radius: 8px;
+        }
+
+        .notice h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+
+        .notice p {
+            line-height: 1.6;
+        }
+
+        .empty {
+            text-align: center;
+            color: #64748b;
+            padding: 30px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h2>📢 Student Notices</h2>
+
+    </div>
+
+
+    <div class="container">
+
+        <a
+            href="/student-dashboard"
+            class="back"
+        >
+            ← Back to Student Dashboard
+        </a>
+
+
+        <div class="box">
+
+            <h2>
+                📢 Notices
+            </h2>
+
+
+            {% if notices %}
+
+                {% for notice in notices %}
+
+                    <div class="notice">
+
+                        <h3>
+                            📢 {{ notice.title }}
+                        </h3>
+
+                        <p>
+                            {{ notice.message }}
+                        </p>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty">
+
+                    <h3>
+                        📭 No Notices
+                    </h3>
+
+                    <p>
+                        अभी कोई notice उपलब्ध नहीं है।
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

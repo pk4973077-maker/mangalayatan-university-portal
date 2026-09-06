@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Attendance</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .card h2 {
+            margin: 5px 0;
+            color: #2563eb;
+        }
+
+        .card p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .present {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .absent {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .percentage {
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        @media (max-width: 700px) {
+            .summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📊 My Attendance</h2>
+</div>
+
+<div class="container">
+
+    <a href="/student-dashboard" class="back">
+        ← Back to Student Dashboard
+    </a>
+
+    <div class="summary">
+
+        <div class="card">
+            <h2>{{ total_classes }}</h2>
+            <p>Total Classes</p>
+        </div>
+
+        <div class="card">
+            <h2>{{ total_present }}</h2>
+            <p>Present</p>
+        </div>
+
+        <div class="card">
+            <h2>{{ attendance_percentage }}%</h2>
+            <p>Overall Attendance</p>
+        </div>
+
+    </div>
+
+
+    <div class="box">
+
+        <h2>📚 Subject-wise Attendance</h2>
+
+        <table>
+
+            <tr>
+                <th>Subject</th>
+                <th>Total Classes</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Percentage</th>
+            </tr>
+
+            {% for subject, data in subject_attendance.items() %}
+
+            <tr>
+
+                <td>{{ subject }}</td>
+
+                <td>
+                    {{ data.total }}
+                </td>
+
+                <td class="present">
+                    {{ data.present }}
+                </td>
+
+                <td class="absent">
+                    {{ data.absent }}
+                </td>
+
+                <td class="percentage">
+                    {{ data.percentage }}%
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+<div class="box" style="margin-top: 25px;">
+
+    <h2>📅 Daily Attendance History</h2>
+
+    <table>
+
+        <tr>
+            <th>Date</th>
+            <th>Subject</th>
+            <th>Status</th>
+        </tr>
+
+        {% for record in daily_history %}
+
+        <tr>
+            <td>{{ record.date }}</td>
+
+            <td>{{ record.subject }}</td>
+
+            <td>
+                {% if record.status == "Present" %}
+                    <span class="present">✅ Present</span>
+                {% else %}
+                    <span class="absent">❌ Absent</span>
+                {% endif %}
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>

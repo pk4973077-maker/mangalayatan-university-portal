@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Student</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #1e3a8a;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .update-btn {
+            width: 100%;
+            padding: 13px;
+            margin-top: 25px;
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .update-btn:hover {
+            background: #172554;
+        }
+
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            text-decoration: none;
+            color: #1e3a8a;
+            font-weight: bold;
+        }
+
+        .student-id {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+    <div class="header">
+
+        <h1>👨‍💼 Admin Dashboard</h1>
+
+        <p>Edit Student Information</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <div class="box">
+
+            <h2>✏️ Edit Student</h2>
+
+
+            <!-- Student ID -->
+
+            <div class="student-id">
+
+                <strong>Student ID:</strong>
+
+                {{ student.get("student_id", "") }}
+
+            </div>
+
+
+            <form method="POST">
+
+
+                <!-- Student Name -->
+
+                <label>
+                    Student Name
+                </label>
+
+                <input
+                    type="text"
+                    name="student_name"
+                    value="{{ student.get('name', '') }}"
+                    placeholder="Enter student name"
+                    required
+                >
+
+
+                <!-- Enrollment -->
+
+                <label>
+                    Enrollment Number
+                </label>
+
+                <input
+                    type="text"
+                    name="enrollment"
+                    value="{{ student.get('enrollment', '') }}"
+                    placeholder="Enter enrollment number"
+                    required
+                >
+
+
+                <!-- Semester -->
+
+                <label>
+                    Semester
+                </label>
+
+                <select name="semester" required>
+
+                    <option value="">
+                        Select Semester
+                    </option>
+
+                    <option value="1"
+                        {% if student.get("semester") == "1" %}selected{% endif %}>
+                        1st Semester
+                    </option>
+
+                    <option value="2"
+                        {% if student.get("semester") == "2" %}selected{% endif %}>
+                        2nd Semester
+                    </option>
+
+                    <option value="3"
+                        {% if student.get("semester") == "3" %}selected{% endif %}>
+                        3rd Semester
+                    </option>
+
+                    <option value="4"
+                        {% if student.get("semester") == "4" %}selected{% endif %}>
+                        4th Semester
+                    </option>
+
+                    <option value="5"
+                        {% if student.get("semester") == "5" %}selected{% endif %}>
+                        5th Semester
+                    </option>
+
+                    <option value="6"
+                        {% if student.get("semester") == "6" %}selected{% endif %}>
+                        6th Semester
+                    </option>
+
+                    <option value="7"
+                        {% if student.get("semester") == "7" %}selected{% endif %}>
+                        7th Semester
+                    </option>
+
+                    <option value="8"
+                        {% if student.get("semester") == "8" %}selected{% endif %}>
+                        8th Semester
+                    </option>
+
+                </select>
+
+
+                <!-- Section -->
+
+                <label>
+                    Section
+                </label>
+
+                <select name="section" required>
+
+                    <option value="">
+                        Select Section
+                    </option>
+
+                    <option value="A"
+                        {% if student.get("section") == "A" %}selected{% endif %}>
+                        Section A
+                    </option>
+
+                    <option value="B"
+                        {% if student.get("section") == "B" %}selected{% endif %}>
+                        Section B
+                    </option>
+
+                    <option value="C"
+                        {% if student.get("section") == "C" %}selected{% endif %}>
+                        Section C
+                    </option>
+
+                    <option value="D"
+                        {% if student.get("section") == "D" %}selected{% endif %}>
+                        Section D
+                    </option>
+
+                </select>
+
+
+                <!-- Update -->
+
+                <button
+                    type="submit"
+                    class="update-btn"
+                >
+                    💾 Update Student
+                </button>
+
+            </form>
+
+
+            <a
+                href="/admin-students"
+                class="back-btn"
+            >
+                ← Back to Students
+            </a>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

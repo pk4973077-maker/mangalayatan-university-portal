@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>View Documents</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .view {
+            display: inline-block;
+            padding: 7px 12px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .empty {
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📄 Uploaded Documents</h2>
+</div>
+
+<div class="container">
+
+    <a href="/admission-dashboard" class="back">
+        ← Back to Admission Dashboard
+    </a>
+
+    <div class="box">
+
+        <h2>Application Documents</h2>
+
+        {% if documents %}
+
+        <table>
+
+            <tr>
+                <th>Application ID</th>
+                <th>Document Type</th>
+                <th>File Name</th>
+                <th>View</th>
+            </tr>
+
+            {% for document in documents %}
+
+            <tr>
+
+                <td>{{ document.application_id }}</td>
+
+                <td>{{ document.document_type }}</td>
+
+                <td>{{ document.filename }}</td>
+
+                <td>
+                    <a
+                        href="/uploads/{{ document.filename }}"
+                        target="_blank"
+                        class="view"
+                    >
+                        View
+                    </a>
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        {% else %}
+
+        <p class="empty">
+            अभी कोई document uploaded नहीं है।
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

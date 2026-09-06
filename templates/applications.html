@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Applications</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .pending {
+            color: #d97706;
+            font-weight: bold;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📋 Student Applications</h2>
+</div>
+
+<div class="container">
+
+    <a href="/admission-dashboard" class="back">
+        ← Back to Admission Dashboard
+    </a>
+
+    <div class="box">
+
+        <h2>All Admission Applications</h2>
+
+        {% if applications %}
+
+        <table>
+
+            <tr>
+                <th>Application ID</th>
+                <th>Student Name</th>
+                <th>Father's Name</th>
+                <th>DOB</th>
+                <th>Gender</th>
+                <th>Course</th>
+                <th>Mobile</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>10th %</th>
+                <th>12th %</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+
+            {% for application in applications %}
+
+            <tr>
+
+                <td>{{ application.application_id }}</td>
+
+                <td>{{ application.student_name }}</td>
+
+                <td>{{ application.father_name }}</td>
+
+                <td>{{ application.dob }}</td>
+
+                <td>{{ application.gender }}</td>
+
+                <td>{{ application.course }}</td>
+
+                <td>{{ application.mobile }}</td>
+
+                <td>{{ application.email }}</td>
+
+                <td>{{ application.address }}</td>
+
+                <td>{{ application.tenth }}</td>
+
+                <td>{{ application.twelfth }}</td>
+
+                <td class="pending">
+                    {{ application.status }}
+                </td>
+
+                <td>
+
+    <a href="/approve-application/{{ application.application_id }}">
+        <button type="button">✅ Approve</button>
+    </a>
+
+    <a href="/reject-application/{{ application.application_id }}">
+        <button type="button">❌ Reject</button>
+    </a>
+
+</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        {% else %}
+
+        <p>अभी कोई application saved नहीं है।</p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

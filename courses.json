@@ -1,0 +1,37 @@
+[
+    {
+        "course_id": "COURSE001",
+        "name": "B.TECH CSE",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE004",
+        "name": "B.TECH AI & ML",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE005",
+        "name": "B.TECH CYBER SECURITY",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE006",
+        "name": "B.TECH DATA SCIENCE",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE007",
+        "name": "DIPLOMA CSE",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE008",
+        "name": "BCA",
+        "department": "DCEA"
+    },
+    {
+        "course_id": "COURSE009",
+        "name": "MCA",
+        "department": "DCEA"
+    }
+]

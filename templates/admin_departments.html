@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Department Management</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #1d4ed8;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .department {
+            background: #f8fafc;
+            padding: 18px;
+            margin-top: 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .department-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1d4ed8;
+            margin-bottom: 8px;
+        }
+
+        .empty {
+            color: #64748b;
+            padding: 10px 0;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>🏢 Admin Dashboard</h1>
+
+        <p>Department Management</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <a href="/admin-dashboard" class="back">
+            ← Back to Admin Dashboard
+        </a>
+
+
+        <!-- ADD DEPARTMENT -->
+
+        <div class="box">
+
+            <h2>➕ Add Department</h2>
+
+            <form
+                action="/admin-departments"
+                method="POST"
+            >
+
+                <label>
+                    Department Name
+                </label>
+
+                <input
+                    type="text"
+                    name="department_name"
+                    placeholder="Enter Department Name"
+                    required
+                >
+
+                <button type="submit">
+                    ➕ Add Department
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- DEPARTMENT LIST -->
+
+        <div class="box">
+
+            <h2>🏢 Department List</h2>
+
+            {% if departments %}
+
+                {% for department in departments %}
+
+                    <div class="department">
+
+                        <div class="department-name">
+
+                            {{ department.name }}
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Department ID:
+                            </strong>
+
+                            {{ department.department_id }}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty">
+
+                    No department added yet.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

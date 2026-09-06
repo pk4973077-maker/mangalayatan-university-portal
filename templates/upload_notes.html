@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Upload Notes - Faculty Portal</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #7c3aed;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            font-size: 15px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            cursor: not-allowed;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 13px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .subject-info {
+            margin-top: 8px;
+            padding: 10px;
+            background: #f3e8ff;
+            border-radius: 8px;
+            color: #6d28d9;
+            display: none;
+        }
+
+        .note {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 15px;
+            background: #f8fafc;
+        }
+
+        .note h3 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        .note p {
+            margin: 7px 0;
+            color: #475569;
+        }
+
+        .open-btn,
+        .delete-btn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 9px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .open-btn {
+            background: #2563eb;
+        }
+
+        .open-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            margin-left: 8px;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .empty {
+            color: #64748b;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .no-subject {
+            color: #dc2626;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                width: 94%;
+            }
+
+            .box {
+                padding: 18px;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+            .delete-btn {
+                margin-left: 0;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h1>👨‍🏫 Faculty Portal</h1>
+
+        <p>Upload Notes</p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- BACK BUTTON -->
+
+        <a href="/faculty-dashboard" class="back">
+
+            ← Back to Faculty Dashboard
+
+        </a>
+
+
+        <!-- UPLOAD BOX -->
+
+        <div class="box">
+
+            <h2>📚 Upload New Notes</h2>
+
+
+            <form
+                action="/upload-notes"
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+
+                <!-- FACULTY NAME -->
+
+                <label for="faculty_name">
+                    Faculty Name
+                </label>
+
+                <input
+                    type="text"
+                    id="faculty_name"
+                    value="{{ faculty_name }}"
+                    readonly
+                >
+
+
+                <!-- SEMESTER -->
+
+                <label for="semester">
+                    Semester
+                </label>
+
+                <select
+                    name="semester"
+                    id="semester"
+                    required
+                >
+
+                    <option value="">
+                        Select Semester
+                    </option>
+
+                    <option value="1">1st Semester</option>
+                    <option value="2">2nd Semester</option>
+                    <option value="3">3rd Semester</option>
+                    <option value="4">4th Semester</option>
+                    <option value="5">5th Semester</option>
+                    <option value="6">6th Semester</option>
+                    <option value="7">7th Semester</option>
+                    <option value="8">8th Semester</option>
+
+                </select>
+
+
+                <!-- COURSE -->
+
+                <label for="course">
+                    Course
+                </label>
+
+                <select
+                    name="course"
+                    id="course"
+                    required
+                >
+
+                    <option value="">
+                        Select Course
+                    </option>
+
+                    {% for course in courses %}
+
+                        <option
+                            value="{{ course.get('name', '') }}"
+                        >
+
+                            {{ course.get('name', '') }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <!-- SUBJECT -->
+
+                <label for="subject">
+                    Subject
+                </label>
+
+                <select
+                    name="subject"
+                    id="subject"
+                    required
+                >
+
+                    <option value="">
+                        Select Semester and Course first
+                    </option>
+
+                </select>
+
+
+                <div
+                    id="subjectInfo"
+                    class="subject-info"
+                ></div>
+
+
+                <div
+                    id="noSubject"
+                    class="no-subject"
+                >
+                    No subject found for the selected
+                    Course and Semester.
+                </div>
+
+
+                <!-- SECTION -->
+
+                <label for="section">
+                    Section
+                </label>
+
+                <select
+                    name="section"
+                    id="section"
+                    required
+                >
+
+                    <option value="">
+                        Select Section
+                    </option>
+
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                    <option value="D">Section D</option>
+
+                </select>
+
+
+                <!-- TITLE -->
+
+                <label for="title">
+                    Notes Title
+                </label>
+
+                <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    placeholder="Enter notes title"
+                    required
+                >
+
+
+                <!-- FILE -->
+
+                <label for="file">
+                    Select Notes File
+                </label>
+
+                <input
+                    type="file"
+                    name="file"
+                    id="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    required
+                >
+
+
+                <!-- SUBMIT -->
+
+                <button type="submit">
+
+                    📤 Upload Notes
+
+                </button>
+
+
+            </form>
+
+        </div>
+
+
+        <!-- UPLOADED NOTES -->
+
+        <div class="box">
+
+            <h2>📋 Uploaded Notes</h2>
+
+
+            {% if notes %}
+
+                {% for note in notes %}
+
+                    <div class="note">
+
+                        <h3>
+                            📚 {{ note.get('title', 'Untitled Notes') }}
+                        </h3>
+
+
+                        <p>
+                            <strong>Sent By:</strong>
+                            {{ note.get('faculty_name', '-') }}
+                        </p>
+
+
+                        <p>
+                            <strong>Course:</strong>
+                            {{ note.get('course', '-') }}
+                        </p>
+
+
+                        <p>
+                            <strong>Subject:</strong>
+                            {{ note.get('subject', '-') }}
+                        </p>
+
+
+                        <p>
+                            <strong>Semester:</strong>
+                            {{ note.get('semester', '-') }}
+                        </p>
+
+
+                        <p>
+                            <strong>Section:</strong>
+                            {{ note.get('section', '-') }}
+                        </p>
+
+
+                        <p>
+                            <strong>File:</strong>
+                            {{ note.get('filename', '-') }}
+                        </p>
+
+
+                        {% if note.get('filename') %}
+
+                            <a
+                                href="{{ url_for('uploaded_file', filename=note.get('filename')) }}"
+                                target="_blank"
+                                class="open-btn"
+                            >
+                                👁️ Open Notes
+                            </a>
+
+                        {% endif %}
+
+
+                        <a
+                            href="/delete-note/{{ note.get('_index') }}"
+                            class="delete-btn"
+                            onclick="return confirm('Kya aap is note ko delete karna chahte hain?');"
+                        >
+                            🗑️ Delete
+                        </a>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty">
+
+                    अभी तक कोई notes upload नहीं हुए हैं।
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+
+    <script>
+
+
+        const semesterSelect =
+            document.getElementById("semester");
+
+
+        const courseSelect =
+            document.getElementById("course");
+
+
+        const subjectSelect =
+            document.getElementById("subject");
+
+
+        const subjectInfo =
+            document.getElementById("subjectInfo");
+
+
+        const noSubject =
+            document.getElementById("noSubject");
+
+
+        /*
+        =========================================
+        UPDATE SUBJECTS
+        =========================================
+        */
+
+        function updateSubjects() {
+
+
+            const semester =
+                semesterSelect.value;
+
+
+            const course =
+                courseSelect.value;
+
+
+            subjectSelect.innerHTML = "";
+
+
+            subjectInfo.style.display = "none";
+
+            noSubject.style.display = "none";
+
+
+            /*
+            CHECK
+            */
+
+            if (
+                !semester ||
+                !course
+            ) {
+
+                subjectSelect.innerHTML =
+                    '<option value="">Select Semester and Course first</option>';
+
+                return;
+
+            }
+
+
+            /*
+            DEFAULT OPTION
+            */
+
+            const defaultOption =
+                document.createElement("option");
+
+
+            defaultOption.value = "";
+
+            defaultOption.textContent =
+                "Select Subject";
+
+
+            subjectSelect.appendChild(
+                defaultOption
+            );
+
+
+            let found = 0;
+
+
+            /*
+            =========================================
+            SUBJECT DATA
+            =========================================
+            */
+
+            {% for subject in subjects %}
+
+                {
+
+                    const subjectCourse =
+                        {{ subject.get('course', '') | tojson }};
+
+
+                    const subjectSemester =
+                        {{ subject.get('semester', '') | tojson }};
+
+
+                    const subjectName =
+                        {{ subject.get('subject_name', '') | tojson }};
+
+
+                    /*
+                    COURSE + SEMESTER MATCH
+                    */
+
+                    if (
+
+                        subjectCourse.toLowerCase()
+                        === course.toLowerCase()
+
+                        &&
+
+                        subjectSemester.toString()
+                        === semester.toString()
+
+                    ) {
+
+
+                        const option =
+                            document.createElement("option");
+
+
+                        option.value =
+                            subjectName;
+
+
+                        option.textContent =
+                            subjectName;
+
+
+                        subjectSelect.appendChild(
+                            option
+                        );
+
+
+                        found++;
+
+                    }
+
+                }
+
+            {% endfor %}
+
+
+            /*
+            =========================================
+            NO SUBJECT
+            =========================================
+            */
+
+            if (found === 0) {
+
+                subjectSelect.innerHTML =
+                    '<option value="">No subjects found</option>';
+
+                noSubject.style.display = "block";
+
+            }
+
+        }
+
+
+        /*
+        =========================================
+        EVENTS
+        =========================================
+        */
+
+        semesterSelect.addEventListener(
+            "change",
+            function() {
+
+                updateSubjects();
+
+            }
+        );
+
+
+        courseSelect.addEventListener(
+            "change",
+            function() {
+
+                updateSubjects();
+
+            }
+        );
+
+
+        /*
+        =========================================
+        INITIAL STATE
+        =========================================
+        */
+
+        updateSubjects();
+
+
+    </script>
+
+
+</body>
+
+</html>

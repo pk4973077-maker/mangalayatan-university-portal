@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Syllabus - Student Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .subject {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 18px;
+        }
+
+        .subject h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+
+        .open-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 18px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .open-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .filename {
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .no-syllabus {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>📖 Student Syllabus</h2>
+    </div>
+
+    <div class="container">
+
+        <a href="/student-dashboard" class="back">
+            ← Back to Student Dashboard
+        </a>
+
+        <div class="box">
+
+            <h2>📚 B.Tech CSE Syllabus</h2>
+
+            {% if syllabuses %}
+
+                {% for syllabus in syllabuses %}
+
+                    <div class="subject">
+
+                        <h3>📘 {{ syllabus.subject }}</h3>
+
+                        <div class="filename">
+                            📄 {{ syllabus.filename }}
+                        </div>
+
+                        <a
+                            href="{{ url_for('syllabus_file', filename=syllabus.filename) }}"
+                            target="_blank"
+                            class="open-btn"
+                        >
+                            📂 Open Syllabus
+                        </a>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="no-syllabus">
+                    <h3>📭 No syllabus uploaded yet</h3>
+                    <p>Faculty has not uploaded any syllabus.</p>
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</body>
+</html>

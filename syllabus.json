@@ -1,0 +1,20 @@
+[
+    {
+        "faculty_id": "FAC001",
+        "faculty_name": "MRS. UPMA",
+        "course": "B.TECH CSE",
+        "semester": "5",
+        "section": "A",
+        "subject": "SOFTWARE ENGINEERING (MOOCS) (CSL-3101)",
+        "filename": "a787b91d-6b86-48a7-84de-b3c2eceb0a6d_TIME_TABLE_FOR_STUDY.pdf"
+    },
+    {
+        "faculty_id": "FAC001",
+        "faculty_name": "MRS. UPMA",
+        "course": "B.TECH CSE",
+        "semester": "5",
+        "section": "B",
+        "subject": "SOFTWARE ENGINEERING (MOOCS) (CSL-3101)",
+        "filename": "94a81af5-d86d-4747-a067-624fcdd78b3f_S_P_UNIT_1ST.pdf"
+    }
+]

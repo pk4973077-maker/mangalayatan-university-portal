@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Daily Attendance</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #7c3aed;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 25px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f3ff;
+        }
+
+        button {
+            margin-top: 25px;
+            width: 100%;
+            padding: 13px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .present {
+            color: green;
+            font-weight: bold;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f5f3ff;
+            border-radius: 8px;
+        }
+
+        .empty-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+        }
+
+        /* COURSE SEARCH */
+
+        .course-search-box {
+            position: relative;
+        }
+
+        #courseSearch {
+            margin-bottom: 0;
+        }
+
+        #courseList {
+            display: none;
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            margin-top: 5px;
+            background: white;
+        }
+
+        .course-option {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .course-option:last-child {
+            border-bottom: none;
+        }
+
+        .course-option:hover {
+            background: #f1f5f9;
+        }
+
+        .course-option strong {
+            color: #7c3aed;
+        }
+
+        .no-course {
+            padding: 12px;
+            color: #64748b;
+        }
+
+        .selected-course {
+            margin-top: 8px;
+            padding: 10px;
+            background: #f3e8ff;
+            border-radius: 8px;
+            color: #6d28d9;
+            display: none;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h2>📊 Daily Attendance</h2>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/faculty-dashboard"
+       class="back">
+
+        ← Back to Faculty Dashboard
+
+    </a>
+
+
+    <div class="box">
+
+
+        <h2>Take Today's Attendance</h2>
+
+
+        <form action="/manage-attendance"
+              method="POST">
+
+
+            <!-- FACULTY NAME -->
+
+            <label>Faculty Name</label>
+
+            <input
+                type="text"
+                name="faculty_name"
+                value="{{ faculty_name }}"
+                readonly
+            >
+
+
+            <!-- SEMESTER -->
+
+            <label>Semester</label>
+
+            <select
+                name="semester"
+                id="semester"
+                required
+            >
+
+                <option value="">
+                    Select Semester
+                </option>
+
+                {% for i in range(1, 9) %}
+
+                <option value="{{ i }}">
+                    Semester {{ i }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+
+            <!-- COURSE FROM ADMIN PORTAL -->
+
+            <label>Course</label>
+
+            <div class="course-search-box">
+
+
+                <input
+                    type="text"
+                    id="courseSearch"
+                    placeholder="Search course or select from list..."
+                    autocomplete="off"
+                    required
+                >
+
+
+                <input
+                    type="hidden"
+                    name="course"
+                    id="courseValue"
+                >
+
+
+                <div id="courseList">
+
+
+                    {% for course in courses %}
+
+                        {% if course is mapping %}
+
+                        <div
+                            class="course-option"
+                            data-name="{{ course.get('name', '') }}"
+                            data-id="{{ course.get('course_id', '') }}"
+                        >
+
+                            <strong>
+                                {{ course.get('name', '') }}
+                            </strong>
+
+                            {% if course.get('course_id') %}
+
+                            <br>
+
+                            <small>
+                                {{ course.get('course_id') }}
+                            </small>
+
+                            {% endif %}
+
+                        </div>
+
+                        {% else %}
+
+                        <div
+                            class="course-option"
+                            data-name="{{ course }}"
+                            data-id=""
+                        >
+
+                            <strong>
+                                {{ course }}
+                            </strong>
+
+                        </div>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+
+                </div>
+
+
+                <div
+                    id="selectedCourse"
+                    class="selected-course"
+                ></div>
+
+
+            </div>
+
+
+            <!-- SUBJECT -->
+
+            <label>Subject</label>
+
+            <select
+                name="subject"
+                id="subjectSelect"
+                required
+            >
+
+                <option value="">
+                    Select Course and Semester first
+                </option>
+
+            </select>
+
+
+            <!-- SECTION -->
+
+            <label>Section</label>
+
+            <select
+                name="section"
+                id="section"
+                required
+            >
+
+                <option value="">
+                    Select Section
+                </option>
+
+                <option value="A">
+                    Section A
+                </option>
+
+                <option value="B">
+                    Section B
+                </option>
+
+                <option value="C">
+                    Section C
+                </option>
+
+                <option value="D">
+                    Section D
+                </option>
+
+            </select>
+
+
+            <!-- DATE -->
+
+            <label>Date</label>
+
+            <input
+                type="date"
+                name="date"
+                required
+            >
+
+
+            <!-- INFO -->
+
+            <div class="info">
+
+                👨‍🎓 Students will appear after selecting
+                <strong>Course + Semester + Section</strong>.
+
+            </div>
+
+
+            <!-- STUDENTS TABLE -->
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Enrollment
+                        </th>
+
+                        <th>
+                            Student Name
+                        </th>
+
+                        <th>
+                            Attendance
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                    {% if students %}
+
+
+                        {% for student in students %}
+
+
+                        <tr
+                            class="student-row"
+                            data-course="{{ student.get('course', '') }}"
+                            data-semester="{{ student.get('semester', '') }}"
+                            data-section="{{ student.get('section', '') }}"
+                        >
+
+
+                            <td>
+                                {{ student.get('enrollment', '') }}
+                            </td>
+
+
+                            <td>
+                                {{ student.get('name', '') }}
+                            </td>
+
+
+                            <td>
+
+                                <input
+                                    type="checkbox"
+                                    name="present"
+                                    value="{{ student.get('enrollment', '') }}"
+                                >
+
+                                <span class="present">
+                                    Present
+                                </span>
+
+                            </td>
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    {% endif %}
+
+
+                    <!-- NO STUDENT MESSAGE -->
+
+                    <tr
+                        id="studentEmptyMessage"
+                        class="empty-message"
+                    >
+
+                        <td colspan="3">
+
+                            No students found for the selected
+                            Course + Semester + Section.
+
+                        </td>
+
+                    </tr>
+
+
+                </tbody>
+
+            </table>
+
+
+            <!-- SAVE -->
+
+            <button type="submit">
+
+                💾 Save Today's Attendance
+
+            </button>
+
+            <a href="/faculty-attendance-history"
+   style="
+       display:inline-block;
+       margin-top:15px;
+       padding:12px 20px;
+       background:#2563eb;
+       color:white;
+       text-decoration:none;
+       border-radius:8px;
+       font-weight:bold;
+   ">
+    📋 Attendance History
+</a>
+
+
+        </form>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* =========================
+   MAIN ELEMENTS
+   ========================= */
+
+const semesterSelect =
+    document.getElementById("semester");
+
+
+const sectionSelect =
+    document.getElementById("section");
+
+
+const subjectSelect =
+    document.getElementById("subjectSelect");
+
+
+const studentRows =
+    document.querySelectorAll(".student-row");
+
+
+const studentEmptyMessage =
+    document.getElementById("studentEmptyMessage");
+
+
+
+/* =========================
+   COURSE ELEMENTS
+   ========================= */
+
+const courseSearch =
+    document.getElementById("courseSearch");
+
+
+const courseValue =
+    document.getElementById("courseValue");
+
+
+const courseList =
+    document.getElementById("courseList");
+
+
+const selectedCourse =
+    document.getElementById("selectedCourse");
+
+
+const courseOptions =
+    document.querySelectorAll(".course-option");
+
+
+
+/* =========================
+   ADMIN SUBJECT DATA
+   ========================= */
+
+const subjects = [
+
+    {% for subject in subjects %}
+
+    {
+        name:
+            {{ subject.get("subject_name", "") | tojson }},
+
+        course:
+            {{ subject.get("course", "") | tojson }},
+
+        semester:
+            {{ subject.get("semester", "") | tojson }}
+    },
+
+    {% endfor %}
+
+];
+
+
+
+/* =========================
+   FILTER STUDENTS
+   COURSE + SEMESTER + SECTION
+   ========================= */
+
+function filterStudents() {
+
+
+    const course =
+        courseValue.value
+            .trim()
+            .toLowerCase();
+
+
+    const semester =
+        semesterSelect.value
+            .trim();
+
+
+    const section =
+        sectionSelect.value
+            .trim()
+            .toUpperCase();
+
+
+    let visibleCount = 0;
+
+
+    studentRows.forEach(function(row) {
+
+
+        const studentCourse =
+            (row.dataset.course || "")
+                .trim()
+                .toLowerCase();
+
+
+        const studentSemester =
+            (row.dataset.semester || "")
+                .trim();
+
+
+        const studentSection =
+            (row.dataset.section || "")
+                .trim()
+                .toUpperCase();
+
+
+        if (
+
+            course
+            &&
+            semester
+            &&
+            section
+            &&
+            studentCourse === course
+            &&
+            studentSemester === semester
+            &&
+            studentSection === section
+
+        ) {
+
+            row.style.display = "";
+
+            visibleCount++;
+
+        }
+
+        else {
+
+            row.style.display = "none";
+
+        }
+
+
+    });
+
+
+    /* EMPTY MESSAGE */
+
+    if (
+
+        course
+        &&
+        semester
+        &&
+        section
+        &&
+        visibleCount === 0
+
+    ) {
+
+        studentEmptyMessage.style.display =
+            "table-row";
+
+    }
+
+    else {
+
+        studentEmptyMessage.style.display =
+            "none";
+
+    }
+
+
+}
+
+
+
+/* =========================
+   FILTER SUBJECTS
+   COURSE + SEMESTER
+   ========================= */
+
+function filterSubjects() {
+
+
+    const semester =
+        semesterSelect.value;
+
+
+    const course =
+        courseValue.value;
+
+
+    subjectSelect.innerHTML = "";
+
+
+    if (!semester || !course) {
+
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = "";
+
+
+        option.textContent =
+            "Select Course and Semester first";
+
+
+        subjectSelect.appendChild(option);
+
+
+        return;
+
+    }
+
+
+    const defaultOption =
+        document.createElement("option");
+
+
+    defaultOption.value = "";
+
+
+    defaultOption.textContent =
+        "Select Subject";
+
+
+    subjectSelect.appendChild(
+        defaultOption
+    );
+
+
+    let found = false;
+
+
+    subjects.forEach(function(subject) {
+
+
+        const subjectCourse =
+            String(subject.course || "")
+                .trim()
+                .toLowerCase();
+
+
+        const selectedCourseName =
+            String(course || "")
+                .trim()
+                .toLowerCase();
+
+
+        const subjectSemester =
+            String(subject.semester || "")
+                .trim();
+
+
+        const selectedSemester =
+            String(semester || "")
+                .trim();
+
+
+        if (
+
+            subjectCourse ===
+                selectedCourseName
+
+            &&
+
+            subjectSemester ===
+                selectedSemester
+
+        ) {
+
+
+            const option =
+                document.createElement("option");
+
+
+            option.value =
+                subject.name;
+
+
+            option.textContent =
+                subject.name;
+
+
+            subjectSelect.appendChild(
+                option
+            );
+
+
+            found = true;
+
+        }
+
+
+    });
+
+
+    if (!found) {
+
+
+        subjectSelect.innerHTML = "";
+
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = "";
+
+
+        option.textContent =
+            "No Subject Found";
+
+
+        subjectSelect.appendChild(
+            option
+        );
+
+    }
+
+
+}
+
+
+
+/* =========================
+   FILTER COURSES
+   ========================= */
+
+function filterCourses() {
+
+
+    const search =
+        courseSearch.value
+            .toLowerCase()
+            .trim();
+
+
+    let visibleCount = 0;
+
+
+    courseOptions.forEach(function(option) {
+
+
+        const courseName =
+            (
+                option.getAttribute("data-name")
+                || ""
+            )
+            .toLowerCase();
+
+
+        if (
+            courseName.includes(search)
+        ) {
+
+            option.style.display =
+                "block";
+
+            visibleCount++;
+
+        }
+
+        else {
+
+            option.style.display =
+                "none";
+
+        }
+
+
+    });
+
+
+    let noCourse =
+        document.getElementById("noCourse");
+
+
+    if (visibleCount === 0) {
+
+
+        if (!noCourse) {
+
+
+            noCourse =
+                document.createElement("div");
+
+
+            noCourse.id =
+                "noCourse";
+
+
+            noCourse.className =
+                "no-course";
+
+
+            noCourse.innerText =
+                "No matching course found.";
+
+
+            courseList.appendChild(
+                noCourse
+            );
+
+        }
+
+    }
+
+    else {
+
+
+        if (noCourse) {
+
+            noCourse.remove();
+
+        }
+
+    }
+
+
+    courseList.style.display =
+        "block";
+
+}
+
+
+
+/* =========================
+   SELECT COURSE
+   ========================= */
+
+function selectCourse(option) {
+
+
+    const name =
+        option.getAttribute(
+            "data-name"
+        );
+
+
+    courseSearch.value =
+        name;
+
+
+    courseValue.value =
+        name;
+
+
+    selectedCourse.innerHTML =
+        "✅ Selected Course: <strong>"
+        +
+        name
+        +
+        "</strong>";
+
+
+    selectedCourse.style.display =
+        "block";
+
+
+    courseList.style.display =
+        "none";
+
+
+    /* COURSE CHANGE */
+
+    filterSubjects();
+
+    filterStudents();
+
+}
+
+
+
+/* =========================
+   SEMESTER CHANGE
+   ========================= */
+
+semesterSelect.addEventListener(
+    "change",
+    function() {
+
+        filterSubjects();
+
+        filterStudents();
+
+    }
+);
+
+
+
+/* =========================
+   SECTION CHANGE
+   ========================= */
+
+sectionSelect.addEventListener(
+    "change",
+    function() {
+
+        filterStudents();
+
+    }
+);
+
+
+
+/* =========================
+   COURSE SEARCH
+   ========================= */
+
+courseSearch.addEventListener(
+    "focus",
+    function() {
+
+        filterCourses();
+
+    }
+);
+
+
+
+courseSearch.addEventListener(
+    "input",
+    function() {
+
+
+        /*
+           Agar user manually course
+           change kare to old selection
+           remove ho jayega.
+        */
+
+        courseValue.value = "";
+
+
+        selectedCourse.style.display =
+            "none";
+
+
+        filterCourses();
+
+
+        filterSubjects();
+
+
+        filterStudents();
+
+    }
+);
+
+
+
+/* =========================
+   COURSE CLICK
+   ========================= */
+
+courseOptions.forEach(function(option) {
+
+
+    option.addEventListener(
+        "click",
+        function() {
+
+            selectCourse(option);
+
+        }
+    );
+
+
+});
+
+
+
+/* =========================
+   ENTER = FIRST COURSE
+   ========================= */
+
+courseSearch.addEventListener(
+    "keydown",
+    function(event) {
+
+
+        if (event.key === "Enter") {
+
+
+            event.preventDefault();
+
+
+            const visibleOptions =
+                Array.from(courseOptions)
+                .filter(function(option) {
+
+                    return (
+                        option.style.display !==
+                        "none"
+                    );
+
+                });
+
+
+            if (
+                visibleOptions.length > 0
+            ) {
+
+
+                selectCourse(
+                    visibleOptions[0]
+                );
+
+
+            }
+
+
+        }
+
+
+    }
+);
+
+
+
+/* =========================
+   CLICK OUTSIDE
+   ========================= */
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+
+        if (
+            !event.target.closest(
+                ".course-search-box"
+            )
+        ) {
+
+
+            courseList.style.display =
+                "none";
+
+
+        }
+
+
+    }
+);
+
+
+
+/* =========================
+   INITIAL STATE
+   ========================= */
+
+filterStudents();
+
+filterSubjects();
+
+
+</script>
+
+
+</body>
+
+</html>

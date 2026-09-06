@@ -1,0 +1,14 @@
+[
+    {
+        "department_id": "DEPT001",
+        "name": "DCEA"
+    },
+    {
+        "department_id": "DEPT002",
+        "name": "DECE"
+    },
+    {
+        "department_id": "DEPT003",
+        "name": "IET"
+    }
+]

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admission Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .welcome {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-decoration: none;
+            color: #1e293b;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .card-icon {
+            font-size: 40px;
+        }
+
+        .card h3 {
+            color: #1e40af;
+        }
+
+        .card p {
+            color: #64748b;
+        }
+
+        @media (max-width: 600px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 15px #cbd5e1;
+}
+
+.summary-icon {
+    font-size: 30px;
+}
+
+.summary-card h3 {
+    color: #475569;
+    font-size: 16px;
+}
+
+.number {
+    font-size: 30px;
+    font-weight: bold;
+    color: #1e40af;
+}
+
+@media (max-width: 800px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h2>🎓 Admission Portal</h2>
+    </div>
+
+    <div class="container">
+
+        <div class="welcome">
+            <h2>Welcome to Admission Portal 👋</h2>
+            <p>Manage university admission activities from here.</p>
+        </div>
+
+        <div class="summary-cards">
+
+    <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <h3>Total Applications</h3>
+        <div class="number">{{ total_applications }}</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon">🟡</div>
+        <h3>Pending</h3>
+        <div class="number">{{ pending }}</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <h3>Approved</h3>
+        <div class="number">{{ approved }}</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon">❌</div>
+        <h3>Rejected</h3>
+        <div class="number">{{ rejected }}</div>
+    </div>
+
+</div>
+
+        <div class="cards">
+
+            <a href="/new-admission" class="card">
+                <div class="card-icon">📝</div>
+                <h3>New Admission</h3>
+                <p>Create a new student admission.</p>
+            </a>
+
+            <a href="/applications" class="card">
+                <div class="card-icon">📋</div>
+                <h3>Applications</h3>
+                <p>View student admission applications.</p>
+            </a>
+
+            <a href="/admission-status" class="card">
+                <div class="card-icon">🔍</div>
+                <h3>Admission Status</h3>
+                <p>Check application status.</p>
+            </a>
+
+            <a href="/admission-documents" class="card">
+                <div class="card-icon">📄</div>
+                <h3>Documents</h3>
+                <p>Manage admission documents.</p>
+            </a>
+
+            <a href="/view-documents" class="card">
+    <div class="card-icon">👁️</div>
+    <h3>View Documents</h3>
+    <p>View uploaded admission documents.</p>
+</a>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

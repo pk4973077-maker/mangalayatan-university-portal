@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Manage Faculty - Admin</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #7c3aed;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #6d28d9;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 20px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .faculty {
+            background: #f8fafc;
+            padding: 18px;
+            margin-top: 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .faculty-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #6d28d9;
+            margin-bottom: 8px;
+        }
+
+        .password-status {
+            display: inline-block;
+            margin-top: 8px;
+            background: #dcfce7;
+            color: #166534;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .edit-btn {
+            background: #2563eb;
+        }
+
+        .edit-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .reset-btn {
+            background: #16a34a;
+        }
+
+        .reset-btn:hover {
+            background: #15803d;
+        }
+
+        .empty {
+            color: #64748b;
+            padding: 10px 0;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- HEADER -->
+
+    <div class="header">
+
+        <h1>👨‍💼 Admin Dashboard</h1>
+
+        <p>Manage Faculty</p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- BACK -->
+
+        <a href="/admin-dashboard" class="back">
+
+            ← Back to Admin Dashboard
+
+        </a>
+
+
+        <!-- ADD FACULTY -->
+
+        <div class="box">
+
+            <h2>➕ Add Faculty</h2>
+
+
+            <form action="/admin-faculty"
+                  method="POST">
+
+
+                <label>
+                    Faculty Name
+                </label>
+
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter faculty name"
+                    required
+                >
+
+
+                <label>Department</label>
+
+<select name="department" required>
+
+    <option value="">
+        Select Department
+    </option>
+
+    {% for department in departments %}
+
+        <option value="{{ department.name }}">
+            {{ department.name }}
+        </option>
+
+    {% endfor %}
+
+</select>
+
+
+                <button type="submit">
+
+                    ➕ Add Faculty
+
+                </button>
+
+
+            </form>
+
+        </div>
+
+        <!-- FACULTY SEARCH -->
+<div class="box">
+
+    <h2>🔍 Search Faculty</h2>
+
+    <form action="/admin-faculty" method="GET">
+
+        <input
+            type="text"
+            name="search"
+            value="{{ search }}"
+            placeholder="Search by Faculty ID, Name or Department"
+        >
+
+        <button type="submit">
+            🔍 Search
+        </button>
+
+    </form>
+
+</div>
+
+
+        <!-- FACULTY LIST -->
+
+        <div class="box">
+
+            <h2>👨‍🏫 Faculty List</h2>
+
+
+            {% if faculty_list %}
+
+
+                {% for faculty in faculty_list %}
+
+
+                    <div class="faculty">
+
+
+                        <div class="faculty-name">
+
+                            {{ faculty.name }}
+
+                        </div>
+
+
+                        <div>
+
+                            <strong>Faculty ID:</strong>
+
+                            {{ faculty.faculty_id }}
+
+                        </div>
+
+
+                        <div>
+
+                            <strong>Department:</strong>
+
+                            {{ faculty.department }}
+
+                        </div>
+
+
+                        <!-- PASSWORD STATUS -->
+
+                        <div>
+
+                            <strong>Password Status:</strong>
+
+                            {% if faculty.password_hash %}
+
+                                <span class="password-status">
+
+                                    🔒 Password Set
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="password-status">
+
+                                    🔑 Initial Password
+
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- BUTTONS -->
+
+                        <div class="buttons">
+
+
+                            <!-- EDIT -->
+
+                            <a
+                                href="/edit-faculty/{{ faculty.faculty_id }}"
+                                class="action-btn edit-btn"
+                            >
+
+                                ✏️ Edit
+
+                            </a>
+
+
+                            <!-- DELETE -->
+
+                            <a
+                                href="/delete-faculty/{{ faculty.faculty_id }}"
+                                class="action-btn delete-btn"
+                                onclick="return confirm('Are you sure you want to delete this faculty?');"
+                            >
+
+                                🗑️ Delete
+
+                            </a>
+
+
+                            <!-- RESET PASSWORD -->
+
+                            <a
+                                href="/reset-faculty-password/{{ faculty.faculty_id }}"
+                                class="action-btn reset-btn"
+                                onclick="return confirm('Reset password to Faculty ID?');"
+                            >
+
+                                🔄 Reset Password
+
+                            </a>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="empty">
+
+                    No faculty added yet.
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>

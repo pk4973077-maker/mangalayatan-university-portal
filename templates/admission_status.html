@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admission Status</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .header h2 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h1 {
+            color: #1e40af;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #eff6ff;
+            border-radius: 10px;
+        }
+
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .approved {
+            color: #16a34a;
+        }
+
+        .rejected {
+            color: #dc2626;
+        }
+
+        .pending {
+            color: #d97706;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>🔍 Admission Status</h2>
+</div>
+
+<div class="container">
+
+    <a href="/admission-dashboard" class="back">
+        ← Back to Admission Dashboard
+    </a>
+
+    <div class="box">
+
+        <h1>Check Admission Status</h1>
+
+        <form action="/admission-status" method="POST">
+
+            <label>Application ID</label>
+
+            <input
+                type="text"
+                name="application_id"
+                placeholder="Example: APP001"
+                required
+            >
+
+            <button type="submit">
+                Check Status
+            </button>
+
+        </form>
+
+        {% if application %}
+
+        <div class="result">
+
+            <h3>Application Details</h3>
+
+            <p>
+                <strong>Application ID:</strong>
+                {{ application.application_id }}
+            </p>
+
+            <p>
+                <strong>Student Name:</strong>
+                {{ application.student_name }}
+            </p>
+
+            <p>
+                <strong>Course:</strong>
+                {{ application.course }}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+
+                {% if application.status == "Approved" %}
+
+                    <span class="status approved">
+                        ✅ Approved
+                    </span>
+
+                {% elif application.status == "Rejected" %}
+
+                    <span class="status rejected">
+                        ❌ Rejected
+                    </span>
+
+                {% else %}
+
+                    <span class="status pending">
+                        🟡 Pending
+                    </span>
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+        {% endif %}
+
+        {% if not_found %}
+
+        <div class="result">
+            ❌ Application ID not found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
