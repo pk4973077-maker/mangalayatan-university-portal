@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for
+import base64
+import qrcode
 import os
 import io
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +13,99 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get("SECRET_KEY", "development-secret-key")
 
+ADMIN_FILE = "admin.json"
+def get_admin_data():
+
+    if not os.path.exists(ADMIN_FILE):
+
+        admin_data = {
+            "admin_id": "ADMIN001",
+            "password": generate_password_hash("admin123")
+        }
+
+        with open(ADMIN_FILE, "w") as file:
+            json.dump(admin_data, file, indent=4)
+
+        return admin_data
+
+    try:
+        with open(ADMIN_FILE, "r") as file:
+            admin_data = json.load(file)
+
+        return admin_data
+
+    except Exception:
+        admin_data = {
+            "admin_id": "ADMIN001",
+            "password": generate_password_hash("admin123")
+        }
+
+        with open(ADMIN_FILE, "w") as file:
+            json.dump(admin_data, file, indent=4)
+
+        return admin_data
+
+
+# =========================================================
+# SERVER-SIDE ROLE / ROUTE SECURITY
+# =========================================================
+
+@app.before_request
+def protect_private_routes():
+
+    path = request.path
+
+    # Public/login pages
+    public_paths = {
+        "/",
+        "/admin-login",
+        "/faculty-login",
+        "/student-login",
+        "/admission-login",
+    }
+
+    if path in public_paths:
+        return None
+
+    # ADMIN-ONLY ROUTES
+    admin_paths = (
+        "/admin-",
+        "/edit-student/",
+        "/delete-student/",
+        "/reset-student-password/",
+        "/edit-faculty/",
+        "/delete-faculty/",
+        "/reset-faculty-password/",
+        "/edit-course/",
+        "/delete-course/",
+        "/delete-subject/",
+        "/approve-application/",
+        "/reject-application/",
+    )
+
+    if path.startswith(admin_paths):
+        if not session.get("admin_id"):
+            return redirect(url_for("admin_login"))
+        return None
+
+    # FACULTY-ONLY ROUTES
+    faculty_paths = (
+        "/manage-attendance",
+        "/upload-notes",
+        "/delete-note/",
+        "/faculty-syllabus",
+        "/delete-syllabus/",
+        "/send-notice",
+        "/delete-notice/",
+        "/holiday-information",
+    )
+
+    if path.startswith(faculty_paths):
+        if not session.get("faculty_id"):
+            return redirect(url_for("faculty_login"))
+        return None
+
+    return None
 
 # =========================================================
 # GLOBAL BROWSER HISTORY + CACHE CONTROL
@@ -566,7 +661,282 @@ def delete_subject(subject_id):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+
+    return render_template(
+        "index.html"
+    )
+
+
+# =========================
+# STUDENT REGISTRATION QR CODE
+# =========================
+# QR ko direct PNG response ke through serve karte hain.
+# Isse browser me broken data-image issue nahi hoga.
+@app.route("/student-registration-qr")
+def student_registration_qr():
+
+    registration_url = (
+        "https://mangalayatan-university-portal-2.onrender.com"
+        "/student-register"
+    )
+
+    qr = qrcode.make(registration_url)
+
+    qr_buffer = io.BytesIO()
+
+    qr.save(
+        qr_buffer,
+        format="PNG"
+    )
+
+    qr_buffer.seek(0)
+
+    return send_file(
+        qr_buffer,
+        mimetype="image/png",
+        download_name="student-registration-qr.png"
+    )
+
+@app.route("/student-register", methods=["GET", "POST"])
+def student_register():
+
+    courses = get_admin_courses()
+
+    students = []
+
+    # -----------------------------
+    # EXISTING STUDENTS LOAD
+    # -----------------------------
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(STUDENTS_FILE, "r") as file:
+                students = json.load(file)
+
+            if not isinstance(students, list):
+                students = []
+
+        except:
+
+            students = []
+
+    # -----------------------------
+    # REGISTRATION
+    # -----------------------------
+
+    if request.method == "POST":
+
+        student_name = request.form.get(
+            "student_name", ""
+        ).strip()
+
+        enrollment = request.form.get(
+            "enrollment", ""
+        ).strip()
+
+        course = request.form.get(
+            "course", ""
+        ).strip()
+
+        semester = request.form.get(
+            "semester", ""
+        ).strip()
+
+        section = request.form.get(
+            "section", ""
+        ).strip().upper()
+
+        # -------------------------
+        # REQUIRED FIELDS
+        # -------------------------
+
+        if (
+            not student_name
+            or not enrollment
+            or not course
+            or not semester
+            or not section
+        ):
+
+            return "Please fill all fields."
+
+        # -------------------------
+        # SEMESTER CHECK
+        # -------------------------
+
+        if semester not in [
+            "1", "2", "3", "4",
+            "5", "6", "7", "8"
+        ]:
+
+            return "Invalid Semester."
+
+        # -------------------------
+        # SECTION CHECK
+        # -------------------------
+
+        if section not in [
+            "A", "B", "C", "D"
+        ]:
+
+            return "Invalid Section."
+
+        # -------------------------
+        # COURSE CHECK
+        # -------------------------
+
+        valid_course = None
+
+        for item in courses:
+
+            if isinstance(item, dict):
+
+                course_name = str(
+                    item.get("name", "")
+                ).strip()
+
+                if (
+                    course_name.lower()
+                    == course.lower()
+                ):
+
+                    valid_course = course_name
+                    break
+
+        if not valid_course:
+
+            return "Invalid Course."
+
+        course = valid_course
+
+        # -------------------------
+        # DUPLICATE ENROLLMENT
+        # -------------------------
+
+        for student in students:
+
+            old_enrollment = str(
+                student.get(
+                    "enrollment",
+                    ""
+                )
+            ).strip()
+
+            if (
+                old_enrollment.lower()
+                == enrollment.lower()
+            ):
+
+                return (
+                    "This Enrollment Number "
+                    "already exists."
+                )
+
+        # -------------------------
+        # GENERATE STUDENT ID
+        # -------------------------
+
+        numbers = []
+
+        for student in students:
+
+            old_id = str(
+                student.get(
+                    "student_id",
+                    ""
+                )
+            ).strip().upper()
+
+            if old_id.startswith("STU"):
+
+                try:
+
+                    number = int(
+                        old_id[3:]
+                    )
+
+                    numbers.append(number)
+
+                except:
+
+                    pass
+
+        if numbers:
+
+            next_number = max(numbers) + 1
+
+        else:
+
+            next_number = 1
+
+        student_id = (
+            "STU"
+            + str(next_number).zfill(3)
+        )
+
+        # -------------------------
+        # CREATE STUDENT
+        # -------------------------
+
+        student = {
+
+            "student_id": student_id,
+
+            "name": student_name,
+
+            "enrollment": enrollment,
+
+            "course": course,
+
+            "semester": semester,
+
+            "section": section
+
+        }
+
+        students.append(student)
+
+        # -------------------------
+        # SAVE
+        # -------------------------
+
+        with open(
+            STUDENTS_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                students,
+                file,
+                indent=4
+            )
+
+        # -------------------------
+        # SUCCESS
+        # -------------------------
+
+        return (
+            "<h2>Registration Successful!</h2>"
+            "<p>Your Student ID is: "
+            + student_id
+            + "</p>"
+            "<p>Username: Enrollment Number</p>"
+            "<p>Password: Student ID</p>"
+            "<p><a href='/student-login'>"
+            "Go to Student Login"
+            "</a></p>"
+        )
+
+    # -----------------------------
+    # REGISTRATION PAGE
+    # -----------------------------
+
+    return render_template(
+        "student_register.html",
+        courses=courses
+    )
 
 
 # =========================
@@ -726,6 +1096,16 @@ def student_login():
                 "Invalid Enrollment Number "
                 "or Password"
             )
+
+        # -------------------------
+        # ROLE SESSION ISOLATION
+        # -------------------------
+        # Student login ke time purane Admin/Faculty session keys hatao.
+        # Isse ek role ke login ke baad doosre role ke private URLs
+        # accidentally accessible nahi rahenge.
+        session.pop("admin_id", None)
+        session.pop("faculty_id", None)
+        session.pop("faculty_name", None)
 
         # -------------------------
         # STUDENT SESSION
@@ -2442,6 +2822,17 @@ def faculty_login():
                     file,
                     indent=4
                 )
+
+        # -------------------------
+        # ROLE SESSION ISOLATION
+        # -------------------------
+        # Faculty login ke time purane Admin/Student session keys hatao.
+        session.pop("admin_id", None)
+        session.pop("student_id", None)
+        session.pop("student_enrollment", None)
+        session.pop("student_course", None)
+        session.pop("student_semester", None)
+        session.pop("student_section", None)
 
         # Faculty session
 
@@ -4494,12 +4885,100 @@ def admin_login():
         admin_id = request.form.get("admin_id", "").strip()
         password = request.form.get("password", "").strip()
 
-        if admin_id == "ADMIN001" and password == "admin123":
+        # Admin data load karo
+        admin_data = get_admin_data()
+
+        if (
+            admin_id == admin_data["admin_id"]
+            and check_password_hash(admin_data["password"], password)
+        ):
+            # -------------------------
+            # ROLE SESSION ISOLATION
+            # -------------------------
+            # Admin login ke time purane Student/Faculty session keys hatao.
+            session.pop("student_id", None)
+            session.pop("student_enrollment", None)
+            session.pop("student_course", None)
+            session.pop("student_semester", None)
+            session.pop("student_section", None)
+            session.pop("faculty_id", None)
+            session.pop("faculty_name", None)
+
+            session["admin_id"] = admin_id
             return redirect("/admin-dashboard")
 
         return "Invalid Admin ID or Password"
 
     return render_template("admin_login.html")
+
+@app.route("/admin-change-password", methods=["GET", "POST"])
+def admin_change_password():
+
+    # केवल logged-in Admin
+    if not session.get("admin_id"):
+        return redirect(url_for("admin_login"))
+
+    message = ""
+
+    if request.method == "POST":
+
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        admin_data = get_admin_data()
+
+        # Current password check
+        if not check_password_hash(
+            admin_data["password"],
+            current_password
+        ):
+            message = "Current password is incorrect."
+
+        # New password confirmation
+        elif new_password != confirm_password:
+            message = "New passwords do not match."
+
+        # Empty/too short password
+        elif len(new_password) < 6:
+            message = "New password must be at least 6 characters."
+
+        # Same password
+        elif check_password_hash(
+            admin_data["password"],
+            new_password
+        ):
+            message = "New password must be different from the current password."
+
+        else:
+
+            admin_data["password"] = generate_password_hash(
+                new_password
+            )
+
+            with open(ADMIN_FILE, "w") as file:
+                json.dump(admin_data, file, indent=4)
+
+            message = "Admin password changed successfully."
+
+    return render_template(
+        "admin_change_password.html",
+        message=message
+    )
+
+@app.route("/admin-logout")
+def admin_logout():
+    # Clear the complete role session so another portal cannot
+    # inherit stale authentication data from the Admin portal.
+    session.pop("admin_id", None)
+    session.pop("student_id", None)
+    session.pop("student_enrollment", None)
+    session.pop("student_course", None)
+    session.pop("student_semester", None)
+    session.pop("student_section", None)
+    session.pop("faculty_id", None)
+    session.pop("faculty_name", None)
+    return redirect(url_for("admin_login"))
 
 
 # =========================
@@ -4508,6 +4987,16 @@ def admin_login():
 
 @app.route("/admin-dashboard")
 def admin_dashboard():
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+    # Extra route-level protection: even if this URL is opened
+    # directly, only a valid Admin session can enter.
+    admin_data = get_admin_data()
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
 
     # =========================
     # STUDENTS COUNT
