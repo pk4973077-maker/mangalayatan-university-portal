@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student Registration</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .container {
+
+            width: 100%;
+            max-width: 500px;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            color: #1e3a8a;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        label {
+
+            display: block;
+
+            margin-top: 16px;
+            margin-bottom: 7px;
+
+            font-weight: bold;
+
+            color: #334155;
+        }
+
+        input,
+        select {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #cbd5e1;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+
+            background: white;
+        }
+
+        input:focus,
+        select:focus {
+
+            outline: none;
+
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 2px rgba(37, 99, 235, 0.10);
+        }
+
+        button {
+
+            width: 100%;
+
+            margin-top: 25px;
+
+            padding: 13px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #2563eb;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .info {
+
+            margin-top: 20px;
+
+            padding: 12px;
+
+            background: #eff6ff;
+
+            color: #1e40af;
+
+            border-radius: 8px;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+
+            text-align: center;
+        }
+
+        .back {
+
+            display: block;
+
+            text-align: center;
+
+            margin-top: 18px;
+
+            text-decoration: none;
+
+            color: #2563eb;
+
+            font-weight: bold;
+
+            font-size: 14px;
+        }
+
+        @media (max-width: 500px) {
+
+            .container {
+                padding: 22px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <div class="icon">
+            🎓
+        </div>
+
+        <h1>
+            Student Registration
+        </h1>
+
+        <div class="subtitle">
+            Register yourself in University Management System
+        </div>
+
+    </div>
+
+
+    <form method="POST">
+
+
+        <!-- STUDENT NAME -->
+
+        <label>
+            Student Name
+        </label>
+
+        <input
+            type="text"
+            name="student_name"
+            placeholder="Enter your full name"
+            required
+        >
+
+
+        <!-- ENROLLMENT -->
+
+        <label>
+            Enrollment Number
+        </label>
+
+        <input
+            type="text"
+            name="enrollment"
+            placeholder="Enter enrollment number"
+            required
+        >
+
+
+        <!-- COURSE -->
+
+        <label>
+            Course
+        </label>
+
+        <select name="course" required>
+
+            <option value="">
+                Select Course
+            </option>
+
+            {% for course in courses %}
+
+                <option value="{{ course.name }}">
+                    {{ course.name }}
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+
+        <!-- SEMESTER -->
+
+        <label>
+            Semester
+        </label>
+
+        <select name="semester" required>
+
+            <option value="">
+                Select Semester
+            </option>
+
+            <option value="1">1st Semester</option>
+            <option value="2">2nd Semester</option>
+            <option value="3">3rd Semester</option>
+            <option value="4">4th Semester</option>
+            <option value="5">5th Semester</option>
+            <option value="6">6th Semester</option>
+            <option value="7">7th Semester</option>
+            <option value="8">8th Semester</option>
+
+        </select>
+
+
+        <!-- SECTION -->
+
+        <label>
+            Section
+        </label>
+
+        <select name="section" required>
+
+            <option value="">
+                Select Section
+            </option>
+
+            <option value="A">
+                Section A
+            </option>
+
+            <option value="B">
+                Section B
+            </option>
+
+            <option value="C">
+                Section C
+            </option>
+
+            <option value="D">
+                Section D
+            </option>
+
+        </select>
+
+
+        <!-- REGISTER -->
+
+        <button type="submit">
+            📝 Register Student
+        </button>
+
+    </form>
+
+
+    <div class="info">
+
+        After registration, your initial login will be:
+
+        <br>
+
+        <b>Username:</b> Enrollment Number
+
+        <br>
+
+        <b>Password:</b> Student ID
+
+    </div>
+
+
+    <a href="/" class="back">
+        ← Back to Main Portal
+    </a>
+
+</div>
+
+</body>
+
+</html>
