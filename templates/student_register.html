@@ -105,6 +105,38 @@
                 0 0 0 2px rgba(37, 99, 235, 0.10);
         }
 
+        .optional-note {
+
+            margin-top: 6px;
+
+            color: #64748b;
+
+            font-size: 12px;
+
+            line-height: 1.4;
+        }
+
+        .section-group-info {
+
+            margin-top: 18px;
+
+            padding: 12px;
+
+            background: #fff7ed;
+
+            color: #9a3412;
+
+            border: 1px solid #fed7aa;
+
+            border-radius: 8px;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+
+            text-align: center;
+        }
+
         button {
 
             width: 100%;
@@ -287,13 +319,13 @@
         <!-- SECTION -->
 
         <label>
-            Section
+            Section <span style="font-weight: normal; color: #64748b;">(Optional)</span>
         </label>
 
-        <select name="section" required>
+        <select name="section">
 
             <option value="">
-                Select Section
+                No Section
             </option>
 
             <option value="A">
@@ -313,6 +345,49 @@
             </option>
 
         </select>
+
+
+        <!-- GROUP -->
+
+        <label>
+            Group <span style="font-weight: normal; color: #64748b;">(Optional)</span>
+        </label>
+
+        <select name="group">
+
+            <option value="">
+                No Group
+            </option>
+
+            <option value="G1">
+                Group G1
+            </option>
+
+            <option value="G2">
+                Group G2
+            </option>
+
+            <option value="G3">
+                Group G3
+            </option>
+
+            <option value="G4">
+                Group G4
+            </option>
+
+        </select>
+
+
+        <!-- SECTION / GROUP MESSAGE -->
+
+        <div class="section-group-info">
+
+            <b>Note:</b><br>
+
+            Section option or Group ke agar nahi hai to fill mat karo.
+            Dono options optional hain.
+
+        </div>
 
 
         <!-- REGISTER -->
