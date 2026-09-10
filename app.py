@@ -73,6 +73,8 @@ def protect_private_routes():
         "/edit-student/",
         "/delete-student/",
         "/reset-student-password/",
+        "/admin-delete-student/",
+        "/admin-reset-student-password/",
         "/edit-faculty/",
         "/delete-faculty/",
         "/reset-faculty-password/",
@@ -748,19 +750,23 @@ def student_register():
             "section", ""
         ).strip().upper()
 
+        group = request.form.get(
+            "group", ""
+        ).strip().upper()
+
         # -------------------------
         # REQUIRED FIELDS
         # -------------------------
+        # Section and Group are optional.
 
         if (
             not student_name
             or not enrollment
             or not course
             or not semester
-            or not section
         ):
 
-            return "Please fill all fields."
+            return "Please fill all required fields."
 
         # -------------------------
         # SEMESTER CHECK
@@ -776,12 +782,24 @@ def student_register():
         # -------------------------
         # SECTION CHECK
         # -------------------------
+        # Section is optional.
 
-        if section not in [
+        if section and section not in [
             "A", "B", "C", "D"
         ]:
 
             return "Invalid Section."
+
+        # -------------------------
+        # GROUP CHECK
+        # -------------------------
+        # Group is optional.
+
+        if group and group not in [
+            "G1", "G2", "G3", "G4"
+        ]:
+
+            return "Invalid Group."
 
         # -------------------------
         # COURSE CHECK
@@ -892,7 +910,9 @@ def student_register():
 
             "semester": semester,
 
-            "section": section
+            "section": section,
+
+            "group": group
 
         }
 
@@ -935,7 +955,10 @@ def student_register():
 
     return render_template(
         "student_register.html",
-        courses=courses
+        courses=courses,
+        semesters=["1", "2", "3", "4", "5", "6", "7", "8"],
+        sections=["A", "B", "C", "D"],
+        groups=["G1", "G2", "G3", "G4"]
     )
 
 
@@ -5221,16 +5244,20 @@ def admin_students():
             "section", ""
         ).strip().upper()
 
+        group = request.form.get(
+            "group", ""
+        ).strip().upper()
+
         # Required fields
+        # Section and Group are optional.
 
         if (
             not student_name
             or not enrollment
             or not course
             or not semester
-            or not section
         ):
-            return "Please fill all fields."
+            return "Please fill all required fields."
 
         # Semester validation
 
@@ -5241,11 +5268,20 @@ def admin_students():
             return "Invalid Semester."
 
         # Section validation
+        # Section is optional.
 
-        if section not in [
+        if section and section not in [
             "A", "B", "C", "D"
         ]:
             return "Invalid Section."
+
+        # Group validation
+        # Group is optional.
+
+        if group and group not in [
+            "G1", "G2", "G3", "G4"
+        ]:
+            return "Invalid Group."
 
         # -----------------------------
         # CHECK COURSE
@@ -5339,7 +5375,9 @@ def admin_students():
 
             "semester": semester,
 
-            "section": section
+            "section": section,
+
+            "group": group
 
         }
 
@@ -5361,49 +5399,10 @@ def admin_students():
 
     # ==================================================
     # COURSE → SEMESTER → SECTION → STUDENTS
+    # ONLY CREATE WHAT ACTUALLY EXISTS IN students.json
     # ==================================================
 
     course_structure = {}
-
-    # -----------------------------
-    # CREATE COURSES
-    # -----------------------------
-
-    for item in courses:
-
-        course_name = get_course_name(item)
-
-        if not course_name:
-            continue
-
-        course_key = course_name.lower().strip()
-
-        if course_key not in course_structure:
-
-            course_structure[course_key] = {
-
-                "name": course_name,
-
-                "semesters": {}
-
-            }
-
-            for sem in range(1, 9):
-
-                course_structure[course_key][
-                    "semesters"
-                ][str(sem)] = {
-
-                    "A": [],
-                    "B": [],
-                    "C": [],
-                    "D": []
-
-                }
-
-    # -----------------------------
-    # PUT STUDENTS
-    # -----------------------------
 
     for student in students:
 
@@ -5412,9 +5411,7 @@ def admin_students():
         ).strip()
 
         # Old data support
-
         if not student_course:
-
             student_course = str(
                 student.get("department", "")
             ).strip()
@@ -5427,6 +5424,7 @@ def admin_students():
             student.get("section", "")
         ).strip().upper()
 
+        # Invalid/incomplete student records are not displayed
         if not student_course:
             continue
 
@@ -5436,45 +5434,70 @@ def admin_students():
         ]:
             continue
 
-        if section not in [
-            "A", "B", "C", "D"
-        ]:
-            continue
+        # Only a real section creates a section box.
+        # Blank section is kept under No Section only when that
+        # student actually has no section.
+        if section not in ["A", "B", "C", "D"]:
+            section = "No Section"
 
-        course_key = student_course.lower()
+        course_key = student_course.lower().strip()
 
-        if course_key in course_structure:
-
-            course_structure[course_key][
-                "semesters"
-            ][semester][section].append(student)
-
-        else:
-
+        # Create COURSE only when this student actually belongs to it.
+        if course_key not in course_structure:
             course_structure[course_key] = {
-
                 "name": student_course,
-
                 "semesters": {}
-
             }
 
-            for sem in range(1, 9):
+        # Create SEMESTER only when a student actually exists in it.
+        if semester not in course_structure[course_key]["semesters"]:
+            course_structure[course_key]["semesters"][semester] = {}
 
-                course_structure[course_key][
-                    "semesters"
-                ][str(sem)] = {
+        # Create SECTION only when a student actually exists in it.
+        if section not in course_structure[course_key]["semesters"][semester]:
+            course_structure[course_key]["semesters"][semester][section] = []
 
-                    "A": [],
-                    "B": [],
-                    "C": [],
-                    "D": []
+        course_structure[course_key]["semesters"][semester][section].append(student)
 
-                }
+    # -----------------------------
+    # SORT DISPLAY
+    # -----------------------------
 
-            course_structure[course_key][
-                "semesters"
-            ][semester][section].append(student)
+    sorted_course_structure = {}
+
+    for course_key in sorted(course_structure.keys()):
+
+        course_data = course_structure[course_key]
+
+        sorted_semesters = {}
+
+        for semester_number in sorted(
+            course_data["semesters"].keys(),
+            key=lambda value: int(value)
+        ):
+
+            semester_data = course_data["semesters"][semester_number]
+
+            section_order = ["A", "B", "C", "D", "No Section"]
+            sorted_sections = {}
+
+            for section_name in section_order:
+                if section_name in semester_data and semester_data[section_name]:
+                    sorted_sections[section_name] = sorted(
+                        semester_data[section_name],
+                        key=enrollment_sort_key
+                    )
+
+            if sorted_sections:
+                sorted_semesters[semester_number] = sorted_sections
+
+        if sorted_semesters:
+            sorted_course_structure[course_key] = {
+                "name": course_data["name"],
+                "semesters": sorted_semesters
+            }
+
+    course_structure = sorted_course_structure
 
     # -----------------------------
     # SORT ONLY THE DISPLAYED LIST
@@ -5650,6 +5673,10 @@ def edit_student(student_id):
 
     students = []
 
+    # =========================
+    # LOAD STUDENTS
+    # =========================
+
     if os.path.exists(STUDENTS_FILE):
         try:
             with open(STUDENTS_FILE, "r") as file:
@@ -5661,9 +5688,8 @@ def edit_student(student_id):
         except:
             students = []
 
-
     # =========================
-    # STUDENT FIND
+    # FIND STUDENT
     # =========================
 
     student = None
@@ -5677,10 +5703,37 @@ def edit_student(student_id):
             student = item
             break
 
-
     if student is None:
         return "Student not found."
 
+    # =========================
+    # ADMIN COURSES
+    # =========================
+
+    courses = get_admin_courses()
+
+    def get_course_name(item):
+
+        if isinstance(item, dict):
+
+            return str(
+                item.get("name")
+                or item.get("course_name")
+                or item.get("course")
+                or item.get("Course Name")
+                or ""
+            ).strip()
+
+        return str(item).strip()
+
+    valid_courses = []
+
+    for item in courses:
+
+        name = get_course_name(item)
+
+        if name:
+            valid_courses.append(name)
 
     # =========================
     # UPDATE STUDENT
@@ -5689,44 +5742,98 @@ def edit_student(student_id):
     if request.method == "POST":
 
         student_name = request.form.get(
-            "student_name", ""
+            "student_name",
+            ""
         ).strip()
 
         enrollment = request.form.get(
-            "enrollment", ""
+            "enrollment",
+            ""
+        ).strip()
+
+        course = request.form.get(
+            "course",
+            ""
         ).strip()
 
         semester = request.form.get(
-            "semester", ""
+            "semester",
+            ""
         ).strip()
 
         section = request.form.get(
-            "section", ""
+            "section",
+            ""
         ).strip().upper()
 
+        group = request.form.get(
+            "group",
+            ""
+        ).strip().upper()
 
-        if not student_name or not enrollment or not semester or not section:
+        # =========================
+        # REQUIRED FIELDS
+        # =========================
 
-            return "Please fill all fields."
+        if (
+            not student_name
+            or not enrollment
+            or not course
+            or not semester
+        ):
+            return "Please fill all required fields."
 
+        # =========================
+        # SEMESTER VALIDATION
+        # =========================
 
         if semester not in [
             "1", "2", "3", "4",
             "5", "6", "7", "8"
         ]:
-
             return "Invalid Semester."
 
+        # =========================
+        # SECTION VALIDATION
+        # =========================
 
-        if section not in [
+        if section and section not in [
             "A", "B", "C", "D"
         ]:
-
             return "Invalid Section."
 
+        # =========================
+        # GROUP VALIDATION
+        # =========================
+
+        if group and group not in [
+            "G1", "G2", "G3", "G4"
+        ]:
+            return "Invalid Group."
 
         # =========================
-        # ENROLLMENT DUPLICATE CHECK
+        # COURSE VALIDATION
+        # =========================
+
+        course_found = False
+
+        for valid_course in valid_courses:
+
+            if valid_course.lower() == course.lower():
+
+                course_found = True
+
+                # Admin Course Management wala
+                # exact course name save hoga
+                course = valid_course
+
+                break
+
+        if not course_found:
+            return "Invalid Course."
+
+        # =========================
+        # DUPLICATE ENROLLMENT CHECK
         # =========================
 
         for item in students:
@@ -5736,9 +5843,7 @@ def edit_student(student_id):
                     item.get("student_id", "")
                 ).strip()
                 != str(student_id).strip()
-
                 and
-
                 str(
                     item.get("enrollment", "")
                 ).strip().lower()
@@ -5747,19 +5852,29 @@ def edit_student(student_id):
 
                 return "This Enrollment Number already exists."
 
-
         # =========================
-        # UPDATE
+        # UPDATE STUDENT
         # =========================
 
         student["name"] = student_name
 
         student["enrollment"] = enrollment
 
+        student["course"] = course
+
         student["semester"] = semester
 
-        student["section"] = section
+        # Optional Section
+        if section:
+            student["section"] = section
+        else:
+            student.pop("section", None)
 
+        # Optional Group
+        if group:
+            student["group"] = group
+        else:
+            student.pop("group", None)
 
         # =========================
         # SAVE
@@ -5776,13 +5891,11 @@ def edit_student(student_id):
                 indent=4
             )
 
+        # =========================
+        # RETURN TO SEARCH
+        # =========================
 
-        # Search Student page par wapas
-        return redirect(
-            "/admin-search-student?q="
-            + enrollment
-        )
-
+        return redirect("/admin-students")
 
     # =========================
     # EDIT PAGE
@@ -5790,10 +5903,12 @@ def edit_student(student_id):
 
     return render_template(
         "edit_student.html",
-        student=student
+        student=student,
+        courses=valid_courses
     )
 
 @app.route("/reset-student-password/<student_id>")
+@app.route("/admin-reset-student-password/<student_id>")
 def reset_student_password(student_id):
 
     students = []
@@ -5905,6 +6020,7 @@ def fix_student_ids():
 # =========================
 
 @app.route("/delete-student/<student_id>")
+@app.route("/admin-delete-student/<student_id>")
 def delete_student(student_id):
 
     students = []
@@ -5921,7 +6037,7 @@ def delete_student(student_id):
     students = [
         student
         for student in students
-        if student.get("student_id") != student_id
+        if str(student.get("student_id", "")).strip() != str(student_id).strip()
     ]
 
     # Updated data save
