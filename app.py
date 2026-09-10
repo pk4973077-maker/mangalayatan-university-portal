@@ -6,6 +6,9 @@ import io
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import json
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
 from database import save_uploaded_file, get_uploaded_file, delete_uploaded_file
 
 
@@ -100,6 +103,8 @@ def protect_private_routes():
         "/send-notice",
         "/delete-notice/",
         "/holiday-information",
+        "/faculty-attendance-record",
+        "/faculty-attendance-record-excel",
     )
 
     if path.startswith(faculty_paths):
@@ -2103,6 +2108,499 @@ def faculty_attendance_history():
         selected_subject=selected_subject,
         attendance_records=attendance_records
     )
+
+# =========================
+# FACULTY ATTENDANCE RECORD
+# =========================
+
+def load_attendance_data():
+
+    if not os.path.exists("attendance.json"):
+        return []
+
+    try:
+        with open("attendance.json", "r") as file:
+            data = json.load(file)
+
+        return data if isinstance(data, list) else []
+
+    except Exception:
+        return []
+
+
+def get_faculty_attendance_combinations(attendance_data, faculty_id):
+
+    combinations = []
+    seen = set()
+
+    for record in attendance_data:
+
+        if str(record.get("faculty_id", "")).strip() != faculty_id:
+            continue
+
+        course = str(record.get("course", "")).strip()
+        semester = str(record.get("semester", "")).strip()
+        section = str(record.get("section", "")).strip().upper()
+        subject = str(record.get("subject", "")).strip()
+
+        if not course or not semester or not section or not subject:
+            continue
+
+        key = (
+            course.lower(),
+            semester,
+            section,
+            subject.lower()
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        combinations.append({
+            "course": course,
+            "semester": semester,
+            "section": section,
+            "subject": subject
+        })
+
+    combinations.sort(
+        key=lambda item: (
+            item["course"].lower(),
+            int(item["semester"]) if item["semester"].isdigit() else 99,
+            item["section"],
+            item["subject"].lower()
+        )
+    )
+
+    return combinations
+
+
+def build_faculty_attendance_record(
+    attendance_data,
+    faculty_id,
+    course,
+    semester,
+    section,
+    subject,
+    end_date
+):
+
+    """
+    Build cumulative attendance for the CURRENT student roster of the
+    selected Course + Semester + Section.
+
+    Student order follows students.json exactly. This keeps the Attendance
+    Record/Excel order the same as the Admin Manage Students roster instead
+    of sorting students alphabetically.
+
+    Attendance itself is restricted to the logged-in faculty and the exact
+    Course + Semester + Section + Subject combination.
+    """
+
+    # ---------------------------------------------------------
+    # 1. Get the current roster for the selected section.
+    #    This is the source of truth for which students belong in
+    #    the report and also preserves their existing order.
+    # ---------------------------------------------------------
+    current_roster = []
+
+    if os.path.exists(STUDENTS_FILE):
+        try:
+            with open(STUDENTS_FILE, "r") as file:
+                loaded_students = json.load(file)
+        except Exception:
+            loaded_students = []
+
+        if isinstance(loaded_students, list):
+            seen_enrollments = set()
+
+            for student in loaded_students:
+                student_course = str(student.get("course", "")).strip()
+                student_semester = str(student.get("semester", "")).strip()
+                student_section = str(student.get("section", "")).strip().upper()
+                enrollment = str(student.get("enrollment", "")).strip()
+                name = str(student.get("name", "")).strip()
+
+                if (
+                    student_course.lower() == course.lower()
+                    and student_semester == semester
+                    and student_section == section.upper()
+                    and enrollment
+                    and enrollment.lower() not in seen_enrollments
+                ):
+                    current_roster.append({
+                        "enrollment": enrollment,
+                        "name": name
+                    })
+                    seen_enrollments.add(enrollment.lower())
+
+    # ---------------------------------------------------------
+    # 2. Find only attendance taken by this faculty for the exact
+    #    selected combination and up to the selected end date.
+    # ---------------------------------------------------------
+    matching = []
+
+    for record in attendance_data:
+
+        if str(record.get("faculty_id", "")).strip() != faculty_id:
+            continue
+
+        if str(record.get("course", "")).strip().lower() != course.lower():
+            continue
+
+        if str(record.get("semester", "")).strip() != semester:
+            continue
+
+        if str(record.get("section", "")).strip().upper() != section.upper():
+            continue
+
+        if str(record.get("subject", "")).strip().lower() != subject.lower():
+            continue
+
+        record_date = str(record.get("date", "")).strip()
+
+        if not record_date:
+            continue
+
+        if record_date > end_date:
+            continue
+
+        matching.append(record)
+
+    if not matching:
+        return None
+
+    dates = sorted({
+        str(record.get("date", "")).strip()
+        for record in matching
+        if str(record.get("date", "")).strip()
+    })
+
+    if not dates:
+        return None
+
+    start_date = dates[0]
+
+    # ---------------------------------------------------------
+    # 3. For duplicate student/date entries, latest saved status wins.
+    # ---------------------------------------------------------
+    latest = {}
+
+    for record in matching:
+        enrollment = str(record.get("student_id", "")).strip()
+        record_date = str(record.get("date", "")).strip()
+
+        if not enrollment or not record_date:
+            continue
+
+        latest[(enrollment.lower(), record_date)] = record
+
+    # ---------------------------------------------------------
+    # 4. Build rows ONLY from the current selected-section roster.
+    #    Historical records for students who are no longer in this
+    #    section will not incorrectly appear in the report.
+    # ---------------------------------------------------------
+    total_lectures = len(dates)
+    rows = []
+
+    for student in current_roster:
+
+        enrollment = student["enrollment"]
+        name = student["name"]
+
+        present = 0
+        absent = 0
+
+        for lecture_date in dates:
+
+            record = latest.get((enrollment.lower(), lecture_date))
+
+            if record is None:
+                # Attendance was not saved for this student on this
+                # lecture date, so count it as absent.
+                absent += 1
+                continue
+
+            status = str(record.get("status", "")).strip().lower()
+
+            if status == "present":
+                present += 1
+            else:
+                absent += 1
+
+        percentage = (
+            round((present / total_lectures) * 100, 2)
+            if total_lectures
+            else 0
+        )
+
+        rows.append({
+            "enrollment": enrollment,
+            "name": name,
+            "total_lectures": total_lectures,
+            "present": present,
+            "absent": absent,
+            "percentage": percentage
+        })
+
+    return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "course": course,
+        "semester": semester,
+        "section": section.upper(),
+        "subject": subject,
+        "rows": rows,
+        "total_lectures": total_lectures
+    }
+
+
+@app.route("/faculty-attendance-record", methods=["GET", "POST"])
+def faculty_attendance_record():
+
+    faculty_id = str(session.get("faculty_id", "")).strip()
+    faculty_name = str(session.get("faculty_name", "")).strip()
+
+    if not faculty_id:
+        return redirect("/faculty-login")
+
+    attendance_data = load_attendance_data()
+
+    combinations = get_faculty_attendance_combinations(
+        attendance_data,
+        faculty_id
+    )
+
+    selected_course = request.values.get("course", "").strip()
+    selected_semester = request.values.get("semester", "").strip()
+    selected_section = request.values.get("section", "").strip().upper()
+    selected_subject = request.values.get("subject", "").strip()
+    selected_end_date = request.values.get("end_date", "").strip()
+
+    if not selected_end_date:
+        from datetime import date
+        selected_end_date = date.today().isoformat()
+
+    record = None
+    error = ""
+
+    if selected_course or selected_semester or selected_section or selected_subject:
+
+        if not all([
+            selected_course,
+            selected_semester,
+            selected_section,
+            selected_subject
+        ]):
+            error = "Please select Course, Semester, Section and Subject."
+
+        else:
+
+            valid_combination = False
+
+            for item in combinations:
+
+                if (
+                    item["course"].lower() == selected_course.lower()
+                    and item["semester"] == selected_semester
+                    and item["section"].upper() == selected_section.upper()
+                    and item["subject"].lower() == selected_subject.lower()
+                ):
+                    valid_combination = True
+                    break
+
+            if not valid_combination:
+                error = (
+                    "Attendance Record is not available for this selection. "
+                    "You can only view attendance taken by your own faculty account."
+                )
+
+            else:
+
+                # Future dates are not allowed.
+                from datetime import date
+                today = date.today().isoformat()
+
+                if selected_end_date > today:
+                    selected_end_date = today
+
+                record = build_faculty_attendance_record(
+                    attendance_data,
+                    faculty_id,
+                    selected_course,
+                    selected_semester,
+                    selected_section,
+                    selected_subject,
+                    selected_end_date
+                )
+
+                if record is None:
+                    error = "No attendance data found for this selection."
+
+    return render_template(
+        "faculty_attendance_record.html",
+        faculty_name=faculty_name,
+        combinations=combinations,
+        selected_course=selected_course,
+        selected_semester=selected_semester,
+        selected_section=selected_section,
+        selected_subject=selected_subject,
+        selected_end_date=selected_end_date,
+        record=record,
+        error=error
+    )
+
+
+@app.route("/faculty-attendance-record-excel")
+def faculty_attendance_record_excel():
+
+    faculty_id = str(session.get("faculty_id", "")).strip()
+    faculty_name = str(session.get("faculty_name", "")).strip()
+
+    if not faculty_id:
+        return redirect("/faculty-login")
+
+    course = request.args.get("course", "").strip()
+    semester = request.args.get("semester", "").strip()
+    section = request.args.get("section", "").strip().upper()
+    subject = request.args.get("subject", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+
+    if not all([course, semester, section, subject, end_date]):
+        return "Invalid attendance record request.", 400
+
+    attendance_data = load_attendance_data()
+
+    # Security: exact combination must belong to logged-in faculty.
+    combinations = get_faculty_attendance_combinations(
+        attendance_data,
+        faculty_id
+    )
+
+    valid_combination = any(
+        item["course"].lower() == course.lower()
+        and item["semester"] == semester
+        and item["section"].upper() == section.upper()
+        and item["subject"].lower() == subject.lower()
+        for item in combinations
+    )
+
+    if not valid_combination:
+        return "Unauthorized attendance record request.", 403
+
+    from datetime import date
+    today = date.today().isoformat()
+
+    if end_date > today:
+        end_date = today
+
+    record = build_faculty_attendance_record(
+        attendance_data,
+        faculty_id,
+        course,
+        semester,
+        section,
+        subject,
+        end_date
+    )
+
+    if record is None:
+        return "No attendance data found for this selection.", 404
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Attendance Record"
+
+    worksheet["A1"] = "Attendance Record"
+    worksheet["A1"].font = Font(bold=True, size=16)
+
+    worksheet["A3"] = "Faculty"
+    worksheet["B3"] = faculty_name
+    worksheet["A4"] = "Course"
+    worksheet["B4"] = record["course"]
+    worksheet["A5"] = "Semester"
+    worksheet["B5"] = record["semester"]
+    worksheet["A6"] = "Section"
+    worksheet["B6"] = record["section"]
+    worksheet["A7"] = "Subject"
+    worksheet["B7"] = record["subject"]
+    worksheet["A8"] = "Attendance Period"
+    worksheet["B8"] = f'{record["start_date"]} to {record["end_date"]}'
+    worksheet["A9"] = "Total Lectures"
+    worksheet["B9"] = record["total_lectures"]
+
+    for row in range(3, 10):
+        worksheet[f"A{row}"].font = Font(bold=True)
+
+    header_row = 11
+    headers = [
+        "Student Name",
+        "Enrollment",
+        "Total Lecture",
+        "Present",
+        "Absent",
+        "Percentage"
+    ]
+
+    for col, header in enumerate(headers, start=1):
+        cell = worksheet.cell(
+            row=header_row,
+            column=col,
+            value=header
+        )
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center")
+
+    for row_index, student in enumerate(record["rows"], start=header_row + 1):
+
+        worksheet.cell(row=row_index, column=1, value=student["name"])
+        worksheet.cell(row=row_index, column=2, value=student["enrollment"])
+        worksheet.cell(row=row_index, column=3, value=student["total_lectures"])
+        worksheet.cell(row=row_index, column=4, value=student["present"])
+        worksheet.cell(row=row_index, column=5, value=student["absent"])
+        worksheet.cell(row=row_index, column=6, value=student["percentage"] / 100)
+        worksheet.cell(row=row_index, column=6).number_format = "0.00%"
+
+    widths = [25, 20, 16, 12, 12, 15]
+
+    for index, width in enumerate(widths, start=1):
+        worksheet.column_dimensions[get_column_letter(index)].width = width
+
+    worksheet.freeze_panes = "A12"
+    worksheet.auto_filter.ref = (
+        f"A{header_row}:F{header_row + len(record['rows'])}"
+    )
+
+    output = io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    safe_course = "".join(
+        char if char.isalnum() or char in "-_" else "_"
+        for char in course
+    )
+    safe_subject = "".join(
+        char if char.isalnum() or char in "-_" else "_"
+        for char in subject
+    )
+
+    filename = (
+        f"Attendance_Record_{safe_course}_Sem{semester}_"
+        f"Section_{section}_{safe_subject}.xlsx"
+    )
+
+    return send_file(
+        output,
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+        as_attachment=True,
+        download_name=filename
+    )
+
 
 # =========================
 # STUDENT NOTES

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Record</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f1f5f9;color:#0f172a}
+.header{background:#059669;color:white;padding:20px 30px}.header h2{margin:0}
+.container{max-width:1100px;margin:30px auto;padding:20px}.back{display:inline-block;margin-bottom:20px;color:#059669;text-decoration:none;font-weight:bold}
+.box{background:white;padding:25px;border-radius:15px;box-shadow:0 5px 15px #cbd5e1;margin-bottom:20px}
+label{display:block;margin-top:15px;margin-bottom:7px;font-weight:bold}
+select,input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:white}
+button,.download{display:inline-block;width:100%;margin-top:22px;padding:13px;background:#059669;color:white;border:0;border-radius:8px;font-size:16px;font-weight:bold;text-align:center;text-decoration:none;cursor:pointer}
+button:hover,.download:hover{background:#047857}.download{background:#2563eb}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:15px}.full{grid-column:1/-1}
+.info{margin-top:18px;padding:13px;background:#ecfdf5;border-radius:8px;color:#065f46}
+.error{margin-top:18px;padding:13px;background:#fef2f2;border-radius:8px;color:#991b1b;font-weight:bold}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}.card{padding:15px;background:#f8fafc;border-radius:10px}.card strong{display:block;font-size:13px;color:#64748b;margin-bottom:5px}.card span{font-weight:bold}
+.period{margin-top:15px;padding:12px;background:#f1f5f9;border-radius:8px}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin-top:20px;min-width:700px}th,td{padding:13px;border-bottom:1px solid #e2e8f0;text-align:left}th{background:#ecfdf5;color:#065f46}td:last-child,th:last-child{text-align:center}.percentage{font-weight:bold}
+.empty{text-align:center;padding:25px;color:#64748b}
+@media(max-width:700px){.filters{grid-template-columns:1fr}.full{grid-column:auto}.summary{grid-template-columns:1fr 1fr}.container{padding:12px;margin:15px auto}.box{padding:18px}}
+</style>
+</head>
+<body>
+<div class="header"><h2>📊 Attendance Record</h2></div>
+<div class="container">
+<a href="/manage-attendance" class="back">← Back to Daily Attendance</a>
+
+<div class="box">
+<h2>Generate Attendance Record</h2>
+<div class="info">🔐 You can only generate records for Course + Semester + Section + Subject where <strong>you have personally taken attendance</strong>.</div>
+<form method="GET" action="/faculty-attendance-record">
+<div class="filters">
+<div><label>Course</label><select name="course" id="course" required><option value="">Select Course</option>{% for item in combinations %}<option value="{{ item.course }}" data-semester="{{ item.semester }}" data-section="{{ item.section }}" data-subject="{{ item.subject }}" {% if selected_course|lower == item.course|lower %}selected{% endif %}>{{ item.course }}</option>{% endfor %}</select></div>
+<div><label>Semester</label><select name="semester" id="semester" required><option value="">Select Semester</option>{% for i in range(1,9) %}<option value="{{ i }}" {% if selected_semester == i|string %}selected{% endif %}>Semester {{ i }}</option>{% endfor %}</select></div>
+<div><label>Section</label><select name="section" id="section" required><option value="">Select Section</option><option value="A" {% if selected_section == 'A' %}selected{% endif %}>Section A</option><option value="B" {% if selected_section == 'B' %}selected{% endif %}>Section B</option><option value="C" {% if selected_section == 'C' %}selected{% endif %}>Section C</option><option value="D" {% if selected_section == 'D' %}selected{% endif %}>Section D</option></select></div>
+<div><label>Subject</label><select name="subject" id="subject" required><option value="">Select Subject</option>{% for item in combinations %}{% if item.course|lower == selected_course|lower and item.semester == selected_semester and item.section|upper == selected_section|upper %}<option value="{{ item.subject }}" {% if selected_subject|lower == item.subject|lower %}selected{% endif %}>{{ item.subject }}</option>{% endif %}{% endfor %}</select></div>
+<div class="full"><label>Record Till Date</label><input type="date" name="end_date" id="end_date" value="{{ selected_end_date }}" required></div>
+</div>
+<button type="submit">🔎 Show Attendance Record</button>
+</form>
+{% if error %}<div class="error">⚠️ {{ error }}</div>{% endif %}
+</div>
+
+{% if record %}
+<div class="box">
+<h2>Attendance Summary</h2>
+<div class="summary">
+<div class="card"><strong>Course</strong><span>{{ record.course }}</span></div>
+<div class="card"><strong>Semester</strong><span>{{ record.semester }}</span></div>
+<div class="card"><strong>Section</strong><span>{{ record.section }}</span></div>
+<div class="card"><strong>Subject</strong><span>{{ record.subject }}</span></div>
+</div>
+<div class="period"><strong>Attendance Period:</strong> {{ record.start_date }} → {{ record.end_date }} &nbsp; | &nbsp; <strong>Total Lectures:</strong> {{ record.total_lectures }}</div>
+
+<a class="download" href="/faculty-attendance-record-excel?course={{ record.course|urlencode }}&semester={{ record.semester|urlencode }}&section={{ record.section|urlencode }}&subject={{ record.subject|urlencode }}&end_date={{ record.end_date|urlencode }}">📥 Download Excel Sheet</a>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Student Name</th><th>Enrollment</th><th>Total Lecture</th><th>Present</th><th>Absent</th><th>Percentage</th></tr></thead>
+<tbody>
+{% for student in record.rows %}
+<tr><td>{{ student.name }}</td><td>{{ student.enrollment }}</td><td>{{ student.total_lectures }}</td><td>{{ student.present }}</td><td>{{ student.absent }}</td><td class="percentage">{{ "%.2f"|format(student.percentage) }}%</td></tr>
+{% else %}<tr><td colspan="6" class="empty">No students found.</td></tr>{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endif %}
+</div>
+<script>
+const combinations={{ combinations|tojson }};
+const course=document.getElementById('course');
+const semester=document.getElementById('semester');
+const section=document.getElementById('section');
+const subject=document.getElementById('subject');
+function fillSubjects(){
+const old=subject.value; subject.innerHTML='<option value="">Select Subject</option>';
+const seen=new Set();
+combinations.forEach(function(item){
+if(String(item.course).toLowerCase()===String(course.value).toLowerCase()&&String(item.semester)===String(semester.value)&&String(item.section).toUpperCase()===String(section.value).toUpperCase()&&!seen.has(String(item.subject).toLowerCase())){const o=document.createElement('option');o.value=item.subject;o.textContent=item.subject;if(String(item.subject).toLowerCase()===String(old).toLowerCase())o.selected=true;subject.appendChild(o);seen.add(String(item.subject).toLowerCase());}
+});
+}
+function filterSectionAndSubject(){
+const validSections=new Set();
+combinations.forEach(function(item){if(String(item.course).toLowerCase()===String(course.value).toLowerCase()&&String(item.semester)===String(semester.value))validSections.add(String(item.section).toUpperCase());});
+Array.from(section.options).forEach(function(o){if(!o.value)return;o.hidden=!validSections.has(o.value);});
+if(section.value&&!validSections.has(section.value))section.value='';
+fillSubjects();
+}
+course.addEventListener('change',function(){filterSectionAndSubject();});
+semester.addEventListener('change',function(){filterSectionAndSubject();});
+section.addEventListener('change',function(){fillSubjects();});
+filterSectionAndSubject();
+</script>
+</body>
+</html>
