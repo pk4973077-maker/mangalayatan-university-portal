@@ -14,228 +14,312 @@
 
         * {
             box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            color: #222;
+            background: #f1f5f9;
+            color: #1e293b;
         }
 
         .header {
-            background: #1f2937;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
             color: white;
-            padding: 25px;
+            padding: 22px;
             text-align: center;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
         }
 
         .header h1 {
             margin: 0;
-            font-size: 30px;
+            font-size: 27px;
         }
 
         .header p {
-            margin-top: 8px;
-            color: #d1d5db;
+            margin: 7px 0 0;
+            opacity: 0.9;
         }
 
         .container {
-            width: 95%;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 30px auto;
+            padding: 20px;
         }
 
-        .form-box {
+        .box {
             background: white;
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
         }
 
-        .form-box h2 {
+        h2 {
             margin-top: 0;
-            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 11px;
+            margin-top: 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px #dbeafe;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
+            gap: 10px 20px;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
+        .optional {
+            font-weight: normal;
+            color: #64748b;
+            font-size: 13px;
         }
 
-        .form-group label {
-            font-weight: bold;
-            margin-bottom: 7px;
-        }
-
-        .form-group input,
-        .form-group select {
+        .info {
+            margin-top: 18px;
             padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 7px;
-            font-size: 15px;
-            background: white;
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            text-align: center;
         }
 
         .add-btn {
-            margin-top: 20px;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 7px;
-            background: #2563eb;
+            width: 100%;
+            padding: 13px;
+            margin-top: 22px;
+            background: #16a34a;
             color: white;
+            border: none;
+            border-radius: 8px;
             font-size: 16px;
-            font-weight: bold;
             cursor: pointer;
         }
 
         .add-btn:hover {
-            background: #1d4ed8;
+            background: #15803d;
         }
 
         .course-box {
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            padding: 20px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            margin-top: 25px;
         }
 
         .course-title {
-            background: #111827;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 17px 20px;
+            border-radius: 12px;
             font-size: 21px;
             font-weight: bold;
-            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.22);
         }
 
         .semester-box {
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            overflow: hidden;
+            margin-top: 18px;
+            background: #f8fafc;
+            border: 1px solid #dbe3ef;
+            border-radius: 13px;
+            padding: 15px;
         }
 
         .semester-title {
-            background: #dbeafe;
-            padding: 14px 16px;
-            font-size: 19px;
+            background: white;
+            border-left: 5px solid #2563eb;
+            padding: 13px 16px;
+            border-radius: 9px;
+            font-size: 18px;
             font-weight: bold;
             color: #1e3a8a;
+            box-shadow: 0 2px 7px rgba(0, 0, 0, 0.06);
         }
 
         .section-box {
-            margin: 15px;
-            border: 1px solid #ddd;
-            border-radius: 9px;
+            margin-top: 15px;
+            background: white;
+            border: 1px solid #dbe3ef;
+            border-radius: 11px;
             overflow: hidden;
         }
 
         .section-title {
-            background: #f3f4f6;
-            padding: 12px 15px;
-            font-size: 17px;
+            padding: 12px 16px;
+            background: linear-gradient(90deg, #eff6ff, #f8fafc);
+            border-bottom: 1px solid #dbeafe;
+            color: #1e40af;
+            font-size: 16px;
             font-weight: bold;
         }
 
-        .students-list {
-            padding: 12px;
+        .section-title span {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            min-width: 34px;
+            text-align: center;
+            padding: 5px 9px;
+            border-radius: 6px;
+            margin-right: 8px;
+            font-size: 13px;
         }
 
         .student-card {
-            background: #f9fafb;
-            border: 1px solid #ddd;
-            border-radius: 9px;
-            padding: 16px;
-            margin-bottom: 12px;
+            margin: 12px;
+            padding: 17px;
+            background: white;
+            border: 1px solid #dbe3ef;
+            border-radius: 11px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+            transition: 0.2s;
         }
 
-        .student-card:last-child {
-            margin-bottom: 0;
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.10);
         }
 
         .student-name {
-            font-size: 19px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 10px;
+            color: #1e3a8a;
+            margin-bottom: 11px;
+            padding-bottom: 9px;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .student-info {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            line-height: 1.75;
             font-size: 14px;
         }
 
-        .student-info div {
-            background: white;
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #eee;
+        .student-info strong {
+            color: #334155;
         }
 
         .buttons {
-            margin-top: 14px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
+            margin-top: 13px;
         }
 
-        .buttons a {
-            text-decoration: none;
-            padding: 9px 15px;
+        .btn {
+            display: inline-block;
+            padding: 8px 12px;
             border-radius: 6px;
+            text-decoration: none;
             color: white;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
         }
 
         .edit-btn {
             background: #2563eb;
         }
 
+        .edit-btn:hover {
+            background: #1d4ed8;
+        }
+
         .reset-btn {
             background: #f59e0b;
+        }
+
+        .reset-btn:hover {
+            background: #d97706;
         }
 
         .delete-btn {
             background: #dc2626;
         }
 
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
         .empty {
-            padding: 30px;
+            padding: 20px;
             text-align: center;
-            background: white;
-            border-radius: 10px;
-            color: #666;
-            font-size: 17px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: #475569;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .back-btn:hover {
+            background: #334155;
         }
 
         @media (max-width: 700px) {
+
+            .container {
+                padding: 12px;
+                margin: 15px auto;
+            }
+
+            .box {
+                padding: 18px;
+            }
 
             .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            .student-info {
-                grid-template-columns: 1fr;
+            .course-title {
+                font-size: 18px;
             }
 
-            .header h1 {
-                font-size: 24px;
+            .semester-title {
+                font-size: 16px;
             }
 
-            .container {
-                width: 92%;
+            .section-title {
+                font-size: 15px;
+            }
+
+            .student-card {
+                margin: 9px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                text-align: center;
+                width: 100%;
             }
 
         }
@@ -244,9 +328,7 @@
 
 </head>
 
-
 <body>
-
 
     <div class="header">
 
@@ -260,22 +342,15 @@
     <div class="container">
 
 
-        <!-- ADD STUDENT -->
-
-        <div class="form-box">
+        <div class="box">
 
             <h2>➕ Add Student</h2>
 
-
             <form method="POST">
-
 
                 <div class="form-grid">
 
-
-                    <!-- STUDENT NAME -->
-
-                    <div class="form-group">
+                    <div>
 
                         <label>
                             Student Name
@@ -291,9 +366,7 @@
                     </div>
 
 
-                    <!-- ENROLLMENT -->
-
-                    <div class="form-group">
+                    <div>
 
                         <label>
                             Enrollment Number
@@ -309,132 +382,75 @@
                     </div>
 
 
-                    <!-- COURSE -->
-
-                    <div class="form-group">
+                    <div>
 
                         <label>
                             Course
                         </label>
 
-                        <select
-                            name="course"
-                            required
-                        >
+                        <select name="course" required>
 
                             <option value="">
                                 Select Course
                             </option>
 
-
                             {% for course in courses %}
 
-                                {% if course is mapping %}
+                                <option value="{{ course.name if course.name is defined else course }}">
 
-                                    {% set course_name =
-                                        course.get('name')
-                                        or course.get('course_name')
-                                        or course.get('course')
-                                        or course.get('Course Name')
-                                    %}
+                                    {{ course.name if course.name is defined else course }}
 
-                                    {% if course_name %}
-
-                                        <option
-                                            value="{{ course_name }}"
-                                        >
-                                            {{ course_name }}
-                                        </option>
-
-                                    {% endif %}
-
-                                {% else %}
-
-                                    <option
-                                        value="{{ course }}"
-                                    >
-                                        {{ course }}
-                                    </option>
-
-                                {% endif %}
+                                </option>
 
                             {% endfor %}
-
 
                         </select>
 
                     </div>
 
 
-                    <!-- SEMESTER -->
-
-                    <div class="form-group">
+                    <div>
 
                         <label>
                             Semester
                         </label>
 
-                        <select
-                            name="semester"
-                            required
-                        >
+                        <select name="semester" required>
 
                             <option value="">
                                 Select Semester
                             </option>
 
-                            <option value="1">
-                                Semester 1
-                            </option>
-
-                            <option value="2">
-                                Semester 2
-                            </option>
-
-                            <option value="3">
-                                Semester 3
-                            </option>
-
-                            <option value="4">
-                                Semester 4
-                            </option>
-
-                            <option value="5">
-                                Semester 5
-                            </option>
-
-                            <option value="6">
-                                Semester 6
-                            </option>
-
-                            <option value="7">
-                                Semester 7
-                            </option>
-
-                            <option value="8">
-                                Semester 8
-                            </option>
+                            <option value="1">1st Semester</option>
+                            <option value="2">2nd Semester</option>
+                            <option value="3">3rd Semester</option>
+                            <option value="4">4th Semester</option>
+                            <option value="5">5th Semester</option>
+                            <option value="6">6th Semester</option>
+                            <option value="7">7th Semester</option>
+                            <option value="8">8th Semester</option>
 
                         </select>
 
                     </div>
 
 
-                    <!-- SECTION -->
-
-                    <div class="form-group">
+                    <div>
 
                         <label>
+
                             Section
+
+                            <span class="optional">
+                                (Optional)
+                            </span>
+
                         </label>
 
-                        <select
-                            name="section"
-                            required
-                        >
+                        <select name="section">
 
                             <option value="">
-                                Select Section
+                                No Section
                             </option>
 
                             <option value="A">
@@ -458,6 +474,54 @@
                     </div>
 
 
+                    <div>
+
+                        <label>
+
+                            Group
+
+                            <span class="optional">
+                                (Optional)
+                            </span>
+
+                        </label>
+
+                        <select name="group">
+
+                            <option value="">
+                                No Group
+                            </option>
+
+                            <option value="G1">
+                                Group G1
+                            </option>
+
+                            <option value="G2">
+                                Group G2
+                            </option>
+
+                            <option value="G3">
+                                Group G3
+                            </option>
+
+                            <option value="G4">
+                                Group G4
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <div class="info">
+
+                    <b>Note:</b><br>
+
+                    Section option or Group ke agar nahi hai to fill mat karo.
+                    Dono options optional hain.
+
                 </div>
 
 
@@ -470,345 +534,249 @@
 
                 </button>
 
-
             </form>
 
         </div>
 
 
-        <!-- STUDENT DISPLAY START -->
+        <div class="box">
 
+            <h2>👨‍🎓 Students List</h2>
 
-        {% set overall =
-            namespace(has_students=false)
-        %}
+            {% if course_structure %}
 
+                {% for course_key, course_data in course_structure.items() %}
 
-        {% for course_key, course_data
-           in course_structure.items() %}
+                    <div class="course-box">
 
+                        <div class="course-title">
 
-            {% set course_ns =
-                namespace(has_students=false)
-            %}
+                            📚 {{ course_data.get("name", course_key) }}
 
+                        </div>
 
-            {% for semester, sections
-               in course_data.semesters.items() %}
-
-
-                {% for section_name
-                   in ["A", "B", "C", "D"] %}
-
-
-                    {% if sections[section_name] %}
-
-                        {% set course_ns.has_students = true %}
-
-                        {% set overall.has_students = true %}
-
-                    {% endif %}
-
-
-                {% endfor %}
-
-
-            {% endfor %}
-
-
-            {% if course_ns.has_students %}
-
-
-                <!-- COURSE BOX -->
-
-                <div class="course-box">
-
-
-                    <div class="course-title">
-
-                        🎓 {{ course_data.name }}
-
-                    </div>
-
-
-                    <!-- SEMESTER LOOP START -->
-
-                    {% for semester, sections
-                       in course_data.semesters.items() %}
-
-
-                        {% set semester_ns =
-                            namespace(has_students=false)
-                        %}
-
-
-                        {% for section_name
-                           in ["A", "B", "C", "D"] %}
-
-
-                            {% if sections[section_name] %}
-
-                                {% set semester_ns.has_students = true %}
-
-                            {% endif %}
-
-
-                        {% endfor %}
-
-
-                        {% if semester_ns.has_students %}
-
-
-                            <!-- SEMESTER BOX -->
+                        {% for semester_number, semester_data in course_data.get("semesters", {}).items() %}
 
                             <div class="semester-box">
 
-
                                 <div class="semester-title">
 
-                                    📘 Semester {{ semester }}
+                                    📖 Semester {{ semester_number }}
 
                                 </div>
 
+                                <!-- ONLY EXISTING SECTIONS -->
 
-                                <!-- SECTION LOOP -->
+                                {% for section_name, section_student_list in semester_data.items() %}
 
-                                {% for section_name
-                                   in ["A", "B", "C", "D"] %}
-
-
-                                    {% set section_students =
-                                        sections[section_name]
-                                    %}
-
-
-                                    {% if section_students %}
-
+                                    {% if section_student_list %}
 
                                         <div class="section-box">
 
-
                                             <div class="section-title">
 
-                                                📚 Section
-                                                {{ section_name }}
+                                                <span>
+
+                                                    {% if section_name == "No Section" %}
+
+                                                        —
+
+                                                    {% else %}
+
+                                                        {{ section_name }}
+
+                                                    {% endif %}
+
+                                                </span>
+
+
+                                                {% if section_name == "No Section" %}
+
+                                                    Students Without Section
+
+                                                {% else %}
+
+                                                    Section {{ section_name }}
+
+                                                {% endif %}
 
                                             </div>
 
 
-                                            <div class="students-list">
-                                                <!-- STUDENT LOOP -->
+                                            <!-- STUDENTS -->
 
-                                                {% for student in section_students %}
+                                            {% for student in section_student_list %}
 
+                                                <div class="student-card">
 
-                                                    <div class="student-card">
+                                                    <div class="student-name">
 
-
-                                                        <!-- STUDENT NAME -->
-
-                                                        <div class="student-name">
-
-                                                            👤
-                                                            {{ student.get(
-                                                                "name",
-                                                                "Unknown Student"
-                                                            ) }}
-
-                                                        </div>
-
-
-                                                        <!-- STUDENT INFORMATION -->
-
-                                                        <div class="student-info">
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Enrollment:
-                                                                </strong>
-
-                                                                {{ student.get(
-                                                                    "enrollment",
-                                                                    "N/A"
-                                                                ) }}
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Student ID:
-                                                                </strong>
-
-                                                                {{ student.get(
-                                                                    "student_id",
-                                                                    "N/A"
-                                                                ) }}
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Course:
-                                                                </strong>
-
-                                                                {{ student.get(
-                                                                    "course"
-                                                                )
-                                                                or student.get(
-                                                                    "department"
-                                                                )
-                                                                or "N/A" }}
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Semester:
-                                                                </strong>
-
-                                                                {{ student.get(
-                                                                    "semester",
-                                                                    "N/A"
-                                                                ) }}
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Section:
-                                                                </strong>
-
-                                                                {{ student.get(
-                                                                    "section",
-                                                                    "N/A"
-                                                                ) }}
-
-                                                            </div>
-
-
-                                                            <div>
-
-                                                                <strong>
-                                                                    Password:
-                                                                </strong>
-
-                                                                Default Password Set
-
-                                                            </div>
-
-
-                                                        </div>
-
-
-                                                        <!-- BUTTONS -->
-
-                                                        <div class="buttons">
-
-
-                                                            <!-- EDIT -->
-
-                                                            <a
-                                                                href="/edit-student/{{ student.get('student_id') }}"
-                                                                class="edit-btn"
-                                                            >
-
-                                                                ✏️ Edit
-
-                                                            </a>
-
-
-                                                            <!-- RESET PASSWORD -->
-
-                                                            <a
-                                                                href="/reset-student-password/{{ student.get('student_id') }}"
-                                                                class="reset-btn"
-
-                                                                onclick="return confirm('Are you sure you want to reset this student password?');"
-                                                            >
-
-                                                                🔑 Reset Password
-
-                                                            </a>
-
-
-                                                            <!-- DELETE -->
-
-                                                            <a
-                                                                href="/delete-student/{{ student.get('student_id') }}"
-                                                                class="delete-btn"
-
-                                                                onclick="return confirm('Are you sure you want to delete this student?');"
-                                                            >
-
-                                                                🗑️ Delete
-
-                                                            </a>
-
-
-                                                        </div>
-
+                                                        👤 {{ student.get("name", "") }}
 
                                                     </div>
 
 
-                                                {% endfor %}
+                                                    <div class="student-info">
+
+                                                        <strong>
+                                                            Enrollment:
+                                                        </strong>
+
+                                                        {{ student.get("enrollment", "") }}
+
+                                                        <br>
 
 
-                                            </div>
+                                                        <strong>
+                                                            Student ID:
+                                                        </strong>
 
+                                                        {{ student.get("student_id", "") }}
+
+                                                        <br>
+
+
+                                                        <strong>
+                                                            Course:
+                                                        </strong>
+
+                                                        {{ student.get("course", student.get("department", "")) }}
+
+                                                        <br>
+
+
+                                                        <strong>
+                                                            Semester:
+                                                        </strong>
+
+                                                        {{ student.get("semester", "") }}
+
+                                                        <br>
+
+
+                                                        <strong>
+                                                            Section:
+                                                        </strong>
+
+                                                        {% if student.get("section") %}
+
+                                                            {{ student.get("section") }}
+
+                                                        {% else %}
+
+                                                            No Section
+
+                                                        {% endif %}
+
+                                                        <br>
+
+
+                                                        <strong>
+                                                            Group:
+                                                        </strong>
+
+                                                        {% if student.get("group") %}
+
+                                                            {{ student.get("group") }}
+
+                                                        {% else %}
+
+                                                            No Group
+
+                                                        {% endif %}
+
+                                                        <br>
+
+
+                                                        <strong>
+                                                            Password:
+                                                        </strong>
+
+                                                        {{ student.get("password", "") }}
+
+                                                    </div>
+
+
+                                                    <!-- BUTTONS -->
+
+                                                    <div class="buttons">
+
+                                                        <a
+                                                            href="/edit-student/{{ student.get('student_id', '') }}"
+                                                            class="btn edit-btn"
+                                                        >
+
+                                                            ✏️ Edit
+
+                                                        </a>
+
+
+                                                        <a
+                                                            href="/admin-reset-student-password/{{ student.get('student_id', '') }}"
+                                                            class="btn reset-btn"
+                                                        >
+
+                                                            🔑 Reset Password
+
+                                                        </a>
+
+
+                                                        <a
+                                                            href="/admin-delete-student/{{ student.get('student_id', '') }}"
+                                                            class="btn delete-btn"
+
+                                                            onclick="return confirm('Are you sure you want to delete this student?');"
+                                                        >
+
+                                                            🗑️ Delete
+
+                                                        </a>
+
+                                                    </div>
+
+                                                </div>
+
+                                            {% endfor %}
 
                                         </div>
 
-
                                     {% endif %}
-
 
                                 {% endfor %}
 
-
                             </div>
 
+                        {% endfor %}
 
-                        {% endif %}
+                    </div>
 
+                {% endfor %}
 
-                    {% endfor %}
+            {% else %}
 
+                <div class="empty">
+
+                    No students found.
 
                 </div>
 
-
             {% endif %}
 
+        </div>
 
-        {% endfor %}
 
+        <!-- BACK -->
 
-        <!-- NO STUDENTS MESSAGE -->
+        <a
+            href="/admin-dashboard"
+            class="back-btn"
+        >
 
-        {% if not overall.has_students %}
+            ← Back to Admin Dashboard
 
-            <div class="empty">
-
-                No Students Added Yet.
-
-            </div>
-
-        {% endif %}
-
+        </a>
 
     </div>
-
 
 </body>
 
