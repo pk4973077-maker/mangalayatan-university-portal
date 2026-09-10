@@ -5181,6 +5181,21 @@ def admin_students():
         return str(item).strip()
 
     # -----------------------------
+    # ENROLLMENT LIST SORTING
+    # -----------------------------
+
+    def enrollment_sort_key(student):
+
+        enrollment = str(
+            student.get("enrollment", "")
+        ).strip()
+
+        try:
+            return (0, int(enrollment))
+        except (ValueError, TypeError):
+            return (1, enrollment.lower())
+
+    # -----------------------------
     # ADD NEW STUDENT
     # -----------------------------
 
@@ -5460,6 +5475,22 @@ def admin_students():
             course_structure[course_key][
                 "semesters"
             ][semester][section].append(student)
+
+    # -----------------------------
+    # SORT ONLY THE DISPLAYED LIST
+    # -----------------------------
+    # Enrollment numbers are entered and saved exactly as provided.
+    # This sorting changes only the order shown on the page.
+
+    students.sort(key=enrollment_sort_key)
+
+    for course_data in course_structure.values():
+
+        for semester_data in course_data.get("semesters", {}).values():
+
+            for section_students in semester_data.values():
+
+                section_students.sort(key=enrollment_sort_key)
 
     # -----------------------------
     # SHOW PAGE
