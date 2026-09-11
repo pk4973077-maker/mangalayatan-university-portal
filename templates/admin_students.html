@@ -124,6 +124,19 @@
             background: #15803d;
         }
 
+        /* BRANCH */
+
+        #branch-field {
+            display: none;
+        }
+
+        .branch-note {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
         .course-box {
             margin-top: 25px;
         }
@@ -330,453 +343,563 @@
 
 <body>
 
-    <div class="header">
+<div class="header">
 
-        <h1>👨‍💼 Admin Dashboard</h1>
+    <h1>👨‍💼 Admin Dashboard</h1>
 
-        <p>Manage Students</p>
+    <p>Manage Students</p>
+
+</div>
+
+<div class="container">
+
+    <div class="box">
+
+        <h2>➕ Add Student</h2>
+
+        <form method="POST">
+
+            <div class="form-grid">
+
+                <div>
+
+                    <label>Student Name</label>
+
+                    <input
+                        type="text"
+                        name="student_name"
+                        placeholder="Enter student name"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>Enrollment Number</label>
+
+                    <input
+                        type="text"
+                        name="enrollment"
+                        placeholder="Enter enrollment number"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>Course</label>
+
+                    <select
+                        name="course"
+                        id="course"
+                        required
+                    >
+
+                        <option value="">
+                            Select Course
+                        </option>
+
+                        {% for course in courses %}
+
+                            <option
+                                value="{{ course.name if course.name is defined else course }}"
+                            >
+
+                                {{ course.name if course.name is defined else course }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>Semester</label>
+
+                    <select
+                        name="semester"
+                        id="semester"
+                        required
+                    >
+
+                        <option value="">
+                            Select Semester
+                        </option>
+
+                        <option value="1">1st Semester</option>
+                        <option value="2">2nd Semester</option>
+                        <option value="3">3rd Semester</option>
+                        <option value="4">4th Semester</option>
+                        <option value="5">5th Semester</option>
+                        <option value="6">6th Semester</option>
+                        <option value="7">7th Semester</option>
+                        <option value="8">8th Semester</option>
+
+                    </select>
+
+                </div>
+
+                <!-- BRANCH -->
+
+                <div id="branch-field">
+
+                    <label>Branch</label>
+
+                    <select
+                        name="branch"
+                        id="branch"
+                    >
+
+                        <option value="">
+                            Select Branch
+                        </option>
+
+                        <option value="CSE">
+                            CSE
+                        </option>
+
+                        <option value="MECHANICAL">
+                            MECHANICAL
+                        </option>
+
+                        <option value="MECHANICAL WITH AI & ML">
+                            MECHANICAL WITH AI & ML
+                        </option>
+
+                        <option value="ELECTRICAL">
+                            ELECTRICAL
+                        </option>
+
+                        <option value="CIVIL">
+                            CIVIL
+                        </option>
+
+                        <option value="ECE">
+                            ECE
+                        </option>
+
+                        <option value="CSE WITH AI & ML">
+                            CSE WITH AI & ML
+                        </option>
+
+                        <option value="CSE WITH CYBER SECURITY">
+                            CSE WITH CYBER SECURITY
+                        </option>
+
+                        <option value="CSE WITH DATA SCIENCE">
+                            CSE WITH DATA SCIENCE
+                        </option>
+
+                    </select>
+
+                    <div class="branch-note">
+
+                        Branch is required for
+                        <b>B.TECH ALL</b>
+                        in Semester 1 and 2.
+
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <label>
+
+                        Section
+
+                        <span class="optional">
+                            (Optional)
+                        </span>
+
+                    </label>
+
+                    <select name="section">
+
+                        <option value="">
+                            No Section
+                        </option>
+
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label>
+
+                        Group
+
+                        <span class="optional">
+                            (Optional)
+                        </span>
+
+                    </label>
+
+                    <select name="group">
+
+                        <option value="">
+                            No Group
+                        </option>
+
+                        <option value="G1">Group G1</option>
+                        <option value="G2">Group G2</option>
+                        <option value="G3">Group G3</option>
+                        <option value="G4">Group G4</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="info">
+
+                <b>Note:</b><br>
+
+                Section option or Group ke agar nahi hai
+                to fill mat karo.
+                Dono options optional hain.
+
+            </div>
+
+            <button
+                type="submit"
+                class="add-btn"
+            >
+
+                ➕ Add Student
+
+            </button>
+
+        </form>
 
     </div>
 
 
-    <div class="container">
+    <div class="box">
 
+        <h2>👨‍🎓 Students List</h2>
 
-        <div class="box">
+        {% if course_structure %}
 
-            <h2>➕ Add Student</h2>
+            {% for course_key, course_data in course_structure.items() %}
 
-            <form method="POST">
+                <div class="course-box">
 
-                <div class="form-grid">
+                    <div class="course-title">
 
-                    <div>
-
-                        <label>
-                            Student Name
-                        </label>
-
-                        <input
-                            type="text"
-                            name="student_name"
-                            placeholder="Enter student name"
-                            required
-                        >
+                        📚 {{ course_data.get("name", course_key) }}
 
                     </div>
 
+                    {% for semester_number, semester_data in course_data.get("semesters", {}).items() %}
 
-                    <div>
+                        <div class="semester-box">
 
-                        <label>
-                            Enrollment Number
-                        </label>
+                            <div class="semester-title">
 
-                        <input
-                            type="text"
-                            name="enrollment"
-                            placeholder="Enter enrollment number"
-                            required
-                        >
+                                📖 Semester {{ semester_number }}
 
-                    </div>
+                            </div>
+                            {% for section_name, section_student_list in semester_data.items() %}
 
+                                {% if section_student_list %}
 
-                    <div>
+                                    <div class="section-box">
 
-                        <label>
-                            Course
-                        </label>
+                                        <div class="section-title">
 
-                        <select name="course" required>
-
-                            <option value="">
-                                Select Course
-                            </option>
-
-                            {% for course in courses %}
-
-                                <option value="{{ course.name if course.name is defined else course }}">
-
-                                    {{ course.name if course.name is defined else course }}
-
-                                </option>
-
-                            {% endfor %}
-
-                        </select>
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-                            Semester
-                        </label>
-
-                        <select name="semester" required>
-
-                            <option value="">
-                                Select Semester
-                            </option>
-
-                            <option value="1">1st Semester</option>
-                            <option value="2">2nd Semester</option>
-                            <option value="3">3rd Semester</option>
-                            <option value="4">4th Semester</option>
-                            <option value="5">5th Semester</option>
-                            <option value="6">6th Semester</option>
-                            <option value="7">7th Semester</option>
-                            <option value="8">8th Semester</option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-
-                            Section
-
-                            <span class="optional">
-                                (Optional)
-                            </span>
-
-                        </label>
-
-                        <select name="section">
-
-                            <option value="">
-                                No Section
-                            </option>
-
-                            <option value="A">
-                                Section A
-                            </option>
-
-                            <option value="B">
-                                Section B
-                            </option>
-
-                            <option value="C">
-                                Section C
-                            </option>
-
-                            <option value="D">
-                                Section D
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div>
-
-                        <label>
-
-                            Group
-
-                            <span class="optional">
-                                (Optional)
-                            </span>
-
-                        </label>
-
-                        <select name="group">
-
-                            <option value="">
-                                No Group
-                            </option>
-
-                            <option value="G1">
-                                Group G1
-                            </option>
-
-                            <option value="G2">
-                                Group G2
-                            </option>
-
-                            <option value="G3">
-                                Group G3
-                            </option>
-
-                            <option value="G4">
-                                Group G4
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <div class="info">
-
-                    <b>Note:</b><br>
-
-                    Section option or Group ke agar nahi hai to fill mat karo.
-                    Dono options optional hain.
-
-                </div>
-
-
-                <button
-                    type="submit"
-                    class="add-btn"
-                >
-
-                    ➕ Add Student
-
-                </button>
-
-            </form>
-
-        </div>
-
-
-        <div class="box">
-
-            <h2>👨‍🎓 Students List</h2>
-
-            {% if course_structure %}
-
-                {% for course_key, course_data in course_structure.items() %}
-
-                    <div class="course-box">
-
-                        <div class="course-title">
-
-                            📚 {{ course_data.get("name", course_key) }}
-
-                        </div>
-
-                        {% for semester_number, semester_data in course_data.get("semesters", {}).items() %}
-
-                            <div class="semester-box">
-
-                                <div class="semester-title">
-
-                                    📖 Semester {{ semester_number }}
-
-                                </div>
-
-                                <!-- ONLY EXISTING SECTIONS -->
-
-                                {% for section_name, section_student_list in semester_data.items() %}
-
-                                    {% if section_student_list %}
-
-                                        <div class="section-box">
-
-                                            <div class="section-title">
-
-                                                <span>
-
-                                                    {% if section_name == "No Section" %}
-
-                                                        —
-
-                                                    {% else %}
-
-                                                        {{ section_name }}
-
-                                                    {% endif %}
-
-                                                </span>
-
+                                            <span>
 
                                                 {% if section_name == "No Section" %}
 
-                                                    Students Without Section
+                                                    —
 
                                                 {% else %}
 
-                                                    Section {{ section_name }}
+                                                    {{ section_name }}
 
                                                 {% endif %}
 
-                                            </div>
+                                            </span>
 
 
-                                            <!-- STUDENTS -->
+                                            {% if section_name == "No Section" %}
 
-                                            {% for student in section_student_list %}
+                                                Students Without Section
 
-                                                <div class="student-card">
+                                            {% else %}
 
-                                                    <div class="student-name">
+                                                Section {{ section_name }}
 
-                                                        👤 {{ student.get("name", "") }}
+                                            {% endif %}
 
-                                                    </div>
+                                        </div>
 
 
-                                                    <div class="student-info">
+                                        {% for student in section_student_list %}
+
+                                            <div class="student-card">
+
+                                                <div class="student-name">
+
+                                                    👤 {{ student.get("name", "") }}
+
+                                                </div>
+
+
+                                                <div class="student-info">
+
+                                                    <strong>
+                                                        Enrollment:
+                                                    </strong>
+
+                                                    {{ student.get("enrollment", "") }}
+
+                                                    <br>
+
+
+                                                    <strong>
+                                                        Student ID:
+                                                    </strong>
+
+                                                    {{ student.get("student_id", "") }}
+
+                                                    <br>
+
+
+                                                    <strong>
+                                                        Course:
+                                                    </strong>
+
+                                                    {{ student.get(
+                                                        "course",
+                                                        student.get("department", "")
+                                                    ) }}
+
+                                                    <br>
+
+
+                                                    <strong>
+                                                        Semester:
+                                                    </strong>
+
+                                                    {{ student.get("semester", "") }}
+
+                                                    <br>
+
+
+                                                    {% if student.get("branch") %}
 
                                                         <strong>
-                                                            Enrollment:
+                                                            Branch:
                                                         </strong>
 
-                                                        {{ student.get("enrollment", "") }}
+                                                        {{ student.get("branch") }}
 
                                                         <br>
 
-
-                                                        <strong>
-                                                            Student ID:
-                                                        </strong>
-
-                                                        {{ student.get("student_id", "") }}
-
-                                                        <br>
+                                                    {% endif %}
 
 
-                                                        <strong>
-                                                            Course:
-                                                        </strong>
-
-                                                        {{ student.get("course", student.get("department", "")) }}
-
-                                                        <br>
-
-
-                                                        <strong>
-                                                            Semester:
-                                                        </strong>
-
-                                                        {{ student.get("semester", "") }}
-
-                                                        <br>
-
+                                                    {% if student.get("section") %}
 
                                                         <strong>
                                                             Section:
                                                         </strong>
 
-                                                        {% if student.get("section") %}
-
-                                                            {{ student.get("section") }}
-
-                                                        {% else %}
-
-                                                            No Section
-
-                                                        {% endif %}
+                                                        {{ student.get("section") }}
 
                                                         <br>
 
+                                                    {% endif %}
+
+
+                                                    {% if student.get("group") %}
 
                                                         <strong>
                                                             Group:
                                                         </strong>
 
-                                                        {% if student.get("group") %}
-
-                                                            {{ student.get("group") }}
-
-                                                        {% else %}
-
-                                                            No Group
-
-                                                        {% endif %}
+                                                        {{ student.get("group") }}
 
                                                         <br>
 
-
-                                                        <strong>
-                                                            Password:
-                                                        </strong>
-
-                                                        {{ student.get("password", "") }}
-
-                                                    </div>
+                                                    {% endif %}
 
 
-                                                    <!-- BUTTONS -->
+                                                    <strong>
+                                                        Password:
+                                                    </strong>
 
-                                                    <div class="buttons">
-
-                                                        <a
-                                                            href="/edit-student/{{ student.get('student_id', '') }}"
-                                                            class="btn edit-btn"
-                                                        >
-
-                                                            ✏️ Edit
-
-                                                        </a>
-
-
-                                                        <a
-                                                            href="/admin-reset-student-password/{{ student.get('student_id', '') }}"
-                                                            class="btn reset-btn"
-                                                        >
-
-                                                            🔑 Reset Password
-
-                                                        </a>
-
-
-                                                        <a
-                                                            href="/admin-delete-student/{{ student.get('student_id', '') }}"
-                                                            class="btn delete-btn"
-
-                                                            onclick="return confirm('Are you sure you want to delete this student?');"
-                                                        >
-
-                                                            🗑️ Delete
-
-                                                        </a>
-
-                                                    </div>
+                                                    {{ student.get("password", "") }}
 
                                                 </div>
 
-                                            {% endfor %}
 
-                                        </div>
+                                                <div class="buttons">
 
-                                    {% endif %}
+                                                    <a
+                                                        href="/edit-student/{{ student.get('student_id', '') }}"
+                                                        class="btn edit-btn"
+                                                    >
 
-                                {% endfor %}
+                                                        ✏️ Edit
 
-                            </div>
+                                                    </a>
 
-                        {% endfor %}
 
-                    </div>
+                                                    <a
+                                                        href="/admin-reset-student-password/{{ student.get('student_id', '') }}"
+                                                        class="btn reset-btn"
+                                                    >
 
-                {% endfor %}
+                                                        🔑 Reset Password
 
-            {% else %}
+                                                    </a>
 
-                <div class="empty">
 
-                    No students found.
+                                                    <a
+                                                        href="/admin-delete-student/{{ student.get('student_id', '') }}"
+                                                        class="btn delete-btn"
+
+                                                        onclick="return confirm(
+                                                            'Are you sure you want to delete this student?'
+                                                        );"
+                                                    >
+
+                                                        🗑️ Delete
+
+                                                    </a>
+
+                                                </div>
+
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endfor %}
 
                 </div>
 
-            {% endif %}
+            {% endfor %}
 
-        </div>
+        {% else %}
 
+            <div class="empty">
 
-        <!-- BACK -->
+                No students found.
 
-        <a
-            href="/admin-dashboard"
-            class="back-btn"
-        >
+            </div>
 
-            ← Back to Admin Dashboard
-
-        </a>
+        {% endif %}
 
     </div>
+
+
+    <a
+        href="/admin-dashboard"
+        class="back-btn"
+    >
+
+        ← Back to Admin Dashboard
+
+    </a>
+
+</div>
+
+
+<script>
+
+    const courseSelect =
+        document.getElementById("course");
+
+    const semesterSelect =
+        document.getElementById("semester");
+
+    const branchField =
+        document.getElementById("branch-field");
+
+    const branchSelect =
+        document.getElementById("branch");
+
+
+    function checkBranchVisibility() {
+
+        const course =
+            courseSelect.value
+                .trim()
+                .toUpperCase();
+
+        const semester =
+            semesterSelect.value
+                .trim();
+
+
+        if (
+            course === "B.TECH ALL"
+            &&
+            (
+                semester === "1"
+                ||
+                semester === "2"
+            )
+        ) {
+
+            branchField.style.display = "block";
+
+            branchSelect.required = true;
+
+        }
+
+        else {
+
+            branchField.style.display = "none";
+
+            branchSelect.required = false;
+
+            branchSelect.value = "";
+
+        }
+
+    }
+
+
+    courseSelect.addEventListener(
+        "change",
+        checkBranchVisibility
+    );
+
+
+    semesterSelect.addEventListener(
+        "change",
+        checkBranchVisibility
+    );
+
+
+    checkBranchVisibility();
+
+</script>
+
 
 </body>
 

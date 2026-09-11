@@ -66,14 +66,11 @@
         input,
         textarea,
         select {
-
             width: 100%;
             padding: 12px;
             margin-top: 7px;
-
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-
             font-size: 15px;
             background: white;
         }
@@ -88,18 +85,20 @@
             resize: vertical;
         }
 
-        button {
+        .pdf-help {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 6px;
+        }
 
+        button {
             width: 100%;
             margin-top: 20px;
             padding: 13px;
-
             background: #7c3aed;
             color: white;
-
             border: none;
             border-radius: 8px;
-
             font-size: 16px;
             cursor: pointer;
         }
@@ -109,49 +108,52 @@
         }
 
         .notice {
-
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-
             padding: 18px;
             margin-top: 15px;
-
             background: #f8fafc;
         }
 
         .notice h3 {
-
             margin: 0 0 10px;
             color: #7c3aed;
         }
 
         .notice p {
-
             margin: 6px 0;
             color: #475569;
-
             white-space: pre-wrap;
         }
 
         .notice-info {
-
             font-size: 14px;
             color: #64748b;
-
             margin-bottom: 10px;
             line-height: 1.8;
         }
 
-        .delete-btn {
-
+        .pdf-btn {
             display: inline-block;
+            margin-top: 12px;
+            margin-right: 8px;
+            padding: 9px 15px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
 
+        .pdf-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .delete-btn {
+            display: inline-block;
             margin-top: 12px;
             padding: 9px 15px;
-
             background: #dc2626;
             color: white;
-
             text-decoration: none;
             border-radius: 7px;
         }
@@ -161,10 +163,8 @@
         }
 
         .empty {
-
             text-align: center;
             color: #64748b;
-
             padding: 20px;
         }
 
@@ -172,11 +172,7 @@
 
 </head>
 
-
 <body>
-
-
-    <!-- HEADER -->
 
     <div class="header">
 
@@ -189,14 +185,8 @@
 
     <div class="container">
 
-
-        <!-- BACK -->
-
-        <a href="/faculty-dashboard"
-           class="back">
-
+        <a href="/faculty-dashboard" class="back">
             ← Back to Faculty Dashboard
-
         </a>
 
 
@@ -212,6 +202,7 @@
             <form
                 action="/send-notice"
                 method="POST"
+                enctype="multipart/form-data"
             >
 
 
@@ -246,9 +237,7 @@
                     {% for course in courses %}
 
                         <option value="{{ course }}">
-
                             {{ course }}
-
                         </option>
 
                     {% endfor %}
@@ -271,37 +260,14 @@
                         Select Semester
                     </option>
 
-                    <option value="1">
-                        Semester 1
-                    </option>
-
-                    <option value="2">
-                        Semester 2
-                    </option>
-
-                    <option value="3">
-                        Semester 3
-                    </option>
-
-                    <option value="4">
-                        Semester 4
-                    </option>
-
-                    <option value="5">
-                        Semester 5
-                    </option>
-
-                    <option value="6">
-                        Semester 6
-                    </option>
-
-                    <option value="7">
-                        Semester 7
-                    </option>
-
-                    <option value="8">
-                        Semester 8
-                    </option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                    <option value="3">Semester 3</option>
+                    <option value="4">Semester 4</option>
+                    <option value="5">Semester 5</option>
+                    <option value="6">Semester 6</option>
+                    <option value="7">Semester 7</option>
+                    <option value="8">Semester 8</option>
 
                 </select>
 
@@ -321,21 +287,10 @@
                         Select Section
                     </option>
 
-                    <option value="A">
-                        Section A
-                    </option>
-
-                    <option value="B">
-                        Section B
-                    </option>
-
-                    <option value="C">
-                        Section C
-                    </option>
-
-                    <option value="D">
-                        Section D
-                    </option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                    <option value="D">Section D</option>
 
                 </select>
 
@@ -367,14 +322,29 @@
                 ></textarea>
 
 
+                <!-- OPTIONAL PDF -->
+
+                <label>
+                    📎 Attach PDF (Optional)
+                </label>
+
+                <input
+                    type="file"
+                    name="pdf_file"
+                    accept=".pdf,application/pdf"
+                >
+
+                <div class="pdf-help">
+                    PDF attach karna optional hai. Agar PDF nahi lagani hai
+                    to is field ko blank chhod sakte hain.
+                </div>
+
+
                 <!-- SEND -->
 
                 <button type="submit">
-
                     📤 Send Notice
-
                 </button>
-
 
             </form>
 
@@ -392,121 +362,93 @@
 
             {% if notices %}
 
-
                 {% for notice in notices %}
-
 
                     <div class="notice">
 
-
                         <h3>
-
-                            📢
-                            {{ notice.get('title', '') }}
-
+                            📢 {{ notice.get('title', '') }}
                         </h3>
 
 
                         <div class="notice-info">
 
-
-                            <strong>
-                                Faculty:
-                            </strong>
-
-                            {{ notice.get(
-                                'faculty_name',
-                                '-'
-                            ) }}
+                            <strong>Faculty:</strong>
+                            {{ notice.get('faculty_name', '-') }}
 
                             <br>
 
-
-                            <strong>
-                                Course:
-                            </strong>
-
-                            {{ notice.get(
-                                'course',
-                                '-'
-                            ) }}
+                            <strong>Course:</strong>
+                            {{ notice.get('course', '-') }}
 
                             <br>
 
-
-                            <strong>
-                                Semester:
-                            </strong>
-
-                            {{ notice.get(
-                                'semester',
-                                '-'
-                            ) }}
+                            <strong>Semester:</strong>
+                            {{ notice.get('semester', '-') }}
 
                             <br>
 
-
-                            <strong>
-                                Section:
-                            </strong>
-
-                            {{ notice.get(
-                                'section',
-                                '-'
-                            ) }}
-
+                            <strong>Section:</strong>
+                            {{ notice.get('section', '-') }}
 
                         </div>
 
 
                         <p>
-
-                            {{ notice.get(
-                                'message',
-                                ''
-                            ) }}
-
+                            {{ notice.get('message', '') }}
                         </p>
 
+
+                        <!-- PDF -->
+
+                        {% if notice.get('pdf_filename') %}
+
+                            <a
+                                href="{{ url_for('notice_file', filename=notice.get('pdf_filename')) }}"
+                                target="_blank"
+                                class="pdf-btn"
+                            >
+                                📄 Open PDF
+                            </a>
+
+                            <a
+                                href="{{ url_for('notice_file', filename=notice.get('pdf_filename')) }}"
+                                download
+                                class="pdf-btn"
+                            >
+                                ⬇️ Download PDF
+                            </a>
+
+                        {% endif %}
+
+
+                        <!-- DELETE -->
 
                         <a
                             href="/delete-notice/{{ notice.get('_index') }}"
                             class="delete-btn"
-
                             onclick="return confirm(
                                 'Kya aap is notice ko delete karna chahte hain?'
                             );"
                         >
-
                             🗑️ Delete
-
                         </a>
-
 
                     </div>
 
-
                 {% endfor %}
-
 
             {% else %}
 
-
                 <div class="empty">
-
                     अभी तक कोई notice send नहीं किया गया है।
-
                 </div>
-
 
             {% endif %}
 
-
         </div>
 
-
     </div>
-
 
 </body>
 

@@ -751,6 +751,10 @@ def student_register():
             "semester", ""
         ).strip()
 
+        branch = request.form.get(
+            "branch", ""
+        ).strip().upper()
+
         section = request.form.get(
             "section", ""
         ).strip().upper()
@@ -785,28 +789,6 @@ def student_register():
             return "Invalid Semester."
 
         # -------------------------
-        # SECTION CHECK
-        # -------------------------
-        # Section is optional.
-
-        if section and section not in [
-            "A", "B", "C", "D"
-        ]:
-
-            return "Invalid Section."
-
-        # -------------------------
-        # GROUP CHECK
-        # -------------------------
-        # Group is optional.
-
-        if group and group not in [
-            "G1", "G2", "G3", "G4"
-        ]:
-
-            return "Invalid Group."
-
-        # -------------------------
         # COURSE CHECK
         # -------------------------
 
@@ -826,6 +808,7 @@ def student_register():
                 ):
 
                     valid_course = course_name
+
                     break
 
         if not valid_course:
@@ -833,6 +816,91 @@ def student_register():
             return "Invalid Course."
 
         course = valid_course
+
+        # -------------------------
+        # BRANCH VALIDATION
+        # -------------------------
+        # Branch is ONLY required for
+        # B.TECH ALL + Semester 1 or 2.
+
+        branches = [
+
+            "CSE",
+
+            "MECHANICAL",
+
+            "MECHANICAL WITH AI & ML",
+
+            "ELECTRICAL",
+
+            "CIVIL",
+
+            "ECE",
+
+            "CSE WITH AI & ML",
+
+            "CSE WITH CYBER SECURITY",
+
+            "CSE WITH DATA SCIENCE"
+
+        ]
+
+        is_btech_all = (
+            course.strip().lower()
+            == "b.tech all"
+        )
+
+        if (
+            is_btech_all
+            and semester in ["1", "2"]
+        ):
+
+            if not branch:
+
+                return "Please select Branch."
+
+            if branch not in branches:
+
+                return "Invalid Branch."
+
+        else:
+
+            # Other courses and semesters
+            # do not use branch.
+
+            branch = ""
+
+        # -------------------------
+        # SECTION CHECK
+        # -------------------------
+        # Section is optional.
+
+        if section and section not in [
+
+            "A",
+            "B",
+            "C",
+            "D"
+
+        ]:
+
+            return "Invalid Section."
+
+        # -------------------------
+        # GROUP CHECK
+        # -------------------------
+        # Group is optional.
+
+        if group and group not in [
+
+            "G1",
+            "G2",
+            "G3",
+            "G4"
+
+        ]:
+
+            return "Invalid Group."
 
         # -------------------------
         # DUPLICATE ENROLLMENT
@@ -915,6 +983,8 @@ def student_register():
 
             "semester": semester,
 
+            "branch": branch,
+
             "section": section,
 
             "group": group
@@ -961,9 +1031,27 @@ def student_register():
     return render_template(
         "student_register.html",
         courses=courses,
-        semesters=["1", "2", "3", "4", "5", "6", "7", "8"],
-        sections=["A", "B", "C", "D"],
-        groups=["G1", "G2", "G3", "G4"]
+        semesters=[
+            "1", "2", "3", "4",
+            "5", "6", "7", "8"
+        ],
+        branches=[
+            "CSE",
+            "MECHANICAL",
+            "MECHANICAL WITH AI & ML",
+            "ELECTRICAL",
+            "CIVIL",
+            "ECE",
+            "CSE WITH AI & ML",
+            "CSE WITH CYBER SECURITY",
+            "CSE WITH DATA SCIENCE"
+        ],
+        sections=[
+            "A", "B", "C", "D"
+        ],
+        groups=[
+            "G1", "G2", "G3", "G4"
+        ]
     )
 
 
@@ -1449,13 +1537,22 @@ def syllabus():
 def syllabus_file(filename):
 
     stored = get_uploaded_file(filename)
+
     if not stored:
         return "File not found", 404
+
     return send_file(
-        io.BytesIO(bytes(stored["content"])),
-        mimetype=stored["content_type"],
-        download_name=filename
-    )
+    io.BytesIO(bytes(stored["content"])),
+    mimetype=(
+        "image/jpeg"
+        if filename.lower().endswith((".jpg", ".jpeg"))
+        else "image/png"
+        if filename.lower().endswith(".png")
+        else stored["content_type"]
+    ),
+    as_attachment=False,
+    download_name=filename
+)
 
 
 # =========================
@@ -2694,6 +2791,18 @@ def student_notes():
     )
 
 
+@app.route("/student-note/<filename>")
+def student_note(filename):
+
+    # Student login check
+    if "student_enrollment" not in session:
+        return redirect(url_for("student_login"))
+
+    return send_from_directory(
+        UPLOAD_FOLDER,
+        filename
+    )
+
 # =========================
 # OPEN NOTES / UPLOADED FILE
 # =========================
@@ -2704,10 +2813,10 @@ def uploaded_file(filename):
     # -----------------------------
     # STUDENT ACCESS
     # -----------------------------
-    if "student_id" in session:
+    if "student_enrollment" in session:
 
         student_id = str(
-            session.get("student_id", "")
+            session.get("student_enrollment", "")
         ).strip()
 
         students = []
@@ -2774,7 +2883,7 @@ def uploaded_file(filename):
                 note.get("section", "")
             ).strip().upper()
 
-            # Student is allowed only for exact match
+            # Student ke Course + Semester + Section ka exact match
             if (
                 note_course == student_course
                 and note_semester == student_semester
@@ -2782,17 +2891,17 @@ def uploaded_file(filename):
             ):
 
                 stored = get_uploaded_file(filename)
+
                 if not stored:
                     return "File not found", 404
+
                 return send_file(
                     io.BytesIO(bytes(stored["content"])),
                     mimetype=stored["content_type"],
                     download_name=filename
                 )
 
-            return "Unauthorized", 403
-
-        return "File not found", 404
+        return "Unauthorized", 403
 
     # -----------------------------
     # FACULTY ACCESS
@@ -2823,8 +2932,10 @@ def uploaded_file(filename):
             ):
 
                 stored = get_uploaded_file(filename)
+
                 if not stored:
                     return "File not found", 404
+
                 return send_file(
                     io.BytesIO(bytes(stored["content"])),
                     mimetype=stored["content_type"],
@@ -4626,6 +4737,11 @@ def send_notice():
         ).strip()
 
         # -------------------------
+        # Optional PDF
+        # -------------------------
+        pdf_file = request.files.get("pdf_file")
+
+        # -------------------------
         # Required fields
         # -------------------------
         if (
@@ -4656,7 +4772,6 @@ def send_notice():
 
         # -------------------------
         # Course validation
-        # Admin Course Management
         # -------------------------
         valid_course = None
 
@@ -4669,6 +4784,36 @@ def send_notice():
 
         if not valid_course:
             return "Invalid Course."
+
+        # -------------------------
+        # Optional PDF Upload
+        # -------------------------
+        pdf_filename = ""
+
+        if pdf_file and pdf_file.filename:
+
+            if not pdf_file.filename.lower().endswith(".pdf"):
+                return "Only PDF files are allowed."
+
+            import uuid
+
+            original_name = secure_filename(
+                pdf_file.filename
+            )
+
+            if not original_name:
+                return "Invalid PDF filename."
+
+            pdf_filename = (
+                str(uuid.uuid4())
+                + "_"
+                + original_name
+            )
+
+            save_uploaded_file(
+                pdf_file,
+                pdf_filename
+            )
 
         # -------------------------
         # Existing notices
@@ -4685,7 +4830,10 @@ def send_notice():
 
                     notices = json.load(file)
 
-                if not isinstance(notices, list):
+                if not isinstance(
+                    notices,
+                    list
+                ):
                     notices = []
 
             except:
@@ -4715,13 +4863,16 @@ def send_notice():
                 title,
 
             "message":
-                message
+                message,
+
+            "pdf_filename":
+                pdf_filename
         }
 
         notices.append(notice)
 
         # -------------------------
-        # Save
+        # Save Notice
         # -------------------------
         with open(
             NOTICES_FILE,
@@ -4752,7 +4903,10 @@ def send_notice():
 
                 all_notices = json.load(file)
 
-            if not isinstance(all_notices, list):
+            if not isinstance(
+                all_notices,
+                list
+            ):
                 all_notices = []
 
         except:
@@ -4779,6 +4933,21 @@ def send_notice():
         notices=notices,
         courses=clean_courses,
         faculty_name=faculty_name
+    )
+
+@app.route("/notice-file/<filename>")
+def notice_file(filename):
+
+    stored = get_uploaded_file(filename)
+
+    if not stored:
+        return "File not found", 404
+
+    return send_file(
+        io.BytesIO(bytes(stored["content"])),
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=filename
     )
 
 
@@ -5702,7 +5871,7 @@ def admin_students():
         return str(item).strip()
 
     # -----------------------------
-    # ENROLLMENT LIST SORTING
+    # ENROLLMENT SORTING
     # -----------------------------
 
     def enrollment_sort_key(student):
@@ -5738,6 +5907,10 @@ def admin_students():
             "semester", ""
         ).strip()
 
+        branch = request.form.get(
+            "branch", ""
+        ).strip().upper()
+
         section = request.form.get(
             "section", ""
         ).strip().upper()
@@ -5746,8 +5919,9 @@ def admin_students():
             "group", ""
         ).strip().upper()
 
-        # Required fields
-        # Section and Group are optional.
+        # -----------------------------
+        # REQUIRED FIELDS
+        # -----------------------------
 
         if (
             not student_name
@@ -5755,34 +5929,22 @@ def admin_students():
             or not course
             or not semester
         ):
+
             return "Please fill all required fields."
 
-        # Semester validation
+        # -----------------------------
+        # SEMESTER VALIDATION
+        # -----------------------------
 
         if semester not in [
             "1", "2", "3", "4",
             "5", "6", "7", "8"
         ]:
+
             return "Invalid Semester."
 
-        # Section validation
-        # Section is optional.
-
-        if section and section not in [
-            "A", "B", "C", "D"
-        ]:
-            return "Invalid Section."
-
-        # Group validation
-        # Group is optional.
-
-        if group and group not in [
-            "G1", "G2", "G3", "G4"
-        ]:
-            return "Invalid Group."
-
         # -----------------------------
-        # CHECK COURSE
+        # COURSE CHECK
         # -----------------------------
 
         valid_courses = []
@@ -5809,18 +5971,89 @@ def admin_students():
             return "Invalid Course."
 
         # -----------------------------
-        # DUPLICATE ENROLLMENT CHECK
+        # BRANCH VALIDATION
+        # -----------------------------
+        # Branch is ONLY required for
+        # B.TECH ALL + Semester 1 or 2.
+        #
+        # Other courses/semesters do not
+        # require a branch.
+
+        branches = [
+            "CSE",
+            "MECHANICAL",
+            "MECHANICAL WITH AI & ML",
+            "ELECTRICAL",
+            "CIVIL",
+            "ECE",
+            "CSE WITH AI & ML",
+            "CSE WITH CYBER SECURITY",
+            "CSE WITH DATA SCIENCE"
+        ]
+
+        is_btech_all = (
+            course.strip().lower()
+            == "b.tech all"
+        )
+
+        if is_btech_all and semester in ["1", "2"]:
+
+            if not branch:
+                return "Please select Branch."
+
+            if branch not in branches:
+                return "Invalid Branch."
+
+        else:
+
+            # For all other courses/semesters,
+            # branch should remain blank.
+            branch = ""
+
+        # -----------------------------
+        # SECTION VALIDATION
+        # -----------------------------
+        # Section is optional.
+
+        if section and section not in [
+            "A", "B", "C", "D"
+        ]:
+
+            return "Invalid Section."
+
+        # -----------------------------
+        # GROUP VALIDATION
+        # -----------------------------
+        # Group is optional.
+
+        if group and group not in [
+            "G1", "G2", "G3", "G4"
+        ]:
+
+            return "Invalid Group."
+
+        # -----------------------------
+        # DUPLICATE ENROLLMENT
         # -----------------------------
 
         for student in students:
 
             old_enrollment = str(
-                student.get("enrollment", "")
+                student.get(
+                    "enrollment",
+                    ""
+                )
             ).strip()
 
-            if old_enrollment.lower() == enrollment.lower():
+            if (
+                old_enrollment.lower()
+                == enrollment.lower()
+            ):
 
-                return "This Enrollment Number already exists."
+                return (
+                    "This Enrollment Number "
+                    "already exists."
+                )
 
         # -----------------------------
         # STUDENT ID
@@ -5831,14 +6064,20 @@ def admin_students():
         for student in students:
 
             old_id = str(
-                student.get("student_id", "")
+                student.get(
+                    "student_id",
+                    ""
+                )
             ).strip().upper()
 
             if old_id.startswith("STU"):
 
                 try:
 
-                    number = int(old_id[3:])
+                    number = int(
+                        old_id[3:]
+                    )
+
                     numbers.append(number)
 
                 except:
@@ -5858,7 +6097,7 @@ def admin_students():
         )
 
         # -----------------------------
-        # NEW STUDENT
+        # CREATE STUDENT
         # -----------------------------
 
         student = {
@@ -5873,6 +6112,8 @@ def admin_students():
 
             "semester": semester,
 
+            "branch": branch,
+
             "section": section,
 
             "group": group
@@ -5885,7 +6126,10 @@ def admin_students():
         # SAVE STUDENT
         # -----------------------------
 
-        with open(STUDENTS_FILE, "w") as file:
+        with open(
+            STUDENTS_FILE,
+            "w"
+        ) as file:
 
             json.dump(
                 students,
@@ -5893,11 +6137,12 @@ def admin_students():
                 indent=4
             )
 
-        return redirect("/admin-students")
+        return redirect(
+            "/admin-students"
+        )
 
     # ==================================================
     # COURSE → SEMESTER → SECTION → STUDENTS
-    # ONLY CREATE WHAT ACTUALLY EXISTS IN students.json
     # ==================================================
 
     course_structure = {}
@@ -5905,24 +6150,37 @@ def admin_students():
     for student in students:
 
         student_course = str(
-            student.get("course", "")
+            student.get(
+                "course",
+                ""
+            )
         ).strip()
 
         # Old data support
         if not student_course:
+
             student_course = str(
-                student.get("department", "")
+                student.get(
+                    "department",
+                    ""
+                )
             ).strip()
 
         semester = str(
-            student.get("semester", "")
+            student.get(
+                "semester",
+                ""
+            )
         ).strip()
 
         section = str(
-            student.get("section", "")
+            student.get(
+                "section",
+                ""
+            )
         ).strip().upper()
 
-        # Invalid/incomplete student records are not displayed
+        # Invalid records are not displayed
         if not student_course:
             continue
 
@@ -5932,30 +6190,61 @@ def admin_students():
         ]:
             continue
 
-        # Only a real section creates a section box.
-        # Blank section is kept under No Section only when that
-        # student actually has no section.
-        if section not in ["A", "B", "C", "D"]:
+        if section not in [
+            "A", "B", "C", "D"
+        ]:
+
             section = "No Section"
 
-        course_key = student_course.lower().strip()
+        course_key = (
+            student_course
+            .lower()
+            .strip()
+        )
 
-        # Create COURSE only when this student actually belongs to it.
+        # -----------------------------
+        # COURSE
+        # -----------------------------
+
         if course_key not in course_structure:
+
             course_structure[course_key] = {
+
                 "name": student_course,
+
                 "semesters": {}
+
             }
 
-        # Create SEMESTER only when a student actually exists in it.
-        if semester not in course_structure[course_key]["semesters"]:
-            course_structure[course_key]["semesters"][semester] = {}
+        # -----------------------------
+        # SEMESTER
+        # -----------------------------
 
-        # Create SECTION only when a student actually exists in it.
-        if section not in course_structure[course_key]["semesters"][semester]:
-            course_structure[course_key]["semesters"][semester][section] = []
+        if semester not in course_structure[
+            course_key
+        ]["semesters"]:
 
-        course_structure[course_key]["semesters"][semester][section].append(student)
+            course_structure[
+                course_key
+            ]["semesters"][semester] = {}
+
+        # -----------------------------
+        # SECTION
+        # -----------------------------
+
+        if section not in course_structure[
+            course_key
+        ]["semesters"][semester]:
+
+            course_structure[
+                course_key
+            ]["semesters"][semester][section] = []
+
+        course_structure[
+            course_key
+        ]["semesters"][semester][section].append(
+            student
+        )
 
     # -----------------------------
     # SORT DISPLAY
@@ -5963,9 +6252,13 @@ def admin_students():
 
     sorted_course_structure = {}
 
-    for course_key in sorted(course_structure.keys()):
+    for course_key in sorted(
+        course_structure.keys()
+    ):
 
-        course_data = course_structure[course_key]
+        course_data = (
+            course_structure[course_key]
+        )
 
         sorted_semesters = {}
 
@@ -5974,44 +6267,91 @@ def admin_students():
             key=lambda value: int(value)
         ):
 
-            semester_data = course_data["semesters"][semester_number]
+            semester_data = (
+                course_data[
+                    "semesters"
+                ][semester_number]
+            )
 
-            section_order = ["A", "B", "C", "D", "No Section"]
+            section_order = [
+                "A",
+                "B",
+                "C",
+                "D",
+                "No Section"
+            ]
+
             sorted_sections = {}
 
             for section_name in section_order:
-                if section_name in semester_data and semester_data[section_name]:
-                    sorted_sections[section_name] = sorted(
-                        semester_data[section_name],
+
+                if (
+                    section_name
+                    in semester_data
+                    and semester_data[
+                        section_name
+                    ]
+                ):
+
+                    sorted_sections[
+                        section_name
+                    ] = sorted(
+                        semester_data[
+                            section_name
+                        ],
                         key=enrollment_sort_key
                     )
 
             if sorted_sections:
-                sorted_semesters[semester_number] = sorted_sections
+
+                sorted_semesters[
+                    semester_number
+                ] = sorted_sections
 
         if sorted_semesters:
-            sorted_course_structure[course_key] = {
-                "name": course_data["name"],
-                "semesters": sorted_semesters
+
+            sorted_course_structure[
+                course_key
+            ] = {
+
+                "name":
+                    course_data["name"],
+
+                "semesters":
+                    sorted_semesters
+
             }
 
-    course_structure = sorted_course_structure
+    course_structure = (
+        sorted_course_structure
+    )
 
     # -----------------------------
-    # SORT ONLY THE DISPLAYED LIST
+    # SORT DISPLAYED STUDENT LIST
     # -----------------------------
-    # Enrollment numbers are entered and saved exactly as provided.
-    # This sorting changes only the order shown on the page.
 
-    students.sort(key=enrollment_sort_key)
+    students.sort(
+        key=enrollment_sort_key
+    )
 
-    for course_data in course_structure.values():
+    for course_data in (
+        course_structure.values()
+    ):
 
-        for semester_data in course_data.get("semesters", {}).values():
+        for semester_data in (
+            course_data.get(
+                "semesters",
+                {}
+            ).values()
+        ):
 
-            for section_students in semester_data.values():
+            for section_students in (
+                semester_data.values()
+            ):
 
-                section_students.sort(key=enrollment_sort_key)
+                section_students.sort(
+                    key=enrollment_sort_key
+                )
 
     # -----------------------------
     # SHOW PAGE

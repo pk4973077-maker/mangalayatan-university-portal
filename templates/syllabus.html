@@ -118,12 +118,20 @@
                         </div>
 
                         <a
-                            href="{{ url_for('syllabus_file', filename=syllabus.filename) }}"
-                            target="_blank"
-                            class="open-btn"
-                        >
-                            📂 Open Syllabus
-                        </a>
+    href="{{ url_for('syllabus_file', filename=syllabus.filename) }}"
+    target="_blank"
+    class="open-btn"
+>
+    📂 Open Syllabus
+</a>
+
+<a
+    href="{{ url_for('syllabus_file', filename=syllabus.filename) }}"
+    download="{{ syllabus.filename }}"
+    class="open-btn"
+>
+    ⬇️ Download
+</a>
 
                     </div>
 

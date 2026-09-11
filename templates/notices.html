@@ -29,6 +29,10 @@
             padding: 20px 30px;
         }
 
+        .header h2 {
+            margin: 0;
+        }
+
         .container {
             max-width: 900px;
             margin: 30px auto;
@@ -65,6 +69,37 @@
 
         .notice p {
             line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .pdf-btn {
+            display: inline-block;
+            margin-top: 12px;
+            margin-right: 8px;
+            padding: 10px 15px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .pdf-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .download-btn {
+            background: #16a34a;
+        }
+
+        .download-btn:hover {
+            background: #15803d;
+        }
+
+        .pdf-name {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 14px;
         }
 
         .empty {
@@ -110,12 +145,54 @@
                     <div class="notice">
 
                         <h3>
-                            📢 {{ notice.title }}
+                            📢 {{ notice.get('title', '') }}
                         </h3>
 
+
                         <p>
-                            {{ notice.message }}
+                            {{ notice.get('message', '') }}
                         </p>
+
+
+                        <!-- ========================= -->
+                        <!-- OPTIONAL NOTICE PDF -->
+                        <!-- ========================= -->
+
+                        {% if notice.get('pdf_filename') %}
+
+                            <div class="pdf-name">
+
+                                📄 Attached PDF:
+                                {{ notice.get('pdf_filename') }}
+
+                            </div>
+
+
+                            <a
+                                href="{{ url_for(
+                                    'notice_file',
+                                    filename=notice.get('pdf_filename')
+                                ) }}"
+                                target="_blank"
+                                class="pdf-btn"
+                            >
+                                📄 Open PDF
+                            </a>
+
+
+                            <a
+                                href="{{ url_for(
+                                    'notice_file',
+                                    filename=notice.get('pdf_filename')
+                                ) }}"
+                                download
+                                class="pdf-btn download-btn"
+                            >
+                                ⬇️ Download PDF
+                            </a>
+
+                        {% endif %}
+
 
                     </div>
 
@@ -136,6 +213,7 @@
                 </div>
 
             {% endif %}
+
 
         </div>
 

@@ -116,6 +116,25 @@
             line-height: 1.4;
         }
 
+        /* -----------------------------
+           BRANCH
+        ----------------------------- */
+
+        #branch-field {
+            display: none;
+        }
+
+        .branch-note {
+
+            margin-top: 6px;
+
+            color: #64748b;
+
+            font-size: 12px;
+
+            line-height: 1.4;
+        }
+
         .section-group-info {
 
             margin-top: 18px;
@@ -275,7 +294,11 @@
             Course
         </label>
 
-        <select name="course" required>
+        <select
+            name="course"
+            id="course"
+            required
+        >
 
             <option value="">
                 Select Course
@@ -283,8 +306,12 @@
 
             {% for course in courses %}
 
-                <option value="{{ course.name }}">
-                    {{ course.name }}
+                <option
+                    value="{{ course.name if course.name is defined else course }}"
+                >
+
+                    {{ course.name if course.name is defined else course }}
+
                 </option>
 
             {% endfor %}
@@ -298,28 +325,132 @@
             Semester
         </label>
 
-        <select name="semester" required>
+        <select
+            name="semester"
+            id="semester"
+            required
+        >
 
             <option value="">
                 Select Semester
             </option>
 
-            <option value="1">1st Semester</option>
-            <option value="2">2nd Semester</option>
-            <option value="3">3rd Semester</option>
-            <option value="4">4th Semester</option>
-            <option value="5">5th Semester</option>
-            <option value="6">6th Semester</option>
-            <option value="7">7th Semester</option>
-            <option value="8">8th Semester</option>
+            <option value="1">
+                1st Semester
+            </option>
+
+            <option value="2">
+                2nd Semester
+            </option>
+
+            <option value="3">
+                3rd Semester
+            </option>
+
+            <option value="4">
+                4th Semester
+            </option>
+
+            <option value="5">
+                5th Semester
+            </option>
+
+            <option value="6">
+                6th Semester
+            </option>
+
+            <option value="7">
+                7th Semester
+            </option>
+
+            <option value="8">
+                8th Semester
+            </option>
 
         </select>
+
+
+        <!-- =============================
+             BRANCH
+        ============================== -->
+
+        <div id="branch-field">
+
+            <label>
+                Branch
+            </label>
+
+            <select
+                name="branch"
+                id="branch"
+            >
+
+                <option value="">
+                    Select Branch
+                </option>
+
+                <option value="CSE">
+                    CSE
+                </option>
+
+                <option value="MECHANICAL">
+                    MECHANICAL
+                </option>
+
+                <option value="MECHANICAL WITH AI & ML">
+                    MECHANICAL WITH AI & ML
+                </option>
+
+                <option value="ELECTRICAL">
+                    ELECTRICAL
+                </option>
+
+                <option value="CIVIL">
+                    CIVIL
+                </option>
+
+                <option value="ECE">
+                    ECE
+                </option>
+
+                <option value="CSE WITH AI & ML">
+                    CSE WITH AI & ML
+                </option>
+
+                <option value="CSE WITH CYBER SECURITY">
+                    CSE WITH CYBER SECURITY
+                </option>
+
+                <option value="CSE WITH DATA SCIENCE">
+                    CSE WITH DATA SCIENCE
+                </option>
+
+            </select>
+
+            <div class="branch-note">
+
+                Branch is required for B.TECH ALL in Semester 1 and 2.
+
+            </div>
+
+        </div>
 
 
         <!-- SECTION -->
 
         <label>
-            Section <span style="font-weight: normal; color: #64748b;">(Optional)</span>
+
+            Section
+
+            <span
+                style="
+                    font-weight: normal;
+                    color: #64748b;
+                "
+            >
+                (Optional)
+            </span>
+
         </label>
 
         <select name="section">
@@ -350,7 +481,18 @@
         <!-- GROUP -->
 
         <label>
-            Group <span style="font-weight: normal; color: #64748b;">(Optional)</span>
+
+            Group
+
+            <span
+                style="
+                    font-weight: normal;
+                    color: #64748b;
+                "
+            >
+                (Optional)
+            </span>
+
         </label>
 
         <select name="group">
@@ -393,11 +535,15 @@
         <!-- REGISTER -->
 
         <button type="submit">
+
             📝 Register Student
+
         </button>
 
     </form>
 
+
+    <!-- LOGIN INFORMATION -->
 
     <div class="info">
 
@@ -405,20 +551,113 @@
 
         <br>
 
-        <b>Username:</b> Enrollment Number
+        <b>Username:</b>
+        Enrollment Number
 
         <br>
 
-        <b>Password:</b> Student ID
+        <b>Password:</b>
+        Student ID
 
     </div>
 
 
     <a href="/" class="back">
+
         ← Back to Main Portal
+
     </a>
 
 </div>
+
+
+<!-- =============================
+     BRANCH AUTO SHOW/HIDE
+============================== -->
+
+<script>
+
+    const courseSelect =
+        document.getElementById("course");
+
+    const semesterSelect =
+        document.getElementById("semester");
+
+    const branchField =
+        document.getElementById("branch-field");
+
+    const branchSelect =
+        document.getElementById("branch");
+
+
+    function updateBranchVisibility() {
+
+        const course =
+            courseSelect.value
+                .trim()
+                .toLowerCase();
+
+        const semester =
+            semesterSelect.value;
+
+
+        /*
+         * Branch ONLY appears when:
+         *
+         * Course = B.TECH ALL
+         * AND
+         * Semester = 1 or 2
+         */
+
+        if (
+            course === "b.tech all"
+            &&
+            (
+                semester === "1"
+                ||
+                semester === "2"
+            )
+        ) {
+
+            branchField.style.display = "block";
+
+            branchSelect.required = true;
+
+        }
+
+        else {
+
+            branchField.style.display = "none";
+
+            branchSelect.required = false;
+
+            branchSelect.value = "";
+
+        }
+
+    }
+
+
+    courseSelect.addEventListener(
+        "change",
+        updateBranchVisibility
+    );
+
+
+    semesterSelect.addEventListener(
+        "change",
+        updateBranchVisibility
+    );
+
+
+    /*
+     * Run once when page loads
+     */
+
+    updateBranchVisibility();
+
+</script>
+
 
 </body>
 
