@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
     <title>Edit Course</title>
@@ -45,6 +46,10 @@
             cursor: pointer;
         }
 
+        button:hover {
+            background: #1d4ed8;
+        }
+
         .back {
             display: inline-block;
             margin-bottom: 20px;
@@ -70,6 +75,7 @@
 
         <form method="POST">
 
+
             <label>
                 Course Name
             </label>
@@ -80,6 +86,7 @@
                 value="{{ course.name }}"
                 required
             >
+
 
             <label>
                 Department
@@ -102,6 +109,22 @@
 
             </select>
 
+
+            <label>
+                Total Semesters
+            </label>
+
+            <input
+                type="number"
+                name="total_semesters"
+                min="1"
+                max="20"
+                value="{{ course.total_semesters if course.total_semesters else '' }}"
+                placeholder="Example: 8"
+                required
+            >
+
+
             <button type="submit">
                 💾 Save Changes
             </button>
@@ -113,4 +136,5 @@
 </div>
 
 </body>
+
 </html>

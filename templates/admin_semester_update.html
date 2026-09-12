@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Semester Update</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .icon {
+            text-align: center;
+            font-size: 55px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+        }
+
+        .warning {
+            margin-top: 20px;
+            padding: 18px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+
+        .course-list {
+            margin-top: 25px;
+        }
+
+        .course {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+        }
+
+        .course-name {
+            font-weight: bold;
+            font-size: 17px;
+        }
+
+        .course-info {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .update-btn {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .update-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .cancel-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            padding: 14px;
+            border-radius: 9px;
+            background: #475569;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <a
+        href="/admin-dashboard"
+        class="back"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+
+    <div class="box">
+
+        <div class="icon">
+            🎓
+        </div>
+
+        <h1>
+            Semester Update
+        </h1>
+
+
+        <p>
+            This will move eligible students one semester forward
+            according to the maximum semester defined for their course.
+        </p>
+
+
+        <div class="warning">
+
+            <b>Important:</b>
+
+            <br>
+
+            Only the student's semester will be changed.
+
+            <br>
+
+            Student name, enrollment number, course, section,
+            group, password and other information will remain unchanged.
+
+            <br><br>
+
+            Students already in their final semester will remain
+            in their final semester.
+
+        </div>
+
+
+        <div class="course-list">
+
+            <h3>
+                Course Semester Limits
+            </h3>
+
+
+            {% if courses %}
+
+                {% for course in courses %}
+
+                    <div class="course">
+
+                        <div class="course-name">
+
+                            {{ course.name }}
+
+                        </div>
+
+                        <div class="course-info">
+
+                            Department:
+                            {{ course.department }}
+
+                            <br>
+
+                            Maximum Semesters:
+
+                            {% if course.get("total_semesters") %}
+
+                                {{ course.get("total_semesters") }}
+
+                            {% else %}
+
+                                Not Set
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <p>
+                    No courses found.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+
+        <form
+            method="POST"
+            action="/admin-confirm-semester-update"
+            onsubmit="return confirm(
+                'Are you sure you want to update the semester of all eligible students?\\n\\nOnly semester will change. Other student information will remain unchanged.'
+            );"
+        >
+
+            <button
+                type="submit"
+                class="update-btn"
+            >
+
+                🎓 Update All Students' Semester
+
+            </button>
+
+        </form>
+
+
+        <a
+            href="/admin-dashboard"
+            class="cancel-btn"
+        >
+            Cancel
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

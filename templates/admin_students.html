@@ -700,17 +700,17 @@
                                                     <br>
 
 
-                                                    {% if student.get("branch") %}
+                                                    {% if student.get("branch") and student.get("semester")|int <= 2 %}
 
-                                                        <strong>
-                                                            Branch:
-                                                        </strong>
+    <strong>
+        Branch:
+    </strong>
 
-                                                        {{ student.get("branch") }}
+    {{ student.get("branch") }}
 
-                                                        <br>
+    <br>
 
-                                                    {% endif %}
+{% endif %}
 
 
                                                     {% if student.get("section") %}
@@ -900,6 +900,75 @@
 
 </script>
 
+
+<script>
+
+function updateBranchVisibility() {
+
+    const course = document.getElementById("course");
+    const semester = document.getElementById("semester");
+    const branchField = document.getElementById("branch-field");
+    const branch = document.getElementById("branch");
+
+    if (!course || !semester || !branchField) {
+        return;
+    }
+
+    const selectedCourse =
+        course.value.trim().toUpperCase();
+
+    const selectedSemester =
+        parseInt(semester.value);
+
+    /*
+       B.TECH ALL + Semester 1/2
+       = Branch show
+
+       B.TECH ALL + Semester 3+
+       = Branch hide
+    */
+
+    if (
+        selectedCourse === "B.TECH ALL" &&
+        (selectedSemester === 1 || selectedSemester === 2)
+    ) {
+
+        branchField.style.display = "block";
+
+    } else {
+
+        branchField.style.display = "none";
+
+        if (branch) {
+            branch.value = "";
+        }
+    }
+}
+
+
+/* Course change */
+
+document.getElementById("course")
+    ?.addEventListener(
+        "change",
+        updateBranchVisibility
+    );
+
+
+/* Semester change */
+
+document.getElementById("semester")
+    ?.addEventListener(
+        "change",
+        updateBranchVisibility
+    );
+
+
+/* Page load */
+
+updateBranchVisibility();
+
+</script>
 
 </body>
 

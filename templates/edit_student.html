@@ -95,6 +95,13 @@
             line-height: 1.4;
         }
 
+        .branch-note {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
         .section-group-info {
             margin-top: 18px;
             padding: 12px;
@@ -141,6 +148,14 @@
 
         .student-id strong {
             color: #334155;
+        }
+
+        /* =========================
+           BRANCH FIELD
+        ========================= */
+
+        #branch-field {
+            display: none;
         }
 
         @media (max-width: 650px) {
@@ -237,7 +252,11 @@
                     Course
                 </label>
 
-                <select name="course" required>
+                <select
+                    name="course"
+                    id="course"
+                    required
+                >
 
                     <option value="">
                         Select Course
@@ -274,7 +293,11 @@
                     Semester
                 </label>
 
-                <select name="semester" required>
+                <select
+                    name="semester"
+                    id="semester"
+                    required
+                >
 
                     <option value="">
                         Select Semester
@@ -337,6 +360,101 @@
                     </option>
 
                 </select>
+
+
+                <!-- =========================
+                     BRANCH
+                ========================= -->
+
+                <div id="branch-field">
+
+                    <label>
+                        Branch
+                    </label>
+
+                    <select
+                        name="branch"
+                        id="branch"
+                    >
+
+                        <option value="">
+                            Select Branch
+                        </option>
+
+                        <option value="CSE"
+                            {% if student.get("branch", "")|upper == "CSE" %}
+                                selected
+                            {% endif %}>
+                            CSE
+                        </option>
+
+                        <option value="MECHANICAL"
+                            {% if student.get("branch", "")|upper == "MECHANICAL" %}
+                                selected
+                            {% endif %}>
+                            MECHANICAL
+                        </option>
+
+                        <option value="MECHANICAL WITH AI & ML"
+                            {% if student.get("branch", "")|upper == "MECHANICAL WITH AI & ML" %}
+                                selected
+                            {% endif %}>
+                            MECHANICAL WITH AI & ML
+                        </option>
+
+                        <option value="ELECTRICAL"
+                            {% if student.get("branch", "")|upper == "ELECTRICAL" %}
+                                selected
+                            {% endif %}>
+                            ELECTRICAL
+                        </option>
+
+                        <option value="CIVIL"
+                            {% if student.get("branch", "")|upper == "CIVIL" %}
+                                selected
+                            {% endif %}>
+                            CIVIL
+                        </option>
+
+                        <option value="ECE"
+                            {% if student.get("branch", "")|upper == "ECE" %}
+                                selected
+                            {% endif %}>
+                            ECE
+                        </option>
+
+                        <option value="CSE WITH AI & ML"
+                            {% if student.get("branch", "")|upper == "CSE WITH AI & ML" %}
+                                selected
+                            {% endif %}>
+                            CSE WITH AI & ML
+                        </option>
+
+                        <option value="CSE WITH CYBER SECURITY"
+                            {% if student.get("branch", "")|upper == "CSE WITH CYBER SECURITY" %}
+                                selected
+                            {% endif %}>
+                            CSE WITH CYBER SECURITY
+                        </option>
+
+                        <option value="CSE WITH DATA SCIENCE"
+                            {% if student.get("branch", "")|upper == "CSE WITH DATA SCIENCE" %}
+                                selected
+                            {% endif %}>
+                            CSE WITH DATA SCIENCE
+                        </option>
+
+                    </select>
+
+                    <div class="branch-note">
+
+                        Branch is available for
+                        <b>B.TECH ALL</b>
+                        in Semester 1 and 2 only.
+
+                    </div>
+
+                </div>
 
 
                 <!-- SECTION -->
@@ -478,6 +596,117 @@
         </div>
 
     </div>
+
+
+    <!-- =========================
+         BRANCH VISIBILITY SCRIPT
+    ========================= -->
+
+    <script>
+
+        function updateBranchVisibility() {
+
+            const courseElement =
+                document.getElementById("course");
+
+            const semesterElement =
+                document.getElementById("semester");
+
+            const branchField =
+                document.getElementById("branch-field");
+
+            const branchElement =
+                document.getElementById("branch");
+
+
+            if (
+                !courseElement ||
+                !semesterElement ||
+                !branchField
+            ) {
+                return;
+            }
+
+
+            const course =
+                courseElement.value
+                    .trim()
+                    .toUpperCase();
+
+
+            const semester =
+                parseInt(
+                    semesterElement.value
+                );
+
+
+            /*
+                B.TECH ALL
+                Semester 1 or 2
+                = Branch show
+
+                B.TECH ALL
+                Semester 3+
+                = Branch hide
+            */
+
+            if (
+                course === "B.TECH ALL" &&
+                (
+                    semester === 1 ||
+                    semester === 2
+                )
+            ) {
+
+                branchField.style.display =
+                    "block";
+
+            } else {
+
+                branchField.style.display =
+                    "none";
+
+                /*
+                    3rd semester ya uske baad
+                    branch ko blank kar do.
+                */
+
+                if (branchElement) {
+
+                    branchElement.value = "";
+
+                }
+
+            }
+
+        }
+
+
+        /* Course change */
+
+        document
+            .getElementById("course")
+            .addEventListener(
+                "change",
+                updateBranchVisibility
+            );
+
+
+        /* Semester change */
+
+        document
+            .getElementById("semester")
+            .addEventListener(
+                "change",
+                updateBranchVisibility
+            );
+
+
+        /* Page load */
+
+        updateBranchVisibility();
+
+    </script>
 
 </body>
 

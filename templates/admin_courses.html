@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
     <title>Course Management</title>
@@ -54,8 +55,6 @@
             background: #1d4ed8;
         }
 
-        /* Course row */
-
         .course {
             display: flex;
             justify-content: space-between;
@@ -87,9 +86,14 @@
         .department {
             color: #666;
             font-size: 14px;
+            margin-bottom: 5px;
         }
 
-        /* Edit Delete buttons */
+        .semester-info {
+            color: #2563eb;
+            font-size: 14px;
+            font-weight: bold;
+        }
 
         .course-actions {
             display: flex;
@@ -117,8 +121,6 @@
             text-decoration: none;
             color: #2563eb;
         }
-
-        /* Mobile */
 
         @media (max-width: 600px) {
 
@@ -148,7 +150,9 @@
     <h1>Course Management</h1>
 
 
-    <!-- Add Course -->
+    <!-- =========================
+         ADD COURSE
+    ========================= -->
 
     <div class="box">
 
@@ -166,6 +170,7 @@
                 placeholder="Enter course name"
                 required
             >
+
 
             <label>
                 Department
@@ -187,6 +192,21 @@
 
             </select>
 
+
+            <label>
+                Total Semesters
+            </label>
+
+            <input
+                type="number"
+                name="total_semesters"
+                min="1"
+                max="20"
+                placeholder="Example: B.Tech = 8, MCA = 4"
+                required
+            >
+
+
             <button type="submit">
                 ➕ Add Course
             </button>
@@ -196,7 +216,9 @@
     </div>
 
 
-    <!-- Course List -->
+    <!-- =========================
+         COURSE LIST
+    ========================= -->
 
     <div class="box">
 
@@ -207,8 +229,6 @@
             {% for course in courses %}
 
                 <div class="course">
-
-                    <!-- Course Information -->
 
                     <div class="course-info">
 
@@ -221,13 +241,27 @@
                         </div>
 
                         <div class="department">
-                            {{ course.department }}
+                            Department: {{ course.department }}
+                        </div>
+
+                        <div class="semester-info">
+
+                            {% if course.total_semesters %}
+
+                                Total Semesters:
+                                {{ course.total_semesters }}
+
+                            {% else %}
+
+                                Total Semesters:
+                                Not Set
+
+                            {% endif %}
+
                         </div>
 
                     </div>
 
-
-                    <!-- Actions -->
 
                     <div class="course-actions">
 
@@ -265,4 +299,5 @@
 </div>
 
 </body>
+
 </html>

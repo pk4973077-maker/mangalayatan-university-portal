@@ -9,7 +9,13 @@ import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from openpyxl.utils import get_column_letter
-from database import save_uploaded_file, get_uploaded_file, delete_uploaded_file
+from database import (
+    get_connection,
+    save_uploaded_file,
+    get_uploaded_file,
+    delete_uploaded_file,
+    json_delete
+)
 
 
 app = Flask(__name__)
@@ -4951,6 +4957,122 @@ def notice_file(filename):
     )
 
 
+@app.route("/admin-delete-faculty-records", methods=["GET"])
+def admin_delete_faculty_records():
+
+    # ==============================
+    # ADMIN LOGIN CHECK
+    # ==============================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        return redirect(url_for("admin_login"))
+
+    # ==============================
+    # CONFIRMATION PAGE
+    # ==============================
+
+    return render_template(
+        "admin_faculty_records.html"
+    )
+
+
+@app.route("/admin-confirm-delete-faculty-data", methods=["POST"])
+def admin_confirm_delete_faculty_data():
+
+    # ==============================
+    # ADMIN LOGIN CHECK
+    # ==============================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        return redirect(url_for("admin_login"))
+
+    # ==============================
+    # DELETE NOTES DATA
+    # ==============================
+
+    try:
+        json_delete(NOTES_FILE)
+    except Exception:
+        pass
+
+
+    # ==============================
+    # DELETE SYLLABUS DATA
+    # ==============================
+
+    try:
+        json_delete(SYLLABUS_FILE)
+    except Exception:
+        pass
+
+
+    # ==============================
+    # DELETE NOTICE DATA
+    # ==============================
+
+    try:
+        json_delete(NOTICES_FILE)
+    except Exception:
+        pass
+
+
+    # ==============================
+    # DELETE HOLIDAY DATA
+    # ==============================
+
+    try:
+        json_delete(HOLIDAYS_FILE)
+    except Exception:
+        pass
+
+
+    # ==============================
+    # DELETE ALL UPLOADED FILES
+    # FROM POSTGRESQL DATABASE
+    # ==============================
+
+    try:
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute(
+                    "DELETE FROM uploaded_files"
+                )
+
+            conn.commit()
+
+        finally:
+
+            conn.close()
+
+    except Exception:
+        pass
+
+
+    # ==============================
+    # SUCCESS
+    # ==============================
+
+    return """
+    <script>
+
+        alert(
+            "All faculty uploaded records have been deleted successfully."
+        );
+
+        window.location.href = "/admin-dashboard";
+
+    </script>
+    """
+
 # =========================
 # STUDENT NOTICE BOARD
 # =========================
@@ -5740,6 +5862,32 @@ def admin_dashboard():
         total_faculty=total_faculty
     )
 
+# =========================================================
+# ADMIN - DELETE WHOLE ATTENDANCE RECORD
+# =========================================================
+
+@app.route("/admin-delete-whole-attendance")
+def admin_delete_whole_attendance():
+
+    # Admin login check
+    if not session.get("admin_id"):
+        return redirect(url_for("admin_login"))
+
+    # Attendance ka poora record delete
+    try:
+
+        with open("attendance.json", "w") as file:
+            json.dump([], file, indent=4)
+
+    except Exception as e:
+
+        return f"Unable to delete attendance record: {e}"
+
+    return redirect("/admin-dashboard")
+
+
+
+
 @app.route("/admin-search-faculty", methods=["GET"])
 def admin_search_faculty():
 
@@ -6516,15 +6664,19 @@ def edit_student(student_id):
     # =========================
 
     if os.path.exists(STUDENTS_FILE):
+
         try:
+
             with open(STUDENTS_FILE, "r") as file:
                 students = json.load(file)
 
             if not isinstance(students, list):
                 students = []
 
-        except:
+        except Exception:
+
             students = []
+
 
     # =========================
     # FIND STUDENT
@@ -6541,14 +6693,18 @@ def edit_student(student_id):
             student = item
             break
 
+
     if student is None:
+
         return "Student not found."
+
 
     # =========================
     # ADMIN COURSES
     # =========================
 
     courses = get_admin_courses()
+
 
     def get_course_name(item):
 
@@ -6564,6 +6720,7 @@ def edit_student(student_id):
 
         return str(item).strip()
 
+
     valid_courses = []
 
     for item in courses:
@@ -6572,6 +6729,7 @@ def edit_student(student_id):
 
         if name:
             valid_courses.append(name)
+
 
     # =========================
     # UPDATE STUDENT
@@ -6584,30 +6742,42 @@ def edit_student(student_id):
             ""
         ).strip()
 
+
         enrollment = request.form.get(
             "enrollment",
             ""
         ).strip()
+
 
         course = request.form.get(
             "course",
             ""
         ).strip()
 
+
         semester = request.form.get(
             "semester",
             ""
         ).strip()
+
+
+        branch = request.form.get(
+            "branch",
+            ""
+        ).strip().upper()
+
 
         section = request.form.get(
             "section",
             ""
         ).strip().upper()
 
+
         group = request.form.get(
             "group",
             ""
         ).strip().upper()
+
 
         # =========================
         # REQUIRED FIELDS
@@ -6619,35 +6789,109 @@ def edit_student(student_id):
             or not course
             or not semester
         ):
+
             return "Please fill all required fields."
+
 
         # =========================
         # SEMESTER VALIDATION
         # =========================
 
         if semester not in [
-            "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
         ]:
+
             return "Invalid Semester."
+
 
         # =========================
         # SECTION VALIDATION
         # =========================
 
         if section and section not in [
-            "A", "B", "C", "D"
+            "A",
+            "B",
+            "C",
+            "D"
         ]:
+
             return "Invalid Section."
+
 
         # =========================
         # GROUP VALIDATION
         # =========================
 
         if group and group not in [
-            "G1", "G2", "G3", "G4"
+            "G1",
+            "G2",
+            "G3",
+            "G4"
         ]:
+
             return "Invalid Group."
+
+
+        # =========================
+        # BRANCH VALIDATION
+        # =========================
+
+        valid_branches = [
+
+            "CSE",
+
+            "MECHANICAL",
+
+            "MECHANICAL WITH AI & ML",
+
+            "ELECTRICAL",
+
+            "CIVIL",
+
+            "ECE",
+
+            "CSE WITH AI & ML",
+
+            "CSE WITH CYBER SECURITY",
+
+            "CSE WITH DATA SCIENCE"
+
+        ]
+
+
+        # ==========================================
+        # B.TECH ALL BRANCH RULE
+        # ==========================================
+
+        if (
+            course.strip().upper() == "B.TECH ALL"
+            and semester in ["1", "2"]
+        ):
+
+            if not branch:
+
+                return "Please select Branch for B.TECH ALL in Semester 1 or 2."
+
+
+            if branch not in valid_branches:
+
+                return "Invalid Branch."
+
+
+        else:
+
+            # Semester 3 onwards / other courses
+            # branch completely remove
+
+            branch = ""
+
 
         # =========================
         # COURSE VALIDATION
@@ -6655,20 +6899,28 @@ def edit_student(student_id):
 
         course_found = False
 
+
         for valid_course in valid_courses:
 
-            if valid_course.lower() == course.lower():
+            if (
+                valid_course.lower()
+                == course.lower()
+            ):
 
                 course_found = True
 
-                # Admin Course Management wala
+                # Admin Course Management ka
                 # exact course name save hoga
+
                 course = valid_course
 
                 break
 
+
         if not course_found:
+
             return "Invalid Course."
+
 
         # =========================
         # DUPLICATE ENROLLMENT CHECK
@@ -6677,18 +6929,32 @@ def edit_student(student_id):
         for item in students:
 
             if (
+
                 str(
-                    item.get("student_id", "")
+                    item.get(
+                        "student_id",
+                        ""
+                    )
                 ).strip()
                 != str(student_id).strip()
+
                 and
+
                 str(
-                    item.get("enrollment", "")
+                    item.get(
+                        "enrollment",
+                        ""
+                    )
                 ).strip().lower()
                 == enrollment.lower()
+
             ):
 
-                return "This Enrollment Number already exists."
+                return (
+                    "This Enrollment Number "
+                    "already exists."
+                )
+
 
         # =========================
         # UPDATE STUDENT
@@ -6702,17 +6968,59 @@ def edit_student(student_id):
 
         student["semester"] = semester
 
-        # Optional Section
-        if section:
-            student["section"] = section
-        else:
-            student.pop("section", None)
 
-        # Optional Group
-        if group:
-            student["group"] = group
+        # =========================
+        # BRANCH SAVE / REMOVE
+        # =========================
+
+        if (
+            course.strip().upper()
+            == "B.TECH ALL"
+            and semester in ["1", "2"]
+            and branch
+        ):
+
+            student["branch"] = branch
+
         else:
-            student.pop("group", None)
+
+            student.pop(
+                "branch",
+                None
+            )
+
+
+        # =========================
+        # OPTIONAL SECTION
+        # =========================
+
+        if section:
+
+            student["section"] = section
+
+        else:
+
+            student.pop(
+                "section",
+                None
+            )
+
+
+        # =========================
+        # OPTIONAL GROUP
+        # =========================
+
+        if group:
+
+            student["group"] = group
+
+        else:
+
+            student.pop(
+                "group",
+                None
+            )
+
 
         # =========================
         # SAVE
@@ -6726,14 +7034,19 @@ def edit_student(student_id):
             json.dump(
                 students,
                 file,
-                indent=4
+                indent=4,
+                ensure_ascii=False
             )
 
+
         # =========================
-        # RETURN TO SEARCH
+        # RETURN
         # =========================
 
-        return redirect("/admin-students")
+        return redirect(
+            "/admin-students"
+        )
+
 
     # =========================
     # EDIT PAGE
@@ -7220,38 +7533,97 @@ def admin_courses():
     courses = []
     departments = []
 
-    # Courses पढ़ना
+    # =========================
+    # LOAD COURSES
+    # =========================
+
     if os.path.exists(COURSES_FILE):
+
         try:
+
             with open(COURSES_FILE, "r") as file:
                 courses = json.load(file)
-        except:
+
+            if not isinstance(courses, list):
+                courses = []
+
+        except Exception:
+
             courses = []
 
-    # Departments पढ़ना
+
+    # =========================
+    # LOAD DEPARTMENTS
+    # =========================
+
     if os.path.exists(DEPARTMENTS_FILE):
+
         try:
+
             with open(DEPARTMENTS_FILE, "r") as file:
                 departments = json.load(file)
-        except:
+
+            if not isinstance(departments, list):
+                departments = []
+
+        except Exception:
+
             departments = []
 
-    # नया Course add करना
+
+    # =========================
+    # ADD COURSE
+    # =========================
+
     if request.method == "POST":
 
         course_name = request.form.get(
-            "course_name", ""
+            "course_name",
+            ""
         ).strip()
 
         department = request.form.get(
-            "department", ""
+            "department",
+            ""
         ).strip()
 
-        if not course_name or not department:
+        total_semesters = request.form.get(
+            "total_semesters",
+            ""
+        ).strip()
+
+
+        # =========================
+        # VALIDATION
+        # =========================
+
+        if not course_name or not department or not total_semesters:
+
             return "Please fill all fields."
 
-        # Duplicate Course check
+
+        try:
+
+            total_semesters = int(total_semesters)
+
+        except ValueError:
+
+            return "Total semesters must be a number."
+
+
+        if total_semesters < 1:
+
+            return "Total semesters must be at least 1."
+
+
+        # =========================
+        # DUPLICATE COURSE CHECK
+        # =========================
+
         for course in courses:
+
+            if not isinstance(course, dict):
+                continue
 
             if (
                 str(course.get("name", "")).strip().lower()
@@ -7260,47 +7632,83 @@ def admin_courses():
                 str(course.get("department", "")).strip().lower()
                 == department.lower()
             ):
+
                 return "This Course already exists in this Department."
 
-        # Automatic Course ID
-        course_id = "COURSE" + str(
-            len(courses) + 1
-        ).zfill(3)
+
+        # =========================
+        # COURSE ID
+        # =========================
 
         existing_ids = []
 
         for course in courses:
+
             existing_ids.append(
-                str(course.get("course_id", "")).strip()
+                str(
+                    course.get(
+                        "course_id",
+                        ""
+                    )
+                ).strip()
             )
 
+
         number = len(courses) + 1
+
+        course_id = "COURSE" + str(number).zfill(3)
+
 
         while course_id in existing_ids:
 
             number += 1
 
-            course_id = "COURSE" + str(
-                number
-            ).zfill(3)
+            course_id = "COURSE" + str(number).zfill(3)
+
+
+        # =========================
+        # CREATE COURSE
+        # =========================
 
         course = {
+
             "course_id": course_id,
+
             "name": course_name,
-            "department": department
+
+            "department": department,
+
+            "total_semesters": total_semesters
+
         }
+
 
         courses.append(course)
 
-        with open(COURSES_FILE, "w") as file:
+
+        # =========================
+        # SAVE
+        # =========================
+
+        with open(
+            COURSES_FILE,
+            "w"
+        ) as file:
 
             json.dump(
                 courses,
                 file,
-                indent=4
+                indent=4,
+                ensure_ascii=False
             )
 
+
         return redirect("/admin-courses")
+
+
+    # =========================
+    # PAGE
+    # =========================
 
     return render_template(
         "admin_courses.html",
@@ -7314,56 +7722,194 @@ def edit_course(course_id):
     courses = []
     departments = []
 
+    # =========================
+    # LOAD COURSES
+    # =========================
+
     if os.path.exists(COURSES_FILE):
+
         try:
+
             with open(COURSES_FILE, "r") as file:
                 courses = json.load(file)
-        except:
+
+            if not isinstance(courses, list):
+                courses = []
+
+        except Exception:
+
             courses = []
 
+
+    # =========================
+    # LOAD DEPARTMENTS
+    # =========================
+
     if os.path.exists(DEPARTMENTS_FILE):
+
         try:
+
             with open(DEPARTMENTS_FILE, "r") as file:
                 departments = json.load(file)
-        except:
+
+            if not isinstance(departments, list):
+                departments = []
+
+        except Exception:
+
             departments = []
+
+
+    # =========================
+    # FIND COURSE
+    # =========================
 
     course = None
 
     for item in courses:
-        if str(item.get("course_id", "")).strip() == str(course_id).strip():
+
+        if (
+            str(
+                item.get(
+                    "course_id",
+                    ""
+                )
+            ).strip()
+            ==
+            str(course_id).strip()
+        ):
+
             course = item
+
             break
 
+
     if course is None:
+
         return "Course not found."
+
+
+    # =========================
+    # SAVE EDIT
+    # =========================
 
     if request.method == "POST":
 
-        course_name = request.form.get("course_name", "").strip()
-        department = request.form.get("department", "").strip()
+        course_name = request.form.get(
+            "course_name",
+            ""
+        ).strip()
 
-        if not course_name or not department:
+        department = request.form.get(
+            "department",
+            ""
+        ).strip()
+
+        total_semesters = request.form.get(
+            "total_semesters",
+            ""
+        ).strip()
+
+
+        if (
+            not course_name
+            or
+            not department
+            or
+            not total_semesters
+        ):
+
             return "Please fill all fields."
+
+
+        try:
+
+            total_semesters = int(
+                total_semesters
+            )
+
+        except ValueError:
+
+            return "Total semesters must be a number."
+
+
+        if total_semesters < 1:
+
+            return "Total semesters must be at least 1."
+
+
+        # =========================
+        # DUPLICATE CHECK
+        # =========================
 
         for item in courses:
 
             if (
-                str(item.get("course_id", "")).strip() != str(course_id).strip()
+                str(
+                    item.get(
+                        "course_id",
+                        ""
+                    )
+                ).strip()
+                !=
+                str(course_id).strip()
                 and
-                str(item.get("name", "")).strip().lower() == course_name.lower()
+                str(
+                    item.get(
+                        "name",
+                        ""
+                    )
+                ).strip().lower()
+                ==
+                course_name.lower()
                 and
-                str(item.get("department", "")).strip().lower() == department.lower()
+                str(
+                    item.get(
+                        "department",
+                        ""
+                    )
+                ).strip().lower()
+                ==
+                department.lower()
             ):
+
                 return "This Course already exists in this Department."
 
+
+        # =========================
+        # UPDATE COURSE
+        # =========================
+
         course["name"] = course_name
+
         course["department"] = department
 
-        with open(COURSES_FILE, "w") as file:
-            json.dump(courses, file, indent=4)
+        course["total_semesters"] = total_semesters
+
+
+        # =========================
+        # SAVE
+        # =========================
+
+        with open(
+            COURSES_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                courses,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
 
         return redirect("/admin-courses")
+
+
+    # =========================
+    # EDIT PAGE
+    # =========================
 
     return render_template(
         "edit_course.html",
@@ -7395,6 +7941,400 @@ def delete_course(course_id):
         json.dump(courses, file, indent=4)
 
     return redirect("/admin-courses")
+
+@app.route("/admin-semester-update")
+def admin_semester_update():
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
+
+    # =========================
+    # LOAD COURSES
+    # =========================
+
+    courses = []
+
+    if os.path.exists(COURSES_FILE):
+
+        try:
+
+            with open(COURSES_FILE, "r") as file:
+                courses = json.load(file)
+
+            if not isinstance(courses, list):
+                courses = []
+
+        except Exception:
+
+            courses = []
+
+
+    # =========================
+    # PAGE
+    # =========================
+
+    return render_template(
+        "admin_semester_update.html",
+        courses=courses
+    )
+
+
+@app.route("/admin-confirm-semester-update", methods=["POST"])
+def admin_confirm_semester_update():
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
+
+    # =========================
+    # LOAD COURSES
+    # =========================
+
+    try:
+
+        with open(COURSES_FILE, "r") as file:
+            courses = json.load(file)
+
+        if not isinstance(courses, list):
+            courses = []
+
+    except Exception:
+
+        courses = []
+
+
+    # =========================
+    # COURSE SEMESTER LIMITS
+    # =========================
+
+    course_limits = {}
+
+    for course in courses:
+
+        if not isinstance(course, dict):
+            continue
+
+        course_name = str(
+            course.get("name", "")
+        ).strip()
+
+        course_id = str(
+            course.get("course_id", "")
+        ).strip()
+
+        try:
+
+            total_semesters = int(
+                course.get("total_semesters")
+            )
+
+        except (TypeError, ValueError):
+
+            continue
+
+        if total_semesters < 1:
+            continue
+
+        if course_name:
+
+            course_limits[
+                course_name.lower()
+            ] = total_semesters
+
+        if course_id:
+
+            course_limits[
+                course_id.lower()
+            ] = total_semesters
+
+
+    # =========================
+    # LOAD STUDENTS
+    # =========================
+
+    try:
+
+        with open(STUDENTS_FILE, "r") as file:
+            students = json.load(file)
+
+        if not isinstance(students, list):
+            students = []
+
+    except Exception:
+
+        students = []
+
+
+    # =========================
+    # COUNTERS
+    # =========================
+
+    updated_count = 0
+    final_semester_count = 0
+    skipped_count = 0
+
+
+    # =========================
+    # UPDATE EACH STUDENT
+    # =========================
+
+    for student in students:
+
+        if not isinstance(student, dict):
+
+            skipped_count += 1
+            continue
+
+
+        # =========================
+        # FIND STUDENT COURSE
+        # =========================
+
+        student_course = str(
+            student.get("course", "")
+        ).strip()
+
+        if not student_course:
+
+            student_course = str(
+                student.get("course_id", "")
+            ).strip()
+
+
+        if not student_course:
+
+            skipped_count += 1
+            continue
+
+
+        # =========================
+        # FIND COURSE LIMIT
+        # =========================
+
+        max_semester = course_limits.get(
+            student_course.lower()
+        )
+
+
+        if max_semester is None:
+
+            skipped_count += 1
+            continue
+
+
+        # =========================
+        # CURRENT SEMESTER
+        # =========================
+
+        try:
+
+            current_semester = int(
+                str(
+                    student.get(
+                        "semester",
+                        ""
+                    )
+                ).strip()
+            )
+
+        except (TypeError, ValueError):
+
+            skipped_count += 1
+            continue
+
+
+        # =========================
+        # FINAL SEMESTER
+        # =========================
+
+        if current_semester >= max_semester:
+
+            final_semester_count += 1
+            continue
+
+
+        # =========================
+        # ONLY ONE STEP FORWARD
+        # =========================
+
+        new_semester = current_semester + 1
+
+
+        # Extra safety:
+        # maximum semester se kabhi upar nahi jayega
+
+        if new_semester > max_semester:
+
+            new_semester = max_semester
+
+
+        # =========================
+        # SAVE ONLY SEMESTER
+        # =========================
+
+        student["semester"] = str(
+            new_semester
+        )
+
+        updated_count += 1
+
+
+    # =========================
+    # SAVE STUDENTS
+    # =========================
+
+    try:
+
+        with open(
+            STUDENTS_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                students,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+    except Exception as e:
+
+        return f"""
+        <h2>Semester Update Failed</h2>
+
+        <p>
+            {str(e)}
+        </p>
+
+        <br>
+
+        <a href="/admin-dashboard">
+            Back to Admin Dashboard
+        </a>
+        """
+
+
+    # =========================
+    # SUCCESS PAGE
+    # =========================
+
+    return f"""
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+        <title>Semester Update</title>
+
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+
+        <style>
+
+            body {{
+                font-family: Arial, sans-serif;
+                background: #f1f5f9;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                padding: 20px;
+            }}
+
+            .box {{
+                background: white;
+                width: 100%;
+                max-width: 500px;
+                padding: 30px;
+                border-radius: 15px;
+                text-align: center;
+                box-shadow: 0 5px 20px #cbd5e1;
+            }}
+
+            h1 {{
+                color: #166534;
+            }}
+
+            p {{
+                color: #475569;
+                line-height: 1.7;
+            }}
+
+            .btn {{
+                display: inline-block;
+                margin-top: 20px;
+                padding: 12px 20px;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: bold;
+            }}
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <div class="box">
+
+            <h1>
+                ✅ Semester Updated
+            </h1>
+
+            <p>
+                Students updated:
+                <b>{updated_count}</b>
+            </p>
+
+            <p>
+                Final semester students:
+                <b>{final_semester_count}</b>
+            </p>
+
+            <p>
+                Skipped records:
+                <b>{skipped_count}</b>
+            </p>
+
+            <p>
+                Every eligible student was moved
+                <b>exactly one semester forward.</b>
+            </p>
+
+            <a
+                href="/admin-dashboard"
+                class="btn"
+            >
+                Back to Admin Dashboard
+            </a>
+
+        </div>
+
+    </body>
+
+    </html>
+    """
 
 # =========================
 # RUN APPLICATION
