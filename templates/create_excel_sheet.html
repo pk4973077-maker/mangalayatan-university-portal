@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Create Excel Sheet</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #7c3aed;
+            color: white;
+            padding: 22px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 27px;
+        }
+
+        .header p {
+            margin: 7px 0 0;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #6d28d9;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 7px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #7c3aed;
+        }
+
+        .optional {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 13px;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 8px;
+            color: #5b21b6;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .column-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .column-section h3 {
+            margin-top: 0;
+            color: #6d28d9;
+        }
+
+        .column-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .column-row input {
+            margin-top: 0;
+        }
+
+        .column-number {
+            width: 55px;
+            min-width: 55px;
+            background: #ede9fe;
+            color: #6d28d9;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .manual-section {
+            display: none;
+            margin-top: 20px;
+            padding: 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .manual-section.show {
+            display: block;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .checkbox-row input {
+            width: auto;
+            margin: 0;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 25px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .generate-btn:hover {
+            background: #6d28d9;
+        }
+
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            text-decoration: none;
+            color: #6d28d9;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                margin: 15px auto;
+                padding: 12px;
+            }
+
+            .box {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+            .column-row {
+                gap: 7px;
+            }
+
+            .column-number {
+                width: 50px;
+                min-width: 50px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="header">
+
+    <h1>
+        📑 Create Excel Sheet
+    </h1>
+
+    <p>
+        Create a custom Excel sheet for academic work
+    </p>
+
+</div>
+
+
+<div class="container">
+
+<div class="box">
+
+<h2>
+    Excel Sheet Details
+</h2>
+
+
+<form
+    id="excelForm"
+    method="POST"
+    action="/create-excel-sheet"
+>
+
+
+    <!-- TOPIC -->
+
+    <label>
+        Topic
+    </label>
+
+    <input
+        type="text"
+        name="topic"
+        id="topic"
+        placeholder="Example: Core Java Unit Test 1"
+        required
+    >
+
+
+    <!-- DATE -->
+
+    <label>
+        Date
+    </label>
+
+    <input
+        type="date"
+        name="sheet_date"
+        id="sheet_date"
+        required
+    >
+
+
+    <!-- COURSE -->
+
+    <label>
+
+        Course
+
+        <span class="optional">
+            (Optional)
+        </span>
+
+    </label>
+
+    <select
+        name="course"
+        id="course"
+        onchange="checkManualMode()"
+    >
+
+        <option value="">
+            Select Course
+        </option>
+
+        {% for course in courses %}
+
+        <option value="{{ course }}">
+            {{ course }}
+        </option>
+
+        {% endfor %}
+
+    </select>
+
+
+    <!-- SEMESTER -->
+
+    <label>
+
+        Semester
+
+        <span class="optional">
+            (Optional)
+        </span>
+
+    </label>
+
+    <select
+        name="semester"
+        id="semester"
+        onchange="checkManualMode()"
+    >
+
+        <option value="">
+            Select Semester
+        </option>
+
+        <option value="1">1st Semester</option>
+        <option value="2">2nd Semester</option>
+        <option value="3">3rd Semester</option>
+        <option value="4">4th Semester</option>
+        <option value="5">5th Semester</option>
+        <option value="6">6th Semester</option>
+        <option value="7">7th Semester</option>
+        <option value="8">8th Semester</option>
+
+    </select>
+
+
+    <!-- SECTION -->
+
+    <label>
+
+        Section
+
+        <span class="optional">
+            (Optional)
+        </span>
+
+    </label>
+
+    <select
+        name="section"
+        id="section"
+        onchange="checkManualMode()"
+    >
+
+        <option value="">
+            Select Section
+        </option>
+
+        <option value="A">Section A</option>
+        <option value="B">Section B</option>
+        <option value="C">Section C</option>
+        <option value="D">Section D</option>
+
+    </select>
+
+
+    <!-- MANUAL ROW OPTION -->
+
+    <div
+        id="manual-section"
+        class="manual-section"
+    >
+
+        <b>
+            📝 Manual Student Rows
+        </b>
+
+        <p>
+            Course, Semester aur Section select nahi kiya hai.
+            Isliye student data automatically nahi aayega.
+        </p>
+
+
+        <label>
+            Number of S.No. Rows
+        </label>
+
+        <select
+            name="manual_rows"
+            id="manual_rows"
+        >
+
+            <option value="5">5 Rows</option>
+            <option value="10" selected>10 Rows</option>
+            <option value="15">15 Rows</option>
+            <option value="20">20 Rows</option>
+            <option value="25">25 Rows</option>
+            <option value="30">30 Rows</option>
+            <option value="40">40 Rows</option>
+            <option value="50">50 Rows</option>
+            <option value="75">75 Rows</option>
+            <option value="100">100 Rows</option>
+
+        </select>
+
+
+        <div class="checkbox-row">
+
+            <input
+                type="checkbox"
+                id="add_manual_sno"
+                name="add_manual_sno"
+                value="yes"
+            >
+
+            <label
+                for="add_manual_sno"
+                style="margin:0;"
+            >
+                Add S.No. column
+            </label>
+
+        </div>
+
+    </div>
+
+
+    <div class="info">
+
+        <b>Student Data:</b>
+
+        <br><br>
+
+        Course, Semester ya Section mein se koi bhi
+        select karne par matching students automatically
+        Excel mein aa jayenge.
+
+        <br><br>
+
+        Students enrollment number ke numerical order mein
+        Excel mein arrange honge.
+
+        <br><br>
+
+        Filter select karne par S.No. automatically first
+        column mein aayega.
+
+        <br><br>
+
+        Agar Course, Semester aur Section teeno blank hain,
+        to student data automatically nahi aayega.
+
+        <br><br>
+
+        Us situation mein aap manual rows aur S.No. option
+        use kar sakte hain.
+
+    </div>
+
+
+    <!-- COLUMNS -->
+
+    <div class="column-section">
+
+        <h3>
+            📋 Columns
+        </h3>
+
+
+        <label>
+            Number of Columns
+        </label>
+
+
+        <select
+            id="column_count"
+            name="column_count"
+            onchange="createColumns()"
+            required
+        >
+
+            <option value="">
+                Select Number of Columns
+            </option>
+
+            {% for i in range(1, 16) %}
+
+            <option value="{{ i }}">
+                {{ i }}
+                Column{% if i != 1 %}s{% endif %}
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+
+        <div id="columns-container"></div>
+
+    </div>
+
+
+    <button
+        type="submit"
+        class="generate-btn"
+    >
+
+        ⬇️ Create & Download Excel
+
+    </button>
+
+
+</form>
+
+
+<a
+    href="/faculty-dashboard"
+    class="back-btn"
+>
+
+    ← Back to Faculty Dashboard
+
+</a>
+
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// ========================================================
+// CHECK MANUAL MODE
+// ========================================================
+
+function checkManualMode() {
+
+    const course =
+        document.getElementById(
+            "course"
+        ).value;
+
+    const semester =
+        document.getElementById(
+            "semester"
+        ).value;
+
+    const section =
+        document.getElementById(
+            "section"
+        ).value;
+
+    const manualSection =
+        document.getElementById(
+            "manual-section"
+        );
+
+    if (
+        !course &&
+        !semester &&
+        !section
+    ) {
+
+        manualSection.classList.add(
+            "show"
+        );
+
+    } else {
+
+        manualSection.classList.remove(
+            "show"
+        );
+
+    }
+
+}
+
+
+// ========================================================
+// CREATE COLUMN INPUTS
+// ========================================================
+
+function createColumns() {
+
+    const count =
+        parseInt(
+            document.getElementById(
+                "column_count"
+            ).value
+        );
+
+    const container =
+        document.getElementById(
+            "columns-container"
+        );
+
+    container.innerHTML = "";
+
+    if (!count) {
+
+        return;
+
+    }
+
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "column-row";
+
+
+        const number =
+            document.createElement(
+                "input"
+            );
+
+        number.type = "text";
+
+        number.className =
+            "column-number";
+
+        number.value =
+            i + 1;
+
+        number.readOnly = true;
+
+
+        const input =
+            document.createElement(
+                "input"
+            );
+
+        input.type = "text";
+
+        input.name =
+            "column_" + i;
+
+        input.id =
+            "column_" + i;
+
+        input.placeholder =
+            "Example: Student Name";
+
+        input.required = true;
+
+
+        row.appendChild(
+            number
+        );
+
+        row.appendChild(
+            input
+        );
+
+        container.appendChild(
+            row
+        );
+
+    }
+
+}
+
+
+// ========================================================
+// PAGE LOAD
+// ========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        checkManualMode();
+
+    }
+);
+
+</script>
+
+
+</body>
+
+</html>

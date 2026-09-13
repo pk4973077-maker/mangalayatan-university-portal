@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for
+from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response
 import base64
 import qrcode
 import os
@@ -8335,6 +8335,997 @@ def admin_confirm_semester_update():
 
     </html>
     """
+
+# =========================================================
+# CREATE EXCEL SHEET
+# =========================================================
+
+@app.route("/create-excel-sheet", methods=["GET", "POST"])
+def create_excel_sheet():
+
+    # =====================================================
+    # GET - CREATE EXCEL PAGE
+    # =====================================================
+
+    if request.method == "GET":
+
+        courses = get_admin_courses()
+
+        valid_courses = []
+
+        for item in courses:
+
+            if isinstance(item, dict):
+
+                name = str(
+                    item.get("name")
+                    or item.get("course_name")
+                    or item.get("course")
+                    or item.get("Course Name")
+                    or ""
+                ).strip()
+
+            else:
+
+                name = str(item).strip()
+
+            if name:
+                valid_courses.append(name)
+
+        return render_template(
+            "create_excel_sheet.html",
+            courses=valid_courses
+        )
+
+    # =====================================================
+    # FORM DATA
+    # =====================================================
+
+    topic = request.form.get(
+        "topic",
+        ""
+    ).strip()
+
+    sheet_date = request.form.get(
+        "sheet_date",
+        ""
+    ).strip()
+
+    course = request.form.get(
+        "course",
+        ""
+    ).strip()
+
+    semester = request.form.get(
+        "semester",
+        ""
+    ).strip()
+
+    section = request.form.get(
+        "section",
+        ""
+    ).strip().upper()
+
+    # =====================================================
+    # MANUAL ROWS
+    # =====================================================
+
+    try:
+
+        manual_rows = int(
+            request.form.get(
+                "manual_rows",
+                "10"
+            )
+        )
+
+    except Exception:
+
+        manual_rows = 10
+
+    if manual_rows < 1:
+        manual_rows = 1
+
+    if manual_rows > 500:
+        manual_rows = 500
+
+    # =====================================================
+    # MANUAL S.NO OPTION
+    # =====================================================
+
+    add_manual_sno = (
+        request.form.get(
+            "add_manual_sno",
+            ""
+        ) == "yes"
+    )
+
+    # =====================================================
+    # COLUMN COUNT
+    # =====================================================
+
+    try:
+
+        column_count = int(
+            request.form.get(
+                "column_count",
+                "0"
+            )
+        )
+
+    except Exception:
+
+        column_count = 0
+
+    # =====================================================
+    # VALIDATION
+    # =====================================================
+
+    if not topic:
+
+        return "Please enter Topic.", 400
+
+    if not sheet_date:
+
+        return "Please select Date.", 400
+
+    if column_count < 1:
+
+        return "Please select at least 1 column.", 400
+
+    if column_count > 50:
+
+        return "Maximum 50 columns allowed.", 400
+
+    # =====================================================
+    # GET USER COLUMNS
+    # =====================================================
+
+    columns = []
+
+    for i in range(column_count):
+
+        column_name = request.form.get(
+            f"column_{i}",
+            ""
+        ).strip()
+
+        if not column_name:
+
+            return (
+                f"Please enter name for Column {i + 1}.",
+                400
+            )
+
+        columns.append(
+            column_name
+        )
+
+    # =====================================================
+    # FILTER MODE
+    # =====================================================
+
+    filters_selected = bool(
+        course
+        or semester
+        or section
+    )
+
+    # =====================================================
+    # LOAD STUDENTS
+    # =====================================================
+
+    all_students = []
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(
+                STUDENTS_FILE,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                all_students = json.load(file)
+
+            if not isinstance(
+                all_students,
+                list
+            ):
+
+                all_students = []
+
+        except Exception:
+
+            all_students = []
+
+    # =====================================================
+    # FILTER STUDENTS
+    # =====================================================
+
+    students = []
+
+    if filters_selected:
+
+        for student in all_students:
+
+            if not isinstance(
+                student,
+                dict
+            ):
+                continue
+
+            student_course = str(
+                student.get("course")
+                or student.get("course_name")
+                or student.get("Course")
+                or ""
+            ).strip().lower()
+
+            student_semester = str(
+                student.get("semester")
+                or student.get("Semester")
+                or ""
+            ).strip()
+
+            student_section = str(
+                student.get("section")
+                or student.get("Section")
+                or ""
+            ).strip().upper()
+
+            course_match = (
+                not course
+                or student_course == course.lower()
+            )
+
+            semester_match = (
+                not semester
+                or student_semester == semester
+            )
+
+            section_match = (
+                not section
+                or student_section == section
+            )
+
+            if (
+                course_match
+                and semester_match
+                and section_match
+            ):
+
+                students.append(
+                    student
+                )
+
+    # =====================================================
+    # NUMERICAL ENROLLMENT SORT
+    # =====================================================
+
+    def enrollment_sort_key(student):
+
+        enrollment = str(
+            student.get("enrollment")
+            or student.get("enrollment_no")
+            or student.get("enrollment_number")
+            or student.get("enrollmentNo")
+            or student.get("Enrollment")
+            or student.get("Enrollment No")
+            or student.get("Enrollment Number")
+            or ""
+        ).strip()
+
+        try:
+
+            return (
+                0,
+                int(enrollment)
+            )
+
+        except Exception:
+
+            return (
+                1,
+                enrollment.lower()
+            )
+
+    if filters_selected:
+
+        students.sort(
+            key=enrollment_sort_key
+        )
+
+    # =====================================================
+    # IMPORT EXCEL STYLES
+    # =====================================================
+
+    from openpyxl.styles import (
+        Font,
+        Alignment,
+        Border,
+        Side
+    )
+
+    # =====================================================
+    # WORKBOOK
+    # =====================================================
+
+    workbook = Workbook()
+
+    worksheet = workbook.active
+
+    worksheet.title = "Sheet 1"
+
+    # =====================================================
+    # PAGE SETUP
+    # =====================================================
+
+    worksheet.sheet_view.showGridLines = False
+
+    worksheet.page_setup.orientation = "portrait"
+
+    worksheet.page_setup.paperSize = (
+        worksheet.PAPERSIZE_A4
+    )
+
+    worksheet.page_setup.fitToWidth = 1
+
+    worksheet.page_setup.fitToHeight = 0
+
+    worksheet.sheet_properties.pageSetUpPr.fitToPage = True
+
+    worksheet.page_margins.left = 0.25
+    worksheet.page_margins.right = 0.25
+    worksheet.page_margins.top = 0.35
+    worksheet.page_margins.bottom = 0.35
+
+    # =====================================================
+    # BORDERS
+    # =====================================================
+
+    thin_side = Side(
+        style="thin"
+    )
+
+    medium_side = Side(
+        style="medium"
+    )
+
+    thin_border = Border(
+        left=thin_side,
+        right=thin_side,
+        top=thin_side,
+        bottom=thin_side
+    )
+
+    medium_border = Border(
+        left=medium_side,
+        right=medium_side,
+        top=medium_side,
+        bottom=medium_side
+    )
+
+    # =====================================================
+    # TOP INFORMATION
+    #
+    # Topic       | Date
+    # Course
+    # Semester
+    # Section
+    #
+    # IMPORTANT:
+    # Blank information gets NO border.
+    # =====================================================
+
+    # -----------------------------------------------------
+    # TOP BOX POSITIONS
+    # -----------------------------------------------------
+
+    top_boxes = []
+
+    # Topic
+    worksheet.merge_cells("A1:C1")
+
+    worksheet["A1"] = topic
+
+    top_boxes.append(
+        ("A1", "A1:C1")
+    )
+
+    # Date
+    worksheet.merge_cells("D1:E1")
+
+    worksheet["D1"] = (
+        f"DATE: {sheet_date}"
+    )
+
+    top_boxes.append(
+        ("D1", "D1:E1")
+    )
+
+    # Course
+    if course:
+
+        worksheet.merge_cells("A2:E2")
+
+        worksheet["A2"] = course
+
+        top_boxes.append(
+            ("A2", "A2:E2")
+        )
+
+    # Semester
+    if semester:
+
+        worksheet.merge_cells("A3:E3")
+
+        semester_names = {
+            "1": "1ST SEM",
+            "2": "2ND SEM",
+            "3": "3RD SEM",
+            "4": "4TH SEM",
+            "5": "5TH SEM",
+            "6": "6TH SEM",
+            "7": "7TH SEM",
+            "8": "8TH SEM"
+        }
+
+        semester_text = semester_names.get(
+            semester,
+            f"{semester}TH SEM"
+        )
+
+        worksheet["A3"] = semester_text
+
+        top_boxes.append(
+            ("A3", "A3:E3")
+        )
+
+    # Section
+    if section:
+
+        worksheet.merge_cells("A4:E4")
+
+        worksheet["A4"] = (
+            f"SECTION {section}"
+        )
+
+        top_boxes.append(
+            ("A4", "A4:E4")
+        )
+
+    # =====================================================
+    # APPLY TOP BOX BORDERS
+    # =====================================================
+
+    for start_cell, merged_range in top_boxes:
+
+        cells = worksheet[merged_range]
+
+        for row_cells in cells:
+
+            for cell in row_cells:
+
+                cell.border = medium_border
+
+                cell.alignment = Alignment(
+                    horizontal="center",
+                    vertical="center",
+                    wrap_text=True
+                )
+
+                cell.font = Font(
+                    bold=True,
+                    size=12
+                )
+
+    # =====================================================
+    # TOP ROW HEIGHT
+    # =====================================================
+
+    worksheet.row_dimensions[1].height = 30
+
+    if course:
+        worksheet.row_dimensions[2].height = 26
+
+    if semester:
+        worksheet.row_dimensions[3].height = 26
+
+    if section:
+        worksheet.row_dimensions[4].height = 26
+
+    # =====================================================
+    # PREPARE COLUMNS
+    # =====================================================
+
+    final_columns = []
+
+    # -----------------------------------------------------
+    # FILTER MODE:
+    # S.NO. ALWAYS AUTOMATICALLY FIRST
+    # -----------------------------------------------------
+
+    if filters_selected:
+
+        final_columns.append(
+            "S.No."
+        )
+
+    # -----------------------------------------------------
+    # MANUAL MODE:
+    # S.NO. ONLY IF USER SELECTS IT
+    # -----------------------------------------------------
+
+    if not filters_selected and add_manual_sno:
+
+        final_columns.append(
+            "S.No."
+        )
+
+    # -----------------------------------------------------
+    # ADD USER COLUMNS
+    # -----------------------------------------------------
+
+    for column_name in columns:
+
+        # Prevent duplicate S.No.
+        column_lower = (
+            column_name
+            .lower()
+            .strip()
+        )
+
+        is_sno = column_lower in [
+            "s.no.",
+            "s.no",
+            "s no",
+            "sno",
+            "serial no",
+            "serial number",
+            "sr no",
+            "sr. no.",
+            "sr.no.",
+            "sr.no"
+        ]
+
+        if is_sno:
+
+            if (
+                filters_selected
+                or add_manual_sno
+            ):
+                continue
+
+        final_columns.append(
+            column_name
+        )
+
+    # =====================================================
+    # HEADER ROW
+    # =====================================================
+
+    header_row = 6
+
+    for index, column_name in enumerate(
+        final_columns,
+        start=1
+    ):
+
+        cell = worksheet.cell(
+            row=header_row,
+            column=index,
+            value=column_name
+        )
+
+        cell.font = Font(
+            bold=True,
+            size=11
+        )
+
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center",
+            wrap_text=True
+        )
+
+        cell.border = medium_border
+
+    worksheet.row_dimensions[
+        header_row
+    ].height = 30
+
+    # =====================================================
+    # NUMBER OF ROWS
+    # =====================================================
+
+    if filters_selected:
+
+        total_rows = len(
+            students
+        )
+
+    else:
+
+        total_rows = manual_rows
+
+    # =====================================================
+    # STUDENT / MANUAL ROWS
+    # =====================================================
+
+    for row_number in range(
+        total_rows
+    ):
+
+        excel_row = (
+            header_row
+            + 1
+            + row_number
+        )
+
+        student = None
+
+        if filters_selected:
+
+            student = students[
+                row_number
+            ]
+
+        # -------------------------------------------------
+        # STUDENT NAME
+        # -------------------------------------------------
+
+        student_name = ""
+
+        if student:
+
+            student_name = str(
+                student.get("name")
+                or student.get("student_name")
+                or student.get("studentName")
+                or ""
+            ).strip()
+
+        # -------------------------------------------------
+        # ENROLLMENT
+        # -------------------------------------------------
+
+        enrollment = ""
+
+        if student:
+
+            enrollment = str(
+                student.get("enrollment")
+                or student.get("enrollment_no")
+                or student.get("enrollment_number")
+                or student.get("enrollmentNo")
+                or student.get("Enrollment")
+                or student.get("Enrollment No")
+                or student.get("Enrollment Number")
+                or ""
+            ).strip()
+
+        # -------------------------------------------------
+        # STUDENT ID
+        # -------------------------------------------------
+
+        student_id = ""
+
+        if student:
+
+            student_id = str(
+                student.get("student_id")
+                or student.get("studentId")
+                or student.get("id")
+                or student.get("studentID")
+                or ""
+            ).strip()
+
+        # -------------------------------------------------
+        # WRITE FINAL COLUMNS
+        # -------------------------------------------------
+
+        for column_index, column_name in enumerate(
+            final_columns,
+            start=1
+        ):
+
+            column_lower = (
+                str(column_name)
+                .lower()
+                .strip()
+            )
+
+            value = ""
+
+            # S.NO.
+            if column_lower in [
+                "s.no.",
+                "s.no",
+                "s no",
+                "sno",
+                "serial no",
+                "serial number",
+                "sr no",
+                "sr. no.",
+                "sr.no.",
+                "sr.no"
+            ]:
+
+                value = (
+                    row_number + 1
+                )
+
+            # STUDENT NAME
+            elif column_lower in [
+                "student name",
+                "studentname",
+                "name"
+            ]:
+
+                value = student_name
+
+            # ENROLLMENT
+            elif column_lower in [
+                "enrollment",
+                "enrollment no",
+                "enrollment no.",
+                "enrollment number",
+                "enrollment_number",
+                "enrollmentno",
+                "enrollment id",
+                "enrollment id.",
+                "enrollment id no"
+            ]:
+
+                value = enrollment
+
+            # STUDENT ID
+            elif column_lower in [
+                "student id",
+                "student_id",
+                "studentid",
+                "student id no",
+                "student id number"
+            ]:
+
+                value = student_id
+
+            # OTHER CUSTOM COLUMNS
+            else:
+
+                value = ""
+
+            cell = worksheet.cell(
+                row=excel_row,
+                column=column_index,
+                value=value
+            )
+
+            # EVERY CELL HAS BORDER
+            cell.border = thin_border
+
+            cell.alignment = Alignment(
+                horizontal="center",
+                vertical="center",
+                wrap_text=True
+            )
+
+        worksheet.row_dimensions[
+            excel_row
+        ].height = 24
+
+    # =====================================================
+    # COLUMN WIDTH
+    # =====================================================
+
+    for column_index in range(
+        1,
+        len(final_columns) + 1
+    ):
+
+        column_letter = get_column_letter(
+            column_index
+        )
+
+        column_name = (
+            final_columns[
+                column_index - 1
+            ]
+            .lower()
+            .strip()
+        )
+
+        if column_name in [
+            "s.no.",
+            "s.no",
+            "s no",
+            "sno",
+            "serial no",
+            "serial number",
+            "sr no",
+            "sr. no.",
+            "sr.no.",
+            "sr.no"
+        ]:
+
+            width = 8
+
+        elif column_name in [
+            "student name",
+            "studentname",
+            "name"
+        ]:
+
+            width = 28
+
+        elif column_name in [
+            "enrollment",
+            "enrollment no",
+            "enrollment no.",
+            "enrollment number",
+            "enrollment_number",
+            "enrollmentno",
+            "enrollment id",
+            "enrollment id.",
+            "enrollment id no"
+        ]:
+
+            width = 20
+
+        elif column_name in [
+            "student id",
+            "student_id",
+            "studentid"
+        ]:
+
+            width = 18
+
+        elif column_name in [
+            "signature",
+            "sign"
+        ]:
+
+            width = 24
+
+        else:
+
+            width = 18
+
+        worksheet.column_dimensions[
+            column_letter
+        ].width = width
+
+    # =====================================================
+    # FREEZE
+    # =====================================================
+
+    worksheet.freeze_panes = "A7"
+
+    # =====================================================
+    # PRINT AREA
+    # =====================================================
+
+    last_row = (
+        header_row
+        + 1
+        + total_rows
+    )
+
+    last_column = get_column_letter(
+        len(final_columns)
+    )
+
+    worksheet.print_area = (
+        f"A1:{last_column}{last_row}"
+    )
+
+    # =====================================================
+    # REPEAT HEADER ON PRINTED PAGES
+    # =====================================================
+
+    worksheet.print_title_rows = "1:6"
+
+   # =====================================================
+    # AUTOFILTER
+    # =====================================================
+
+    if total_rows > 0:
+
+        worksheet.auto_filter.ref = (
+            f"A{header_row}:"
+            f"{last_column}{last_row}"
+        )
+
+    # =====================================================
+    # SAVE FOLDER
+    # =====================================================
+
+    excel_folder = "generated_excel"
+
+    os.makedirs(
+        excel_folder,
+        exist_ok=True
+    )
+
+    # =====================================================
+    # SAFE FILE NAME
+    # =====================================================
+
+    safe_topic = "".join(
+        char
+        if char.isalnum()
+        or char in "-_"
+        else "_"
+        for char in topic
+    )
+
+    filename = (
+        f"{safe_topic}_{sheet_date}.xlsx"
+    )
+
+    file_path = os.path.join(
+        excel_folder,
+        filename
+    )
+
+    # =====================================================
+    # SAVE XLSX
+    # =====================================================
+
+    workbook.save(
+        file_path
+    )
+
+    # =====================================================
+    # DOWNLOAD
+    # =====================================================
+
+    return redirect(
+        url_for(
+            "download_created_excel",
+            filename=filename
+        )
+    )
+
+
+# =========================================================
+# DOWNLOAD CREATED EXCEL
+# =========================================================
+
+@app.route(
+    "/download-created-excel/<path:filename>"
+)
+def download_created_excel(filename):
+
+    excel_folder = "generated_excel"
+
+    file_path = os.path.join(
+        excel_folder,
+        filename
+    )
+
+    if not os.path.isfile(
+        file_path
+    ):
+
+        return (
+            "Excel file not found.",
+            404
+        )
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=filename,
+        mimetype=(
+            "application/vnd.openxmlformats-"
+            "officedocument.spreadsheetml.sheet"
+        ),
+        conditional=False
+    )
+
 
 # =========================
 # RUN APPLICATION
