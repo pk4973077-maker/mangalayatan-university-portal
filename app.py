@@ -1061,9 +1061,9 @@ def student_register():
     )
 
 
-# =========================
+# =========================================================
 # STUDENT LOGIN
-# =========================
+# =========================================================
 
 @app.route("/student-login", methods=["GET", "POST"])
 def student_login():
@@ -1071,18 +1071,20 @@ def student_login():
     if request.method == "POST":
 
         enrollment = request.form.get(
-            "student_id", ""
+            "student_id",
+            ""
         ).strip()
 
         password = request.form.get(
-            "password", ""
+            "password",
+            ""
         )
 
         students = []
 
-        # -------------------------
-        # STUDENTS LOAD
-        # -------------------------
+        # =================================================
+        # LOAD STUDENTS
+        # =================================================
 
         if os.path.exists(STUDENTS_FILE):
 
@@ -1090,25 +1092,35 @@ def student_login():
 
                 with open(
                     STUDENTS_FILE,
-                    "r"
+                    "r",
+                    encoding="utf-8"
                 ) as file:
 
                     students = json.load(file)
 
-                if not isinstance(students, list):
+                if not isinstance(
+                    students,
+                    list
+                ):
                     students = []
 
-            except:
+            except Exception:
 
                 students = []
 
-        # -------------------------
-        # FIND STUDENT
-        # -------------------------
+        # =================================================
+        # FIND STUDENT BY ENROLLMENT
+        # =================================================
 
         student = None
 
         for item in students:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
 
             old_enrollment = str(
                 item.get(
@@ -1117,14 +1129,18 @@ def student_login():
                 )
             ).strip()
 
-            if old_enrollment.lower() == enrollment.lower():
+            if (
+                old_enrollment.lower()
+                ==
+                enrollment.lower()
+            ):
 
                 student = item
                 break
 
-        # -------------------------
+        # =================================================
         # INVALID STUDENT
-        # -------------------------
+        # =================================================
 
         if student is None:
 
@@ -1133,9 +1149,9 @@ def student_login():
                 "or Password"
             )
 
-        # -------------------------
+        # =================================================
         # STUDENT ID
-        # -------------------------
+        # =================================================
 
         student_id = str(
             student.get(
@@ -1151,11 +1167,19 @@ def student_login():
                 "or Password"
             )
 
-        # -------------------------
+        # =================================================
         # PASSWORD CHECK
-        # -------------------------
-
-        login_success = False
+        #
+        # IMPORTANT:
+        #
+        # If password_hash already exists:
+        # ONLY the saved password is accepted.
+        #
+        # Student ID will NOT work anymore.
+        #
+        # If password_hash does NOT exist:
+        # Student ID is used as the FIRST/default password.
+        # =================================================
 
         stored_hash = str(
             student.get(
@@ -1164,7 +1188,12 @@ def student_login():
             )
         ).strip()
 
-        # Existing valid password
+        login_success = False
+
+        # -------------------------------------------------
+        # EXISTING PASSWORD
+        # -------------------------------------------------
+
         if stored_hash:
 
             try:
@@ -1176,41 +1205,49 @@ def student_login():
 
                     login_success = True
 
-            except:
+            except Exception:
 
                 login_success = False
 
-        # -------------------------
-        # DEFAULT PASSWORD
-        # -------------------------
+        # -------------------------------------------------
+        # FIRST-TIME LOGIN
+        #
+        # Only if there is NO password_hash.
+        # -------------------------------------------------
 
-        # Student ID is default password
-        # Example: STU001
+        else:
 
-        if not login_success and password == student_id:
+            if password == student_id:
 
-            student["password_hash"] = (
-                generate_password_hash(
+                student[
+                    "password_hash"
+                ] = generate_password_hash(
                     student_id
                 )
-            )
 
-            with open(
-                STUDENTS_FILE,
-                "w"
-            ) as file:
+                try:
 
-                json.dump(
-                    students,
-                    file,
-                    indent=4
-                )
+                    with open(
+                        STUDENTS_FILE,
+                        "w",
+                        encoding="utf-8"
+                    ) as file:
 
-            login_success = True
+                        json.dump(
+                            students,
+                            file,
+                            indent=4
+                        )
 
-        # -------------------------
+                    login_success = True
+
+                except Exception:
+
+                    login_success = False
+
+        # =================================================
         # FINAL PASSWORD CHECK
-        # -------------------------
+        # =================================================
 
         if not login_success:
 
@@ -1219,55 +1256,80 @@ def student_login():
                 "or Password"
             )
 
-        # -------------------------
+        # =================================================
         # ROLE SESSION ISOLATION
-        # -------------------------
-        # Student login ke time purane Admin/Faculty session keys hatao.
-        # Isse ek role ke login ke baad doosre role ke private URLs
-        # accidentally accessible nahi rahenge.
-        session.pop("admin_id", None)
-        session.pop("faculty_id", None)
-        session.pop("faculty_name", None)
+        # =================================================
 
-        # -------------------------
-        # STUDENT SESSION
-        # -------------------------
-
-        session["student_id"] = student_id
-
-        session["student_enrollment"] = (
-            str(
-                student.get(
-                    "enrollment",
-                    ""
-                )
-            ).strip()
+        session.pop(
+            "admin_id",
+            None
         )
 
-        session["student_course"] = str(
+        session.pop(
+            "faculty_id",
+            None
+        )
+
+        session.pop(
+            "faculty_name",
+            None
+        )
+
+        # =================================================
+        # STUDENT SESSION
+        # =================================================
+
+        session[
+            "student_id"
+        ] = student_id
+
+        session[
+            "student_enrollment"
+        ] = str(
+            student.get(
+                "enrollment",
+                ""
+            )
+        ).strip()
+
+        session[
+            "student_course"
+        ] = str(
             student.get(
                 "course",
                 ""
             )
         ).strip()
 
-        session["student_semester"] = str(
+        session[
+            "student_semester"
+        ] = str(
             student.get(
                 "semester",
                 ""
             )
         ).strip()
 
-        session["student_section"] = str(
+        session[
+            "student_section"
+        ] = str(
             student.get(
                 "section",
                 ""
             )
         ).strip().upper()
 
+        # =================================================
+        # OPEN STUDENT DASHBOARD
+        # =================================================
+
         return redirect(
             "/student-dashboard"
         )
+
+    # =====================================================
+    # GET - LOGIN PAGE
+    # =====================================================
 
     return render_template(
         "student_login.html"
@@ -5978,31 +6040,42 @@ def admin_search_faculty():
 STUDENTS_FILE = "students.json"
 
 
+# =========================================================
+# ADMIN STUDENTS
+# =========================================================
+
 @app.route("/admin-students", methods=["GET", "POST"])
 def admin_students():
 
     students = []
     courses = get_admin_courses()
 
-    # -----------------------------
-    # STUDENTS DATA LOAD
-    # -----------------------------
+    # =====================================================
+    # LOAD STUDENTS
+    # =====================================================
 
     if os.path.exists(STUDENTS_FILE):
 
         try:
-            with open(STUDENTS_FILE, "r") as file:
+
+            with open(
+                STUDENTS_FILE,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
                 students = json.load(file)
 
             if not isinstance(students, list):
                 students = []
 
-        except:
+        except Exception:
+
             students = []
 
-    # -----------------------------
+    # =====================================================
     # COURSE NAME HELPER
-    # -----------------------------
+    # =====================================================
 
     def get_course_name(item):
 
@@ -6018,58 +6091,80 @@ def admin_students():
 
         return str(item).strip()
 
-    # -----------------------------
+    # =====================================================
     # ENROLLMENT SORTING
-    # -----------------------------
+    # =====================================================
 
     def enrollment_sort_key(student):
 
         enrollment = str(
-            student.get("enrollment", "")
+            student.get(
+                "enrollment",
+                ""
+            )
         ).strip()
 
         try:
-            return (0, int(enrollment))
-        except (ValueError, TypeError):
-            return (1, enrollment.lower())
 
-    # -----------------------------
+            return (
+                0,
+                int(enrollment)
+            )
+
+        except (
+            ValueError,
+            TypeError
+        ):
+
+            return (
+                1,
+                enrollment.lower()
+            )
+
+    # =====================================================
     # ADD NEW STUDENT
-    # -----------------------------
+    # =====================================================
 
     if request.method == "POST":
 
         student_name = request.form.get(
-            "student_name", ""
+            "student_name",
+            ""
         ).strip()
 
         enrollment = request.form.get(
-            "enrollment", ""
+            "enrollment",
+            ""
         ).strip()
 
         course = request.form.get(
-            "course", ""
+            "course",
+            ""
         ).strip()
 
         semester = request.form.get(
-            "semester", ""
+            "semester",
+            ""
         ).strip()
 
         branch = request.form.get(
-            "branch", ""
+            "branch",
+            ""
         ).strip().upper()
 
         section = request.form.get(
-            "section", ""
+            "section",
+            ""
         ).strip().upper()
 
         group = request.form.get(
-            "group", ""
+            "group",
+            ""
         ).strip().upper()
 
-        # -----------------------------
+        # =================================================
         # REQUIRED FIELDS
-        # -----------------------------
+        # =================================================
 
         if (
             not student_name
@@ -6078,22 +6173,34 @@ def admin_students():
             or not semester
         ):
 
-            return "Please fill all required fields."
+            return (
+                "Please fill all required fields.",
+                400
+            )
 
-        # -----------------------------
+        # =================================================
         # SEMESTER VALIDATION
-        # -----------------------------
+        # =================================================
 
         if semester not in [
-            "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
         ]:
 
-            return "Invalid Semester."
+            return (
+                "Invalid Semester.",
+                400
+            )
 
-        # -----------------------------
-        # COURSE CHECK
-        # -----------------------------
+        # =================================================
+        # COURSE VALIDATION
+        # =================================================
 
         valid_courses = []
 
@@ -6102,41 +6209,56 @@ def admin_students():
             name = get_course_name(item)
 
             if name:
+
                 valid_courses.append(name)
 
         course_found = False
 
         for valid_course in valid_courses:
 
-            if valid_course.lower() == course.lower():
+            if (
+                valid_course.lower()
+                == course.lower()
+            ):
 
                 course_found = True
+
+                # Save the official course name
                 course = valid_course
 
                 break
 
         if not course_found:
-            return "Invalid Course."
 
-        # -----------------------------
+            return (
+                "Invalid Course.",
+                400
+            )
+
+        # =================================================
         # BRANCH VALIDATION
-        # -----------------------------
-        # Branch is ONLY required for
-        # B.TECH ALL + Semester 1 or 2.
-        #
-        # Other courses/semesters do not
-        # require a branch.
+        # =================================================
 
         branches = [
+
             "CSE",
+
             "MECHANICAL",
+
             "MECHANICAL WITH AI & ML",
+
             "ELECTRICAL",
+
             "CIVIL",
+
             "ECE",
+
             "CSE WITH AI & ML",
+
             "CSE WITH CYBER SECURITY",
+
             "CSE WITH DATA SCIENCE"
+
         ]
 
         is_btech_all = (
@@ -6144,50 +6266,89 @@ def admin_students():
             == "b.tech all"
         )
 
-        if is_btech_all and semester in ["1", "2"]:
+        # Branch required only for
+        # B.Tech All + Semester 1 or 2
+
+        if (
+            is_btech_all
+            and semester in [
+                "1",
+                "2"
+            ]
+        ):
 
             if not branch:
-                return "Please select Branch."
+
+                return (
+                    "Please select Branch.",
+                    400
+                )
 
             if branch not in branches:
-                return "Invalid Branch."
+
+                return (
+                    "Invalid Branch.",
+                    400
+                )
 
         else:
 
-            # For all other courses/semesters,
-            # branch should remain blank.
+            # Other courses/semesters
+            # do not save branch.
+
             branch = ""
 
-        # -----------------------------
+        # =================================================
         # SECTION VALIDATION
-        # -----------------------------
+        # =================================================
+
         # Section is optional.
 
         if section and section not in [
-            "A", "B", "C", "D"
+            "A",
+            "B",
+            "C",
+            "D"
         ]:
 
-            return "Invalid Section."
+            return (
+                "Invalid Section.",
+                400
+            )
 
-        # -----------------------------
+        # =================================================
         # GROUP VALIDATION
-        # -----------------------------
+        # =================================================
+
         # Group is optional.
 
         if group and group not in [
-            "G1", "G2", "G3", "G4"
+            "G1",
+            "G2",
+            "G3",
+            "G4"
         ]:
 
-            return "Invalid Group."
+            return (
+                "Invalid Group.",
+                400
+            )
 
-        # -----------------------------
+        # =================================================
         # DUPLICATE ENROLLMENT
-        # -----------------------------
+        # =================================================
 
-        for student in students:
+        for old_student in students:
+
+            if not isinstance(
+                old_student,
+                dict
+            ):
+
+                continue
 
             old_enrollment = str(
-                student.get(
+                old_student.get(
                     "enrollment",
                     ""
                 )
@@ -6200,19 +6361,27 @@ def admin_students():
 
                 return (
                     "This Enrollment Number "
-                    "already exists."
+                    "already exists.",
+                    400
                 )
 
-        # -----------------------------
-        # STUDENT ID
-        # -----------------------------
+        # =================================================
+        # CREATE NEXT STUDENT ID
+        # =================================================
 
         numbers = []
 
-        for student in students:
+        for old_student in students:
+
+            if not isinstance(
+                old_student,
+                dict
+            ):
+
+                continue
 
             old_id = str(
-                student.get(
+                old_student.get(
                     "student_id",
                     ""
                 )
@@ -6226,14 +6395,20 @@ def admin_students():
                         old_id[3:]
                     )
 
-                    numbers.append(number)
+                    numbers.append(
+                        number
+                    )
 
-                except:
+                except Exception:
+
                     pass
 
         if numbers:
 
-            next_number = max(numbers) + 1
+            next_number = (
+                max(numbers)
+                + 1
+            )
 
         else:
 
@@ -6241,61 +6416,122 @@ def admin_students():
 
         student_id = (
             "STU"
-            + str(next_number).zfill(3)
+            + str(
+                next_number
+            ).zfill(3)
         )
 
-        # -----------------------------
+        # =================================================
         # CREATE STUDENT
-        # -----------------------------
+        # =================================================
+        #
+        # IMPORTANT FIX:
+        #
+        # New student's default password
+        # is Student ID.
+        #
+        # We immediately save the HASH.
+        #
+        # Example:
+        #
+        # Student ID = STU005
+        # Password   = STU005
+        #
+        # But database/json stores only
+        # the password HASH.
+        #
+        # Therefore after changing password,
+        # old Student ID will NOT work.
+        # =================================================
 
         student = {
 
-            "student_id": student_id,
+            "student_id":
+                student_id,
 
-            "name": student_name,
+            "name":
+                student_name,
 
-            "enrollment": enrollment,
+            "enrollment":
+                enrollment,
 
-            "course": course,
+            "course":
+                course,
 
-            "semester": semester,
+            "semester":
+                semester,
 
-            "branch": branch,
+            "branch":
+                branch,
 
-            "section": section,
+            "section":
+                section,
 
-            "group": group
+            "group":
+                group,
+
+            "password_hash":
+                generate_password_hash(
+                    student_id
+                )
 
         }
 
-        students.append(student)
+        # =================================================
+        # ADD TO LIST
+        # =================================================
 
-        # -----------------------------
-        # SAVE STUDENT
-        # -----------------------------
+        students.append(
+            student
+        )
+
+        # =================================================
+        # SORT BEFORE SAVE
+        # =================================================
+
+        students.sort(
+            key=enrollment_sort_key
+        )
+
+        # =================================================
+        # SAVE STUDENTS
+        # =================================================
 
         with open(
             STUDENTS_FILE,
-            "w"
+            "w",
+            encoding="utf-8"
         ) as file:
 
             json.dump(
                 students,
                 file,
-                indent=4
+                indent=4,
+                ensure_ascii=False
             )
+
+        # =================================================
+        # REDIRECT
+        # =================================================
 
         return redirect(
             "/admin-students"
         )
 
-    # ==================================================
+    # =====================================================
     # COURSE → SEMESTER → SECTION → STUDENTS
-    # ==================================================
+    # =====================================================
 
     course_structure = {}
 
     for student in students:
+
+        if not isinstance(
+            student,
+            dict
+        ):
+
+            continue
 
         student_course = str(
             student.get(
@@ -6304,7 +6540,10 @@ def admin_students():
             )
         ).strip()
 
-        # Old data support
+        # =================================================
+        # OLD DATA SUPPORT
+        # =================================================
+
         if not student_course:
 
             student_course = str(
@@ -6328,18 +6567,36 @@ def admin_students():
             )
         ).strip().upper()
 
-        # Invalid records are not displayed
+        # =================================================
+        # INVALID RECORDS
+        # =================================================
+
         if not student_course:
+
             continue
 
         if semester not in [
-            "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
         ]:
+
             continue
 
+        # =================================================
+        # OPTIONAL SECTION
+        # =================================================
+
         if section not in [
-            "A", "B", "C", "D"
+            "A",
+            "B",
+            "C",
+            "D"
         ]:
 
             section = "No Section"
@@ -6350,23 +6607,27 @@ def admin_students():
             .strip()
         )
 
-        # -----------------------------
+        # =================================================
         # COURSE
-        # -----------------------------
+        # =================================================
 
         if course_key not in course_structure:
 
-            course_structure[course_key] = {
+            course_structure[
+                course_key
+            ] = {
 
-                "name": student_course,
+                "name":
+                    student_course,
 
-                "semesters": {}
+                "semesters":
+                    {}
 
             }
 
-        # -----------------------------
+        # =================================================
         # SEMESTER
-        # -----------------------------
+        # =================================================
 
         if semester not in course_structure[
             course_key
@@ -6374,29 +6635,37 @@ def admin_students():
 
             course_structure[
                 course_key
-            ]["semesters"][semester] = {}
+            ]["semesters"][
+                semester
+            ] = {}
 
-        # -----------------------------
+        # =================================================
         # SECTION
-        # -----------------------------
+        # =================================================
 
         if section not in course_structure[
             course_key
-        ]["semesters"][semester]:
+        ]["semesters"][
+            semester
+        ]:
 
             course_structure[
                 course_key
-            ]["semesters"][semester][section] = []
+            ]["semesters"][
+                semester
+            ][section] = []
 
         course_structure[
             course_key
-        ]["semesters"][semester][section].append(
+        ]["semesters"][
+            semester
+        ][section].append(
             student
         )
 
-    # -----------------------------
-    # SORT DISPLAY
-    # -----------------------------
+    # =====================================================
+    # SORT COURSE STRUCTURE
+    # =====================================================
 
     sorted_course_structure = {}
 
@@ -6405,14 +6674,20 @@ def admin_students():
     ):
 
         course_data = (
-            course_structure[course_key]
+            course_structure[
+                course_key
+            ]
         )
 
         sorted_semesters = {}
 
         for semester_number in sorted(
-            course_data["semesters"].keys(),
-            key=lambda value: int(value)
+            course_data[
+                "semesters"
+            ].keys(),
+
+            key=lambda value:
+                int(value)
         ):
 
             semester_data = (
@@ -6422,11 +6697,17 @@ def admin_students():
             )
 
             section_order = [
+
                 "A",
+
                 "B",
+
                 "C",
+
                 "D",
+
                 "No Section"
+
             ]
 
             sorted_sections = {}
@@ -6444,9 +6725,11 @@ def admin_students():
                     sorted_sections[
                         section_name
                     ] = sorted(
+
                         semester_data[
                             section_name
                         ],
+
                         key=enrollment_sort_key
                     )
 
@@ -6463,7 +6746,9 @@ def admin_students():
             ] = {
 
                 "name":
-                    course_data["name"],
+                    course_data[
+                        "name"
+                    ],
 
                 "semesters":
                     sorted_semesters
@@ -6474,13 +6759,17 @@ def admin_students():
         sorted_course_structure
     )
 
-    # -----------------------------
-    # SORT DISPLAYED STUDENT LIST
-    # -----------------------------
+    # =====================================================
+    # SORT MAIN STUDENT LIST
+    # =====================================================
 
     students.sort(
         key=enrollment_sort_key
     )
+
+    # =====================================================
+    # SORT DISPLAYED STUDENTS
+    # =====================================================
 
     for course_data in (
         course_structure.values()
@@ -6501,15 +6790,20 @@ def admin_students():
                     key=enrollment_sort_key
                 )
 
-    # -----------------------------
-    # SHOW PAGE
-    # -----------------------------
+    # =====================================================
+    # SHOW ADMIN STUDENTS PAGE
+    # =====================================================
 
     return render_template(
+
         "admin_students.html",
+
         students=students,
+
         courses=courses,
+
         course_structure=course_structure
+
     )
 
 
@@ -9332,6 +9626,6 @@ def download_created_excel(filename):
 # =========================
 
 if __name__ == "__main__":
-    fix_student_ids()
+    # fix_student_ids()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
