@@ -121,6 +121,29 @@ def protect_private_routes():
     return None
 
 # =========================================================
+# ADMIN LOGIN SECURITY
+# =========================================================
+
+def admin_required():
+
+    admin_data = get_admin_data()
+
+    if (
+        not session.get("admin_id")
+        or
+        session.get("admin_id")
+        != admin_data.get("admin_id")
+    ):
+
+        session.pop("admin_id", None)
+
+        return redirect(
+            url_for("admin_login")
+        )
+
+    return None
+
+# =========================================================
 # GLOBAL BROWSER HISTORY + CACHE CONTROL
 # =========================================================
 
@@ -410,6 +433,16 @@ def get_admin_courses():
 @app.route("/admin-subjects", methods=["GET", "POST"])
 def admin_subjects():
 
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
     subjects = []
     courses = []
 
@@ -636,6 +669,17 @@ def admin_subjects():
 
 @app.route("/delete-subject/<subject_id>")
 def delete_subject(subject_id):
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     subjects = []
 
@@ -1809,6 +1853,21 @@ def attendance():
 def manage_attendance():
 
     # =========================
+    # FACULTY LOGIN SECURITY
+    # =========================
+    faculty_id = str(
+        session.get("faculty_id", "")
+    ).strip()
+
+    if not faculty_id:
+        return redirect("/faculty-login")
+
+    faculty_name = str(
+        session.get("faculty_name", "")
+    ).strip()
+
+
+    # =========================
     # STUDENTS LOAD
     # =========================
     all_students = []
@@ -1841,18 +1900,6 @@ def manage_attendance():
 
 
     # =========================
-    # CURRENT FACULTY
-    # =========================
-    faculty_id = str(
-        session.get("faculty_id", "")
-    ).strip()
-
-    faculty_name = str(
-        session.get("faculty_name", "")
-    ).strip()
-
-
-    # =========================
     # POST - SAVE ATTENDANCE
     # =========================
     if request.method == "POST":
@@ -1880,13 +1927,6 @@ def manage_attendance():
         present_students = request.form.getlist(
             "present"
         )
-
-
-        # =========================
-        # LOGIN CHECK
-        # =========================
-        if not faculty_id:
-            return redirect("/faculty-login")
 
 
         # =========================
@@ -3180,6 +3220,17 @@ def new_admission():
 @app.route("/applications")
 def applications():
 
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
+
     application_data = []
 
     try:
@@ -3203,6 +3254,17 @@ def applications():
 
 @app.route("/approve-application/<application_id>")
 def approve_application(application_id):
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     applications = []
 
@@ -3240,6 +3302,17 @@ def approve_application(application_id):
 
 @app.route("/reject-application/<application_id>")
 def reject_application(application_id):
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     applications = []
 
@@ -3396,6 +3469,17 @@ def admission_documents():
 @app.route("/view-documents")
 def view_documents():
 
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
+
     documents = []
 
     if os.path.exists("uploads"):
@@ -3551,91 +3635,255 @@ def faculty_login():
 @app.route("/faculty-change-password", methods=["GET", "POST"])
 def faculty_change_password():
 
-    # Faculty login hai ya nahi
-    if "faculty_id" not in session:
-        return redirect("/faculty-login")
+    # =========================
+    # FACULTY LOGIN SECURITY
+    # =========================
 
-    faculty_id = session["faculty_id"]
+    faculty_id = str(
+        session.get("faculty_id", "")
+    ).strip()
+
+    if not faculty_id:
+        return redirect(
+            url_for("faculty_login")
+        )
+
+
+    # =========================
+    # LOAD FACULTY DATA
+    # =========================
 
     faculty_list = []
 
     if os.path.exists(FACULTY_FILE):
 
         try:
-            with open(FACULTY_FILE, "r") as file:
+
+            with open(
+                FACULTY_FILE,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
                 faculty_list = json.load(file)
 
-        except:
+            if not isinstance(
+                faculty_list,
+                list
+            ):
+                faculty_list = []
+
+        except Exception:
+
             faculty_list = []
+
+
+    # =========================
+    # FIND LOGGED-IN FACULTY
+    # =========================
 
     faculty = None
 
-    # Logged-in faculty find karo
     for item in faculty_list:
 
-        if str(
-            item.get("faculty_id", "")
-        ).strip() == str(faculty_id).strip():
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        stored_faculty_id = str(
+            item.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+        if stored_faculty_id == faculty_id:
 
             faculty = item
+
             break
 
+
+    # =========================
+    # FACULTY NOT FOUND
+    # =========================
+
     if faculty is None:
-        return "Faculty not found."
+
+        session.pop(
+            "faculty_id",
+            None
+        )
+
+        session.pop(
+            "faculty_name",
+            None
+        )
+
+        return redirect(
+            url_for("faculty_login")
+        )
+
+
+    # =========================
+    # CHANGE PASSWORD
+    # =========================
 
     if request.method == "POST":
 
         current_password = request.form.get(
-            "current_password", ""
+            "current_password",
+            ""
         )
 
         new_password = request.form.get(
-            "new_password", ""
+            "new_password",
+            ""
         )
 
         confirm_password = request.form.get(
-            "confirm_password", ""
+            "confirm_password",
+            ""
         )
+
+
+        # =========================
+        # REQUIRED FIELDS
+        # =========================
 
         if (
             not current_password
             or not new_password
             or not confirm_password
         ):
+
             return "Please fill all fields."
 
-        # Current password check
-        if not check_password_hash(
-            faculty.get("password_hash", ""),
-            current_password
-        ):
-            return "Current password is incorrect."
 
-        # New password match
-        if new_password != confirm_password:
-            return "New passwords do not match."
+        # =========================
+        # CURRENT PASSWORD CHECK
+        # =========================
 
-        # Same password check
-        if current_password == new_password:
-            return "New password must be different from current password."
-
-        # New password hash karo
-        faculty["password_hash"] = generate_password_hash(
-            new_password
+        stored_password_hash = str(
+            faculty.get(
+                "password_hash",
+                ""
+            )
         )
 
-        # Purana plaintext password remove
-        faculty.pop("password", None)
+        if not stored_password_hash:
 
-        with open(FACULTY_FILE, "w") as file:
+            return (
+                "Faculty password is not "
+                "properly configured.",
+                500
+            )
+
+
+        if not check_password_hash(
+            stored_password_hash,
+            current_password
+        ):
+
+            return (
+                "Current password is incorrect."
+            )
+
+
+        # =========================
+        # CONFIRM NEW PASSWORD
+        # =========================
+
+        if (
+            new_password
+            != confirm_password
+        ):
+
+            return (
+                "New passwords do not match."
+            )
+
+
+        # =========================
+        # SAME PASSWORD CHECK
+        # =========================
+
+        if (
+            current_password
+            == new_password
+        ):
+
+            return (
+                "New password must be "
+                "different from current password."
+            )
+
+
+        # =========================
+        # NEW PASSWORD LENGTH
+        # =========================
+
+        if len(new_password) < 6:
+
+            return (
+                "New password must be at least "
+                "6 characters."
+            )
+
+
+        # =========================
+        # HASH NEW PASSWORD
+        # =========================
+
+        faculty["password_hash"] = (
+            generate_password_hash(
+                new_password
+            )
+        )
+
+
+        # =========================
+        # REMOVE OLD PLAINTEXT PASSWORD
+        # =========================
+
+        faculty.pop(
+            "password",
+            None
+        )
+
+
+        # =========================
+        # SAVE FACULTY DATA
+        # =========================
+
+        with open(
+            FACULTY_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
 
             json.dump(
                 faculty_list,
                 file,
-                indent=4
+                indent=4,
+                ensure_ascii=False
             )
 
-        return redirect("/faculty-dashboard")
+
+        # =========================
+        # RETURN TO DASHBOARD
+        # =========================
+
+        return redirect(
+            url_for("faculty_dashboard")
+        )
+
+
+    # =========================
+    # CHANGE PASSWORD PAGE
+    # =========================
 
     return render_template(
         "faculty_change_password.html"
@@ -3643,6 +3891,17 @@ def faculty_change_password():
 
 @app.route("/reset-faculty-password/<faculty_id>")
 def reset_faculty_password(faculty_id):
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     faculty_list = []
 
@@ -3690,6 +3949,17 @@ def reset_faculty_password(faculty_id):
 
 @app.route("/edit-faculty/<faculty_id>", methods=["GET", "POST"])
 def edit_faculty(faculty_id):
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     faculty_list = []
 
@@ -3915,13 +4185,39 @@ def faculty_dashboard():
 )
 def faculty_profile():
 
+    # =========================
+    # FACULTY LOGIN SECURITY
+    # =========================
+
+    faculty_id = str(
+        session.get("faculty_id", "")
+    ).strip()
+
+    if not faculty_id:
+
+        return redirect(
+            url_for("faculty_login")
+        )
+
+
+    # =========================
+    # PROFILE FILE
+    # =========================
+
     profile_file = "faculty_profile.json"
+
+
+    # =========================
+    # DEFAULT PROFILE
+    # =========================
 
     profile = {
 
-        "faculty_id": "FAC001",
+        "faculty_id":
+            faculty_id,
 
-        "name": "Faculty Member",
+        "name":
+            "Faculty Member",
 
         "department":
             "Computer Science & Engineering",
@@ -3933,46 +4229,127 @@ def faculty_profile():
             "Assistant Professor"
     }
 
+
+    # =========================
+    # LOAD PROFILE
+    # =========================
+
     if os.path.exists(profile_file):
 
         try:
 
-            with open(profile_file, "r") as file:
-                profile = json.load(file)
+            with open(
+                profile_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
 
-        except:
+                loaded_profile = json.load(file)
+
+            if isinstance(
+                loaded_profile,
+                dict
+            ):
+
+                profile = loaded_profile
+
+        except Exception:
 
             pass
 
+
+    # =========================
+    # PROFILE OWNERSHIP CHECK
+    # =========================
+
+    stored_profile_id = str(
+        profile.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+    if (
+        stored_profile_id
+        and stored_profile_id != faculty_id
+    ):
+
+        return (
+            "Faculty profile not found.",
+            404
+        )
+
+
+    # Always keep the logged-in
+    # Faculty ID.
+
+    profile["faculty_id"] = faculty_id
+
+
+    # =========================
+    # UPDATE PROFILE
+    # =========================
+
     if request.method == "POST":
 
-        profile["name"] = request.form.get(
-            "name"
-        )
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
 
-        profile["department"] = request.form.get(
-            "department"
-        )
+        department = request.form.get(
+            "department",
+            ""
+        ).strip()
 
-        profile["email"] = request.form.get(
-            "email"
-        )
+        email = request.form.get(
+            "email",
+            ""
+        ).strip()
 
-        profile["designation"] = request.form.get(
-            "designation"
-        )
+        designation = request.form.get(
+            "designation",
+            ""
+        ).strip()
 
-        with open(profile_file, "w") as file:
+
+        profile["faculty_id"] = faculty_id
+
+        profile["name"] = name
+
+        profile["department"] = department
+
+        profile["email"] = email
+
+        profile["designation"] = designation
+
+
+        # =========================
+        # SAVE
+        # =========================
+
+        with open(
+            profile_file,
+            "w",
+            encoding="utf-8"
+        ) as file:
 
             json.dump(
                 profile,
                 file,
-                indent=4
+                indent=4,
+                ensure_ascii=False
             )
 
+
         return redirect(
-            "/faculty-profile"
+            url_for("faculty_profile")
         )
+
+
+    # =========================
+    # SHOW PROFILE
+    # =========================
 
     return render_template(
         "faculty_profile.html",
@@ -3986,6 +4363,21 @@ def faculty_profile():
 
 @app.route("/attendance-history")
 def attendance_history():
+
+    # =========================
+    # STUDENT LOGIN CHECK
+    # =========================
+
+    if "student_enrollment" not in session:
+        return redirect(url_for("student_login"))
+
+    student_enrollment = str(
+        session.get("student_enrollment", "")
+    ).strip()
+
+    if not student_enrollment:
+        return redirect(url_for("student_login"))
+
 
     attendance_records = []
 
@@ -4003,11 +4395,10 @@ def attendance_history():
         all_attendance = []
 
 
-    # फिलहाल logged-in student
-    student_id = "STU001"
+    # =========================
+    # LOGGED-IN STUDENT
+    # =========================
 
-
-    # Students की information पढ़ना
     students = []
 
     if os.path.exists(STUDENTS_FILE):
@@ -4025,56 +4416,60 @@ def attendance_history():
 
     for item in students:
 
-        if item.get("student_id") == student_id:
+        if str(
+            item.get("enrollment", "")
+        ).strip() == student_enrollment:
 
             student = item
             break
 
 
+    if not student:
+        return "Student not found.", 404
+
+
     # Student की attendance
-    if student:
+    student_course = str(
+        student.get("course", "")
+    ).strip()
 
-        student_department = student.get(
-            "department", ""
-        )
+    student_semester = str(
+        student.get("semester", "")
+    ).strip()
 
-        student_semester = student.get(
-            "semester", ""
-        )
+    student_section = str(
+        student.get("section", "")
+    ).strip()
 
-        student_section = student.get(
-            "section", ""
-        )
-
-        student_enrollment = student.get(
-            "enrollment", ""
-        )
+    student_enrollment = str(
+        student.get("enrollment", "")
+    ).strip()
 
 
-        # सिर्फ current student की attendance
-        for record in all_attendance:
+    # सिर्फ current student की attendance
+    for record in all_attendance:
 
-            if (
-                record.get("department")
-                == student_department
+        if (
+            str(record.get("course", "")).strip()
+            == student_course
 
-                and
+            and
 
-                record.get("semester")
-                == student_semester
+            str(record.get("semester", "")).strip()
+            == student_semester
 
-                and
+            and
 
-                record.get("section")
-                == student_section
+            str(record.get("section", "")).strip()
+            == student_section
 
-                and
+            and
 
-                record.get("student_id")
-                == student_enrollment
-            ):
+            str(record.get("student_id", "")).strip()
+            == student_enrollment
+        ):
 
-                attendance_records.append(record)
+            attendance_records.append(record)
 
 
     # Attendance percentage
@@ -4107,7 +4502,6 @@ def attendance_history():
         present_classes=present_classes,
         attendance_percentage=attendance_percentage
     )
-
 
 
 # =========================
@@ -5006,6 +5400,19 @@ def send_notice():
 @app.route("/notice-file/<filename>")
 def notice_file(filename):
 
+    # =========================
+    # LOGIN CHECK
+    # Student ya Faculty login
+    # hona zaroori hai
+    # =========================
+
+    if (
+        "student_id" not in session
+        and "faculty_id" not in session
+    ):
+        return redirect(url_for("student_login"))
+
+
     stored = get_uploaded_file(filename)
 
     if not stored:
@@ -5859,6 +6266,8 @@ def admin_logout():
 # ADMIN DASHBOARD
 # =========================
 
+
+
 @app.route("/admin-dashboard")
 def admin_dashboard():
 
@@ -5931,11 +6340,21 @@ def admin_dashboard():
 @app.route("/admin-delete-whole-attendance")
 def admin_delete_whole_attendance():
 
-    # Admin login check
-    if not session.get("admin_id"):
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
         return redirect(url_for("admin_login"))
 
-    # Attendance ka poora record delete
+
+    # =========================
+    # ATTENDANCE KA POORA RECORD DELETE
+    # =========================
+
     try:
 
         with open("attendance.json", "w") as file:
@@ -5945,6 +6364,7 @@ def admin_delete_whole_attendance():
 
         return f"Unable to delete attendance record: {e}"
 
+
     return redirect("/admin-dashboard")
 
 
@@ -5952,6 +6372,17 @@ def admin_delete_whole_attendance():
 
 @app.route("/admin-search-faculty", methods=["GET"])
 def admin_search_faculty():
+
+    # ==============================
+    # ADMIN LOGIN CHECK
+    # ==============================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
+
 
     faculty_list = []
 
@@ -6046,6 +6477,16 @@ STUDENTS_FILE = "students.json"
 
 @app.route("/admin-students", methods=["GET", "POST"])
 def admin_students():
+
+    # =====================================================
+    # ADMIN LOGIN CHECK
+    # =====================================================
+
+    admin_data = get_admin_data()
+
+    if session.get("admin_id") != admin_data.get("admin_id"):
+        session.pop("admin_id", None)
+        return redirect(url_for("admin_login"))
 
     students = []
     courses = get_admin_courses()
@@ -6951,6 +7392,11 @@ def student_change_password():
 @app.route("/edit-student/<student_id>", methods=["GET", "POST"])
 def edit_student(student_id):
 
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
     students = []
 
     # =========================
@@ -7356,6 +7802,11 @@ def edit_student(student_id):
 @app.route("/admin-reset-student-password/<student_id>")
 def reset_student_password(student_id):
 
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
     students = []
 
     # students.json read
@@ -7400,6 +7851,11 @@ def reset_student_password(student_id):
 
 @app.route("/admin-search-student")
 def admin_search_student():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     search = request.args.get("q", "").strip().lower()
 
@@ -7468,6 +7924,11 @@ def fix_student_ids():
 @app.route("/admin-delete-student/<student_id>")
 def delete_student(student_id):
 
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
     students = []
 
     if os.path.exists(STUDENTS_FILE):
@@ -7504,6 +7965,11 @@ FACULTY_FILE = "faculty.json"
 
 @app.route("/admin-faculty", methods=["GET", "POST"])
 def admin_faculty():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     faculty_list = []
     departments = []
@@ -7737,6 +8203,11 @@ def admin_faculty():
 @app.route("/delete-faculty/<faculty_id>")
 def delete_faculty(faculty_id):
 
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
     faculty_list = []
 
     if os.path.exists(FACULTY_FILE):
@@ -7765,6 +8236,11 @@ def delete_faculty(faculty_id):
 
 @app.route("/admin-departments", methods=["GET", "POST"])
 def admin_departments():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     departments = []
 
@@ -7823,6 +8299,11 @@ def admin_departments():
 
 @app.route("/admin-courses", methods=["GET", "POST"])
 def admin_courses():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     courses = []
     departments = []
@@ -8012,6 +8493,11 @@ def admin_courses():
 
 @app.route("/edit-course/<course_id>", methods=["GET", "POST"])
 def edit_course(course_id):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     courses = []
     departments = []
@@ -8215,6 +8701,11 @@ def edit_course(course_id):
 @app.route("/delete-course/<course_id>")
 def delete_course(course_id):
 
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
     courses = []
 
     if os.path.exists(COURSES_FILE):
@@ -8238,6 +8729,11 @@ def delete_course(course_id):
 
 @app.route("/admin-semester-update")
 def admin_semester_update():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     # =========================
     # ADMIN LOGIN CHECK
@@ -8283,6 +8779,11 @@ def admin_semester_update():
 
 @app.route("/admin-confirm-semester-update", methods=["POST"])
 def admin_confirm_semester_update():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     # =========================
     # ADMIN LOGIN CHECK

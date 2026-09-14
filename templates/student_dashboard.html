@@ -287,10 +287,29 @@
                 {{ student.semester }}
             </p>
 
+            {% if student.branch %}
+
+                <p>
+                    <strong>Branch:</strong>
+                    {{ student.branch }}
+                </p>
+
+            {% endif %}
+
             <p>
                 <strong>Section:</strong>
                 {{ student.section }}
             </p>
+
+
+            {% if student.group %}
+
+                <p>
+                    <strong>Group:</strong>
+                    {{ student.group }}
+                </p>
+
+            {% endif %}
 
         </div>
 
