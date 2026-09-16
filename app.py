@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response
+from flask import make_response
 import base64
 import qrcode
 import os
@@ -5463,38 +5464,34 @@ def notice_file(filename):
     )
 
 
-@app.route("/admin-delete-faculty-records", methods=["GET"])
-def admin_delete_faculty_records():
+@app.route("/head-delete-faculty-records", methods=["GET"])
+def head_delete_faculty_records():
 
     # ==============================
-    # ADMIN LOGIN CHECK
+    # HEAD LOGIN CHECK
     # ==============================
 
-    admin_data = get_admin_data()
-
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        return redirect(url_for("admin_login"))
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
 
     # ==============================
     # CONFIRMATION PAGE
     # ==============================
 
     return render_template(
-        "admin_faculty_records.html"
+        "head_faculty_records.html"
     )
 
 
-@app.route("/admin-confirm-delete-faculty-data", methods=["POST"])
-def admin_confirm_delete_faculty_data():
+@app.route("/head-confirm-delete-faculty-data", methods=["POST"])
+def head_confirm_delete_faculty_data():
 
     # ==============================
-    # ADMIN LOGIN CHECK
+    # HEAD LOGIN CHECK
     # ==============================
 
-    admin_data = get_admin_data()
-
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        return redirect(url_for("admin_login"))
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
 
     # ==============================
     # DELETE NOTES DATA
@@ -5574,7 +5571,7 @@ def admin_confirm_delete_faculty_data():
             "All faculty uploaded records have been deleted successfully."
         );
 
-        window.location.href = "/admin-dashboard";
+        window.location.href = "/head";
 
     </script>
     """
@@ -6371,21 +6368,18 @@ def admin_dashboard():
     )
 
 # =========================================================
-# ADMIN - DELETE WHOLE ATTENDANCE RECORD
+# HEAD - DELETE WHOLE ATTENDANCE RECORD
 # =========================================================
 
-@app.route("/admin-delete-whole-attendance")
-def admin_delete_whole_attendance():
+@app.route("/head-delete-whole-attendance")
+def head_delete_whole_attendance():
 
     # =========================
-    # ADMIN LOGIN CHECK
+    # HEAD LOGIN CHECK
     # =========================
 
-    admin_data = get_admin_data()
-
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
 
 
     # =========================
@@ -6402,7 +6396,7 @@ def admin_delete_whole_attendance():
         return f"Unable to delete attendance record: {e}"
 
 
-    return redirect("/admin-dashboard")
+    return redirect("/head")
 
 
 
@@ -8764,23 +8758,17 @@ def delete_course(course_id):
 
     return redirect("/admin-courses")
 
-@app.route("/admin-semester-update")
-def admin_semester_update():
 
-    security_check = admin_required()
 
-    if security_check:
-        return security_check
+@app.route("/head-semester-update")
+def head_semester_update():
 
     # =========================
-    # ADMIN LOGIN CHECK
+    # HEAD LOGIN CHECK
     # =========================
 
-    admin_data = get_admin_data()
-
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
 
 
     # =========================
@@ -8809,28 +8797,20 @@ def admin_semester_update():
     # =========================
 
     return render_template(
-        "admin_semester_update.html",
+        "head_semester_update.html",
         courses=courses
     )
 
 
-@app.route("/admin-confirm-semester-update", methods=["POST"])
-def admin_confirm_semester_update():
-
-    security_check = admin_required()
-
-    if security_check:
-        return security_check
+@app.route("/head-confirm-semester-update", methods=["POST"])
+def head_confirm_semester_update():
 
     # =========================
-    # ADMIN LOGIN CHECK
+    # HEAD LOGIN CHECK
     # =========================
 
-    admin_data = get_admin_data()
-
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
 
 
     # =========================
@@ -9055,8 +9035,8 @@ def admin_confirm_semester_update():
 
         <br>
 
-        <a href="/admin-dashboard">
-            Back to Admin Dashboard
+        <a href="/head">
+            Back to Head Portal
         </a>
         """
 
@@ -9155,10 +9135,10 @@ def admin_confirm_semester_update():
             </p>
 
             <a
-                href="/admin-dashboard"
+                href="/head"
                 class="btn"
             >
-                Back to Admin Dashboard
+                Back to Head Portal
             </a>
 
         </div>
@@ -11460,6 +11440,342 @@ def finance_search_receipt():
         receipt_no=receipt_no,
         payment=payment
     )
+
+@app.route("/owner")
+def owner():
+    return render_template("owner.html")
+
+
+
+def head_required(view_func):
+
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+
+        if not session.get("head_logged_in"):
+            return redirect("/head-login")
+
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.route("/head")
+@head_required
+def head():
+
+    response = make_response(
+        render_template("head.html")
+    )
+
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
+    return response
+
+
+@app.route("/head-login", methods=["GET", "POST"])
+def head_login():
+
+    if request.method == "POST":
+
+        verification_name = request.form.get(
+            "verification_name",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        if not verification_name or not password:
+
+            return render_template(
+                "head_login.html",
+                error="Please enter verification name and password."
+            )
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS head_credentials (
+                        id INTEGER PRIMARY KEY,
+                        verification_name TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )
+                """)
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM head_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+
+                # FIRST TIME LOGIN
+
+                if not credentials:
+
+                    cur.execute("""
+                        INSERT INTO head_credentials
+                        (
+                            id,
+                            verification_name,
+                            password
+                        )
+                        VALUES (1, %s, %s)
+                    """, (
+                        verification_name,
+                        password
+                    ))
+
+                    conn.commit()
+
+                    session["head_logged_in"] = True
+
+                    return redirect("/head")
+
+
+                # NORMAL LOGIN
+
+                if (
+                    str(verification_name).strip()
+                    == str(credentials["verification_name"]).strip()
+                    and
+                    str(password).strip()
+                    == str(credentials["password"]).strip()
+                ):
+
+                    session["head_logged_in"] = True
+
+                    return redirect("/head")
+
+
+                return render_template(
+                    "head_login.html",
+                    error="Invalid verification name or password."
+                )
+
+        finally:
+
+            conn.close()
+
+
+    return render_template(
+        "head_login.html"
+    )
+
+
+    
+@app.route("/head-change-password", methods=["GET", "POST"])
+def head_change_password():
+
+    # =========================
+    # HEAD LOGIN CHECK
+    # =========================
+
+    if not session.get("head_logged_in"):
+        return redirect(url_for("head_login"))
+
+
+    # =========================
+    # CHANGE LOGIN DETAILS
+    # =========================
+
+    if request.method == "POST":
+
+        current_verification_name = request.form.get(
+            "current_verification_name",
+            ""
+        ).strip()
+
+        current_password = request.form.get(
+            "current_password",
+            ""
+        ).strip()
+
+        new_verification_name = request.form.get(
+            "verification_name",
+            ""
+        ).strip()
+
+        new_password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+
+        # =========================
+        # EMPTY FIELD CHECK
+        # =========================
+
+        if (
+            not current_verification_name
+            or not current_password
+            or not new_verification_name
+            or not new_password
+            or not confirm_password
+        ):
+
+            return render_template(
+                "head_change_password.html",
+                error="Please fill all fields."
+            )
+
+
+        # =========================
+        # NEW PASSWORD CONFIRM
+        # =========================
+
+        if new_password != confirm_password:
+
+            return render_template(
+                "head_change_password.html",
+                error="New password and confirm password do not match."
+            )
+
+
+        # =========================
+        # DATABASE
+        # =========================
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                # =========================
+                # CREATE TABLE IF NOT EXISTS
+                # =========================
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS head_credentials (
+                        id INTEGER PRIMARY KEY,
+                        verification_name TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )
+                """)
+
+
+                # =========================
+                # GET CURRENT DETAILS
+                # =========================
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM head_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+
+                # =========================
+                # CHECK CURRENT DETAILS
+                # =========================
+
+                if not credentials:
+
+                    return render_template(
+                        "head_change_password.html",
+                        error="Head login credentials were not found."
+                    )
+
+
+                if (
+                    str(current_verification_name).strip()
+                    != str(
+                        credentials["verification_name"]
+                    ).strip()
+                    or
+                    str(current_password).strip()
+                    != str(
+                        credentials["password"]
+                    ).strip()
+                ):
+
+                    return render_template(
+                        "head_change_password.html",
+                        error="Current verification name or password is incorrect."
+                    )
+
+
+                # =========================
+                # UPDATE NEW DETAILS
+                # =========================
+
+                cur.execute("""
+                    UPDATE head_credentials
+                    SET
+                        verification_name = %s,
+                        password = %s
+                    WHERE id = 1
+                """, (
+                    new_verification_name,
+                    new_password
+                ))
+
+
+            conn.commit()
+
+
+        finally:
+
+            conn.close()
+
+
+        # =========================
+        # LOGIN SESSION CONTINUE
+        # =========================
+
+        session["head_logged_in"] = True
+
+
+        # =========================
+        # SUCCESS
+        # =========================
+
+        return """
+        <script>
+
+            alert(
+                "Head ID & Password changed successfully."
+            );
+
+            window.location.href = "/head";
+
+        </script>
+        """
+
+
+    # =========================
+    # GET PAGE
+    # =========================
+
+    return render_template(
+        "head_change_password.html"
+    )
+
 
     
 

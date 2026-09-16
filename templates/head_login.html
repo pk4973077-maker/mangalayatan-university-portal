@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Head Login</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background: #f1f5f9;
+        }
+
+        .box {
+            width: 92%;
+            max-width: 430px;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            box-shadow: 0 5px 20px #cbd5e1;
+        }
+
+        h1 {
+            text-align: center;
+
+            color: #0891b2;
+
+            margin-top: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+
+            color: #64748b;
+
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+
+            margin-top: 17px;
+            margin-bottom: 7px;
+
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+
+            padding: 13px;
+
+            border: 1px solid #cbd5e1;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+
+            margin-top: 25px;
+
+            padding: 13px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #0891b2;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0e7490;
+        }
+
+        .error {
+            margin-top: 18px;
+
+            padding: 12px;
+
+            background: #fee2e2;
+
+            color: #b91c1c;
+
+            border-radius: 8px;
+
+            text-align: center;
+        }
+
+        .back {
+            display: block;
+
+            text-align: center;
+
+            margin-top: 20px;
+
+            color: #0891b2;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+    <h1>
+        👨‍💼 Head Login
+    </h1>
+
+    <div class="subtitle">
+        Head Portal Verification
+    </div>
+
+
+    <form
+        action="/head-login"
+        method="POST"
+    >
+
+        <label>
+            Verification Name
+        </label>
+
+        <input
+            type="text"
+            name="verification_name"
+            placeholder="Enter verification name"
+            required
+        >
+
+
+        <label>
+            Password
+        </label>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Enter password"
+            required
+        >
+
+
+        <button type="submit">
+            🔐 Login
+        </button>
+
+    </form>
+
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    <a href="/" class="back">
+        ← Back to Select Portal
+    </a>
+
+</div>
+
+</body>
+
+</html>

@@ -207,31 +207,34 @@
 
     <table>
 
-        <tr>
-            <th>Date</th>
-            <th>Subject</th>
-            <th>Status</th>
-        </tr>
+    <tr>
+        <th>Date</th>
+        <th>Faculty</th>
+        <th>Subject</th>
+        <th>Status</th>
+    </tr>
 
-        {% for record in daily_history %}
+    {% for record in daily_history %}
 
-        <tr>
-            <td>{{ record.date }}</td>
+    <tr>
+        <td>{{ record.date }}</td>
 
-            <td>{{ record.subject }}</td>
+        <td>{{ record.faculty_name }}</td>
 
-            <td>
-                {% if record.status == "Present" %}
-                    <span class="present">✅ Present</span>
-                {% else %}
-                    <span class="absent">❌ Absent</span>
-                {% endif %}
-            </td>
-        </tr>
+        <td>{{ record.subject }}</td>
 
-        {% endfor %}
+        <td>
+            {% if record.status == "Present" %}
+                <span class="present">✅ Present</span>
+            {% else %}
+                <span class="absent">❌ Absent</span>
+            {% endif %}
+        </td>
+    </tr>
 
-    </table>
+    {% endfor %}
+
+</table>
 
 </div>
 
