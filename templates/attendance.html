@@ -181,8 +181,15 @@
                 </td>
 
                 <td class="percentage">
-                    {{ data.percentage }}%
-                </td>
+    {{ data.percentage }}%
+
+    {% if data.percentage < 75 %}
+        <p>
+            ⚠️ You are not eligible for upcoming exams.
+        </p>
+    {% endif %}
+
+</td>
 
             </tr>
 

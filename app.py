@@ -3,9 +3,12 @@ import base64
 import qrcode
 import os
 import io
+import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import json
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from openpyxl.utils import get_column_letter
@@ -2071,6 +2074,40 @@ def manage_attendance():
             except:
                 attendance_data = []
 
+                # =========================
+        # DUPLICATE ATTENDANCE CHECK
+        # =========================
+        for old_record in attendance_data:
+
+            if (
+                str(old_record.get("date", "")).strip()
+                == date
+
+                and
+
+                str(old_record.get("course", "")).strip().lower()
+                == course.lower()
+
+                and
+
+                str(old_record.get("subject", "")).strip().lower()
+                == subject.lower()
+
+                and
+
+                str(old_record.get("semester", "")).strip()
+                == semester
+
+                and
+
+                str(old_record.get("section", "")).strip().upper()
+                == section.upper()
+            ):
+
+                return (
+                    "You have done present on this day "
+                    "for this course, semester, section and subject."
+                )
 
         # =========================
         # SAVE EACH STUDENT
@@ -10120,6 +10157,1311 @@ def download_created_excel(filename):
         ),
         conditional=False
     )
+
+
+from functools import wraps
+
+def finance_required(view_func):
+
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+
+        if not session.get("finance_logged_in"):
+            return redirect("/finance-login")
+
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.route("/finance")
+@finance_required
+def finance():
+
+    if not session.get("finance_logged_in"):
+        return redirect("/finance-login")
+
+    return render_template(
+        "finance.html"
+    )
+
+
+@app.route("/finance-login", methods=["GET", "POST"])
+def finance_login():
+
+    if request.method == "POST":
+
+        verification_name = request.form.get(
+            "verification_name",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        if not verification_name or not password:
+            return render_template(
+                "finance_login.html",
+                error="Please enter verification name and password."
+            )
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS finance_credentials (
+                        id INTEGER PRIMARY KEY,
+                        verification_name TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )
+                """)
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM finance_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+                # FIRST TIME LOGIN
+                if not credentials:
+
+                    cur.execute("""
+                        INSERT INTO finance_credentials
+                        (
+                            id,
+                            verification_name,
+                            password
+                        )
+                        VALUES (1, %s, %s)
+                    """, (
+                        verification_name,
+                        password
+                    ))
+
+                    conn.commit()
+
+                    session["finance_logged_in"] = True
+
+                    return redirect("/finance")
+
+                # NORMAL LOGIN
+                if (
+    str(verification_name).strip()
+    == str(credentials["verification_name"]).strip()
+    and
+    str(password).strip()
+    == str(credentials["password"]).strip()
+):
+
+                    session["finance_logged_in"] = True
+
+                    return redirect("/finance")
+
+                return render_template(
+                    "finance_login.html",
+                    error="Invalid verification name or password."
+                )
+
+        finally:
+
+            conn.close()
+
+    return render_template(
+        "finance_login.html"
+    )
+
+
+
+
+@app.route("/finance-change-credentials", methods=["GET", "POST"])
+@finance_required
+def finance_change_credentials():
+
+    # Finance login check
+    if not session.get("finance_logged_in"):
+        return redirect("/finance-login")
+
+
+    if request.method == "POST":
+
+        current_name = request.form.get(
+            "current_name",
+            ""
+        ).strip()
+
+        current_password = request.form.get(
+            "current_password",
+            ""
+        ).strip()
+
+        new_name = request.form.get(
+            "new_name",
+            ""
+        ).strip()
+
+        new_password = request.form.get(
+            "new_password",
+            ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+
+        # =========================
+        # BASIC CHECK
+        # =========================
+
+        if not current_name or not current_password:
+            return render_template(
+                "finance_change_credentials.html",
+                error="Please enter current verification name and password."
+            )
+
+
+        if not new_name or not new_password:
+            return render_template(
+                "finance_change_credentials.html",
+                error="Please enter new verification name and password."
+            )
+
+
+        if new_password != confirm_password:
+            return render_template(
+                "finance_change_credentials.html",
+                error="New passwords do not match."
+            )
+
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM finance_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+
+                if not credentials:
+                    return render_template(
+                        "finance_change_credentials.html",
+                        error="Finance credentials not found."
+                    )
+
+
+                # =========================
+                # CURRENT CREDENTIAL CHECK
+                # =========================
+
+                if (
+                    current_name
+                    != credentials["verification_name"]
+                    or
+                    current_password
+                    != credentials["password"]
+                ):
+
+                    return render_template(
+                        "finance_change_credentials.html",
+                        error="Current verification name or password is incorrect."
+                    )
+
+
+                # =========================
+                # UPDATE CREDENTIALS
+                # =========================
+
+                cur.execute("""
+                    UPDATE finance_credentials
+                    SET
+                        verification_name = %s,
+                        password = %s
+                    WHERE id = 1
+                """, (
+                    new_name,
+                    new_password
+                ))
+
+            conn.commit()
+
+        finally:
+
+            conn.close()
+
+
+        # Logout after changing credentials
+        session.pop(
+            "finance_logged_in",
+            None
+        )
+
+
+        return redirect(
+            "/finance-login"
+        )
+
+
+    return render_template(
+        "finance_change_credentials.html"
+    )
+
+
+
+@app.route("/finance-payment", methods=["GET", "POST"])
+def finance_payment():
+
+    # =========================
+    # STUDENT LOGIN CHECK
+    # =========================
+
+    if "student_enrollment" not in session:
+        return redirect("/student-login")
+
+    student_enrollment = str(
+        session.get("student_enrollment", "")
+    ).strip()
+
+
+    # =========================
+    # STUDENTS LOAD
+    # =========================
+
+    students = []
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+            with open(
+                STUDENTS_FILE,
+                "r"
+            ) as file:
+
+                students = json.load(file)
+
+        except:
+            students = []
+
+
+    # =========================
+    # CURRENT STUDENT FIND
+    # =========================
+
+    student = None
+
+    for item in students:
+
+        if str(
+            item.get("enrollment", "")
+        ).strip() == student_enrollment:
+
+            student = item
+            break
+
+
+    if not student:
+        return "Student not found.", 404
+
+
+    # =========================
+    # POST - PAYMENT
+    # =========================
+
+    if request.method == "POST":
+
+        enrollment = request.form.get(
+            "enrollment",
+            ""
+        ).strip()
+
+        screenshot = request.files.get(
+            "screenshot"
+        )
+
+        fee_type = request.form.get(
+            "fee_type",
+            ""
+        ).strip()
+
+
+        if not enrollment:
+            return "Please enter Enrollment Number.", 400
+
+
+        if not screenshot or not screenshot.filename:
+            return "Please upload payment screenshot.", 400
+
+
+        if not fee_type:
+            return "Please select Fee Type.", 400
+
+
+        # Student apne hi enrollment se payment karega
+        if enrollment != student_enrollment:
+            return "Invalid Enrollment Number.", 400
+
+
+        # =========================
+        # SCREENSHOT SAVE
+        # =========================
+
+        original_name = os.path.basename(
+            screenshot.filename
+        )
+
+        # Same filename dobara upload na ho
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT 1
+                    FROM payment_records
+                    WHERE LOWER(
+                        regexp_replace(
+                            screenshot,
+                            '^payment_[^_]+_',
+                            ''
+                        )
+                    ) = LOWER(%s)
+                    LIMIT 1
+                """, (original_name,))
+
+                existing_file = cur.fetchone()
+
+        finally:
+
+            conn.close()
+
+
+        if existing_file:
+
+            return (
+                "This screenshot filename has already been uploaded.",
+                400
+            )
+
+
+        stored_filename = (
+            "payment_"
+            + uuid.uuid4().hex
+            + "_"
+            + original_name
+        )
+
+        save_uploaded_file(
+            screenshot,
+            stored_filename
+        )
+
+
+        # =========================
+        # PAYMENT RECORD
+        # =========================
+
+        payment_record = {
+
+            "enrollment": enrollment,
+
+            "student_id": str(
+                student.get("student_id", "")
+            ),
+
+            "student_name": str(
+                student.get("name", "")
+            ),
+
+            "course": str(
+                student.get("course", "")
+            ),
+
+            "semester": str(
+                student.get("semester", "")
+            ),
+
+            "section": str(
+                student.get("section", "")
+            ),
+
+            "group": str(
+                student.get("group", "")
+            ),
+
+            "fee_type": fee_type,
+
+            "screenshot": stored_filename,
+
+            "status": "Recent",
+
+            "amount": "",
+
+            "submitted_date": ""
+
+        }
+
+
+        # =========================
+        # SAVE PAYMENT RECORD IN DATABASE
+        # =========================
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    INSERT INTO payment_records (
+                        enrollment,
+                        student_id,
+                        student_name,
+                        course,
+                        semester,
+                        section,
+                        "group",
+                        fee_type,
+                        screenshot,
+                        status,
+                        amount,
+                        submitted_date
+                    )
+                    VALUES (
+                        %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s
+                    )
+                """, (
+                    payment_record["enrollment"],
+                    payment_record["student_id"],
+                    payment_record["student_name"],
+                    payment_record["course"],
+                    payment_record["semester"],
+                    payment_record["section"],
+                    payment_record["group"],
+                    payment_record["fee_type"],
+                    payment_record["screenshot"],
+                    payment_record["status"],
+                    payment_record["amount"],
+                    payment_record["submitted_date"]
+                ))
+
+            conn.commit()
+
+        finally:
+
+            conn.close()
+
+
+        return redirect(
+            "/finance-payment"
+        )
+
+
+    # =========================
+    # PENDING PAYMENT RECORDS
+    # =========================
+
+    pending_records = []
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    id,
+                    enrollment,
+                    student_name,
+                    course,
+                    semester,
+                    section,
+                    "group",
+                    fee_type,
+                    screenshot,
+                    status,
+                    created_at
+                FROM payment_records
+                WHERE enrollment = %s
+                  AND status != 'Submitted'
+                ORDER BY created_at DESC
+            """, (
+                student_enrollment,
+            ))
+
+            pending_records = cur.fetchall()
+
+    finally:
+
+        conn.close()
+
+
+    # =========================
+    # PAYMENT PAGE
+    # =========================
+
+    return render_template(
+        "finance_payment.html",
+        student=student,
+        pending_records=pending_records
+    )
+
+
+@app.route("/finance-payment-records")
+@finance_required
+def finance_payment_records():
+
+    return render_template(
+        "finance_payment_record.html"
+    )
+
+
+@app.route("/finance-payment-records/recent")
+@finance_required
+def finance_recent_records():
+
+    recent_records = []
+
+    # =========================
+    # LOAD RECENT PAYMENT RECORDS FROM DATABASE
+    # =========================
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    id,
+                    enrollment,
+                    student_id,
+                    student_name,
+                    course,
+                    semester,
+                    section,
+                    "group",
+                    fee_type,
+                    screenshot,
+                    status,
+                    amount,
+                    submitted_date
+                FROM payment_records
+                WHERE status != 'Submitted'
+                ORDER BY created_at DESC
+            """)
+
+            recent_records = cur.fetchall()
+
+    finally:
+
+        conn.close()
+
+
+    return render_template(
+        "finance_recent_records.html",
+        recent_records=recent_records
+    )
+
+
+@app.route("/finance-payment-records/submitted")
+@finance_required
+def finance_submitted_records():
+
+    submitted_records = []
+
+    # =========================
+    # LOAD SUBMITTED RECORDS FROM DATABASE
+    # =========================
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    id,
+                    enrollment,
+                    student_id,
+                    student_name,
+                    course,
+                    semester,
+                    section,
+                    "group",
+                    fee_type,
+                    receipt_no,
+                    screenshot,
+                    status,
+                    amount,
+                    submitted_date
+                FROM payment_records
+                WHERE status = 'Submitted'
+                ORDER BY created_at DESC
+            """)
+
+            submitted_records = cur.fetchall()
+
+    finally:
+
+        conn.close()
+
+
+    return render_template(
+        "finance_submitted_records.html",
+        submitted_records=submitted_records
+    )
+
+
+@app.route("/payment-screenshot/<filename>")
+def payment_screenshot(filename):
+
+    stored = get_uploaded_file(filename)
+
+    if not stored:
+        return "Payment screenshot not found.", 404
+
+    download = request.args.get("download")
+
+    return send_file(
+        io.BytesIO(bytes(stored["content"])),
+        mimetype=stored["content_type"],
+        download_name=filename,
+        as_attachment=(download == "1")
+    )
+
+@app.route("/submit-payment-record/<int:payment_id>", methods=["POST"])
+def submit_payment_record(payment_id):
+
+    amount = request.form.get(
+        "amount",
+        ""
+    ).strip()
+
+    source = request.form.get(
+        "source",
+        "recent"
+    ).strip()
+
+
+    if not amount:
+        return "Please enter payment amount.", 400
+
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            # =========================
+            # PAYMENT RECORD FIND
+            # =========================
+
+            cur.execute("""
+                SELECT enrollment
+                FROM payment_records
+                WHERE id = %s
+            """, (
+                payment_id,
+            ))
+
+            payment = cur.fetchone()
+
+            if not payment:
+                return "Payment record not found.", 404
+
+
+            enrollment = str(
+                payment["enrollment"]
+            ).strip()
+
+
+            # =========================
+            # RECEIPT NUMBER GENERATE
+            # =========================
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM payment_records
+                WHERE status = 'Submitted'
+                  AND EXTRACT(
+                      YEAR FROM created_at
+                  ) = EXTRACT(
+                      YEAR FROM CURRENT_DATE
+                  )
+            """)
+
+            count_result = cur.fetchone()
+
+            current_count = int(
+                count_result["count"]
+            )
+
+            receipt_no = (
+                str(
+                    __import__("datetime")
+                    .date.today()
+                    .year
+                )
+                + "-"
+                + str(current_count + 1)
+            )
+
+
+            # =========================
+            # SUBMIT ONLY THIS PAYMENT
+            # =========================
+
+            cur.execute("""
+                UPDATE payment_records
+                SET
+                    status = 'Submitted',
+                    amount = %s,
+                    submitted_date = CURRENT_DATE::text,
+                    receipt_no = %s
+                WHERE id = %s
+                  AND status != 'Submitted'
+            """, (
+                amount,
+                receipt_no,
+                payment_id
+            ))
+
+
+            if cur.rowcount == 0:
+
+                return (
+                    "Payment record not found or already submitted.",
+                    404
+                )
+
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
+
+
+    # =========================
+    # REDIRECT
+    # =========================
+
+    if source == "search":
+
+        return redirect(
+            "/finance-search-record?enrollment="
+            + enrollment
+        )
+
+
+    return redirect(
+        "/finance-payment-records/recent"
+    )
+
+
+
+@app.route("/fees-slip")
+def fees_slip():
+
+    if "student_enrollment" not in session:
+        return redirect("/student-login")
+
+    student_enrollment = str(
+        session.get("student_enrollment", "")
+    ).strip()
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    id,
+                    enrollment,
+                    student_name,
+                    course,
+                    semester,
+                    section,
+                    "group",
+                    fee_type,
+                    receipt_no,
+                    amount,
+                    submitted_date,
+                    screenshot,
+                    status
+                FROM payment_records
+                WHERE enrollment = %s
+                  AND status = 'Submitted'
+                ORDER BY created_at DESC
+            """, (student_enrollment,))
+
+            payments = cur.fetchall()
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "fees_slip.html",
+        payments=payments
+    )
+
+
+@app.route("/fees-slip/<int:payment_id>")
+def open_fees_slip(payment_id):
+
+    if "student_enrollment" not in session:
+        return redirect("/student-login")
+
+    student_enrollment = str(
+        session.get("student_enrollment", "")
+    ).strip()
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    id,
+                    enrollment,
+                    student_name,
+                    fee_type,
+                    receipt_no,
+                    course,
+                    semester,
+                    section,
+                    "group",
+                    amount,
+                    submitted_date,
+                    screenshot,
+                    status
+                FROM payment_records
+                WHERE id = %s
+                  AND enrollment = %s
+                  AND status = 'Submitted'
+                LIMIT 1
+            """, (
+                payment_id,
+                student_enrollment
+            ))
+
+            payment = cur.fetchone()
+
+    finally:
+        conn.close()
+
+    if not payment:
+        return "Fees slip not found.", 404
+
+
+    # =========================
+    # DOWNLOAD PDF
+    # =========================
+
+    if request.args.get("download") == "1":
+
+        pdf_buffer = io.BytesIO()
+
+        pdf = canvas.Canvas(
+            pdf_buffer,
+            pagesize=A4
+        )
+
+        width, height = A4
+
+        y = height - 60
+
+
+        # UNIVERSITY NAME
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            16
+        )
+
+        pdf.drawCentredString(
+            width / 2,
+            y,
+            "MANGALAYATAN UNIVERSITY BESWAN, ALIGARH"
+        )
+
+        y -= 30
+
+
+        # TITLE
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            14
+        )
+
+        pdf.drawCentredString(
+            width / 2,
+            y,
+            "FEES PAYMENT RECEIPT"
+        )
+
+        y -= 45
+
+
+        pdf.setFont(
+            "Helvetica",
+            11
+        )
+
+
+        # STUDENT DETAILS
+
+        details = [
+
+            ("Student Name", payment["student_name"]),
+
+            ("Fee Type", payment["fee_type"]),
+
+            ("Receipt No.", payment["receipt_no"] or "—"),
+
+            ("Enrollment Number", payment["enrollment"]),
+
+            ("Course", payment["course"]),
+
+            ("Semester", payment["semester"]),
+
+            ("Section", payment["section"] or "—"),
+
+            ("Group", payment["group"] or "—"),
+
+            ("Payment Date", payment["submitted_date"]),
+
+            ("Payment Status", "Submitted"),
+
+            ("Payment Amount", "Rs. " + str(payment["amount"]))
+
+        ]
+
+
+        for label, value in details:
+
+            pdf.setFont(
+                "Helvetica-Bold",
+                10
+            )
+
+            pdf.drawString(
+                70,
+                y,
+                str(label) + ":"
+            )
+
+            pdf.setFont(
+                "Helvetica",
+                10
+            )
+
+            pdf.drawString(
+                210,
+                y,
+                str(value)
+            )
+
+            y -= 25
+
+
+        y -= 15
+
+
+        pdf.setFont(
+            "Helvetica-Bold",
+            11
+        )
+
+        pdf.drawCentredString(
+            width / 2,
+            y,
+            "PAYMENT RECORD SUBMITTED"
+        )
+
+
+        y -= 45
+
+
+        pdf.setFont(
+            "Helvetica",
+            9
+        )
+
+        pdf.drawString(
+            70,
+            y,
+            "Student Fees Receipt"
+        )
+
+
+        pdf.save()
+
+        pdf_buffer.seek(0)
+
+
+        return send_file(
+            pdf_buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=(
+                "fees_slip_"
+                + str(payment["enrollment"])
+                + "_"
+                + str(payment["id"])
+                + ".pdf"
+            )
+        )
+
+
+    # =========================
+    # OPEN FEES SLIP
+    # =========================
+
+    return render_template(
+        "fees_slip_single.html",
+        payment=payment
+    )
+
+
+@app.route("/finance-search-record", methods=["GET", "POST"])
+@finance_required
+def finance_search_record():
+
+    searched_enrollment = ""
+    recent_records = []
+    submitted_records = []
+    semester_totals = {}
+
+
+    # =========================
+    # GET - AFTER SUBMIT
+    # =========================
+
+    if request.method == "GET":
+
+        searched_enrollment = request.args.get(
+            "enrollment",
+            ""
+        ).strip()
+
+
+    # =========================
+    # POST - SEARCH
+    # =========================
+
+    if request.method == "POST":
+
+        searched_enrollment = request.form.get(
+            "enrollment",
+            ""
+        ).strip()
+
+
+    # =========================
+    # LOAD PAYMENT RECORDS
+    # =========================
+
+    if searched_enrollment:
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT
+                        id,
+                        enrollment,
+                        student_name,
+                        course,
+                        semester,
+                        section,
+                        "group",
+                        fee_type,
+                        screenshot,
+                        status,
+                        amount,
+                        submitted_date,
+                        created_at
+                    FROM payment_records
+                    WHERE enrollment = %s
+                    ORDER BY created_at ASC
+                """, (
+                    searched_enrollment,
+                ))
+
+                records = cur.fetchall()
+
+        finally:
+
+            conn.close()
+
+
+        # =========================
+        # SEPARATE RECORDS
+        # =========================
+
+        for record in records:
+
+            if record["status"] == "Submitted":
+
+                submitted_records.append(
+                    record
+                )
+
+                # =========================
+                # SEMESTER-WISE TOTAL
+                # =========================
+
+                semester = record["semester"]
+
+                if semester not in semester_totals:
+                    semester_totals[semester] = 0
+
+                semester_totals[semester] += float(
+                    record["amount"] or 0
+                )
+
+            else:
+
+                recent_records.append(
+                    record
+                )
+
+
+    # =========================
+    # SORT SEMESTERS 1 TO 10
+    # =========================
+
+    def semester_number(semester):
+
+        try:
+
+            return int(
+                ''.join(
+                    filter(
+                        str.isdigit,
+                        str(semester)
+                    )
+                )
+            )
+
+        except:
+
+            return 999
+
+
+    semester_totals = dict(
+        sorted(
+            semester_totals.items(),
+            key=lambda item: semester_number(item[0])
+        )
+    )
+
+
+    return render_template(
+        "finance_search_record.html",
+        searched_enrollment=searched_enrollment,
+        recent_records=recent_records,
+        submitted_records=submitted_records,
+        semester_totals=semester_totals
+    )
+
+
+@app.route("/finance-search-receipt", methods=["GET", "POST"])
+@finance_required
+def finance_search_receipt():
+
+    receipt_no = ""
+    payment = None
+
+    if request.method == "POST":
+
+        receipt_no = request.form.get(
+            "receipt_no",
+            ""
+        ).strip()
+
+        if receipt_no:
+
+            conn = get_connection()
+
+            try:
+
+                with conn.cursor() as cur:
+
+                    cur.execute("""
+                        SELECT
+                            id,
+                            enrollment,
+                            student_id,
+                            student_name,
+                            course,
+                            semester,
+                            section,
+                            "group",
+                            fee_type,
+                            screenshot,
+                            status,
+                            amount,
+                            submitted_date,
+                            receipt_no,
+                            created_at
+                        FROM payment_records
+                        WHERE receipt_no = %s
+                          AND status = 'Submitted'
+                        LIMIT 1
+                    """, (
+                        receipt_no,
+                    ))
+
+                    payment = cur.fetchone()
+
+            finally:
+
+                conn.close()
+
+
+    return render_template(
+        "finance_search_receipt.html",
+        receipt_no=receipt_no,
+        payment=payment
+    )
+
+    
 
 
 # =========================

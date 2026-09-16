@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Fees Slip</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            text-align: center;
+            padding: 25px 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 11px 18px;
+            background: #64748b;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .record {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 18px #cbd5e1;
+            border: 1px solid #e2e8f0;
+        }
+
+        .record h2 {
+            margin-top: 0;
+            color: #166534;
+        }
+
+        .details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .details td {
+            padding: 11px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .details td:first-child {
+            width: 40%;
+            font-weight: bold;
+            background: #f8fafc;
+        }
+
+        .amount {
+            margin-top: 18px;
+            padding: 15px;
+            border: 2px solid #16a34a;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .amount h2 {
+            margin: 5px 0 0;
+            color: #16a34a;
+        }
+
+        .screenshot {
+            margin-top: 20px;
+        }
+
+        .screenshot img {
+            display: block;
+            max-width: 280px;
+            max-height: 280px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .open {
+            background: #2563eb;
+            color: white;
+        }
+
+        .download {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .empty {
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            text-align: center;
+            color: #64748b;
+            box-shadow: 0 5px 18px #cbd5e1;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                padding: 12px;
+            }
+
+            .record {
+                padding: 18px;
+            }
+
+            .header h1 {
+                font-size: 23px;
+            }
+
+            .details td {
+                padding: 9px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .button {
+                text-align: center;
+                width: 100%;
+            }
+
+            .screenshot img {
+                max-width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="header">
+
+    <h1>🧾 Fees Slip</h1>
+
+    <p>Student Payment History</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/student-dashboard"
+       class="back">
+
+        ← Back to Student Dashboard
+
+    </a>
+
+
+    {% if payments %}
+
+
+        {% for payment in payments %}
+
+
+            <div class="record">
+
+
+                <h2>
+                    🧾 Payment Record Submitted
+                </h2>
+
+
+                <table class="details">
+
+                    <tr>
+
+                        <td>
+                            Student Name
+                        </td>
+
+                        <td>
+                            {{ payment.student_name }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            Enrollment Number
+                        </td>
+
+                        <td>
+                            {{ payment.enrollment }}
+                        </td>
+
+                    </tr>
+
+                    
+
+
+                    <tr>
+
+                        <td>
+                            Course
+                        </td>
+
+                        <td>
+                            {{ payment.course }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            Semester
+                        </td>
+
+                        <td>
+                            {{ payment.semester }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            Section
+                        </td>
+
+                        <td>
+                            {{ payment.section or '—' }}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>
+                            Group
+                        </td>
+
+                        <td>
+                            {{ payment.group or '—' }}
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+    <td>
+        Fee Type
+    </td>
+
+    <td>
+        {{ payment.fee_type or '—' }}
+    </td>
+
+</tr>
+
+
+
+<tr>
+
+    <td>
+        Receipt No.
+    </td>
+
+    <td>
+        {{ payment.receipt_no or '—' }}
+    </td>
+
+</tr>
+
+
+                    <tr>
+
+                        <td>
+                            Payment Date
+                        </td>
+
+                        <td>
+                            {{ payment.submitted_date }}
+                        </td>
+
+                    </tr>
+
+                </table>
+
+
+                <div class="amount">
+
+                    <p>
+                        PAYMENT AMOUNT
+                    </p>
+
+                    <h2>
+                        ₹{{ payment.amount }}
+                    </h2>
+
+                </div>
+
+
+                <!-- =========================
+                     FEES SLIP BUTTONS
+                     ========================= -->
+
+                <div class="actions">
+
+                    <a
+                        href="/fees-slip/{{ payment.id }}"
+                        target="_blank"
+                        class="button open"
+                    >
+                        👁️ Open Fees Slip
+                    </a>
+
+
+                    <a
+                        href="/fees-slip/{{ payment.id }}?download=1"
+                        class="button download"
+                    >
+                        ⬇️ Download Fees Slip
+                    </a>
+
+                </div>
+
+
+                <!-- =========================
+                     PAYMENT SCREENSHOT
+                     ========================= -->
+
+                <div class="screenshot">
+
+                    <strong>
+                        📷 Payment Screenshot
+                    </strong>
+
+
+                    <img
+                        src="/payment-screenshot/{{ payment.screenshot }}"
+                        alt="Payment Screenshot"
+                    >
+
+
+                    <div class="actions">
+
+                        <a
+                            href="/payment-screenshot/{{ payment.screenshot }}"
+                            target="_blank"
+                            class="button open"
+                        >
+                            👁️ Open Screenshot
+                        </a>
+
+
+                        <a
+                            href="/payment-screenshot/{{ payment.screenshot }}?download=1"
+                            class="button download"
+                        >
+                            ⬇️ Download Screenshot
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <div class="empty">
+
+            <h2>
+                No Fees Slip Found
+            </h2>
+
+            <p>
+                Your submitted payment records will appear here.
+            </p>
+
+        </div>
+
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

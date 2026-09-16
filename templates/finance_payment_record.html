@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Payment Records</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            text-align: center;
+            padding: 35px 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .header p {
+            margin-top: 10px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 30px;
+            color: #16a34a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .portals {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .card {
+            width: 220px;
+            height: 190px;
+            background: white;
+            border-radius: 15px;
+            text-align: center;
+            padding: 20px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            text-decoration: none;
+            color: #1e293b;
+            transition: 0.2s;
+        }
+
+        .card:hover {
+            background: #dcfce7;
+            transform: translateY(-5px);
+        }
+
+        .icon {
+            font-size: 48px;
+            margin-top: 15px;
+        }
+
+        .card h2 {
+            margin: 15px 0 7px;
+        }
+
+        .card p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+
+            .portals {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .card {
+                width: 90%;
+                max-width: 300px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>💳 Payment Records</h1>
+
+        <p>Manage Student Payment Records</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <a href="/finance" class="back">
+            ← Back to Finance Portal
+        </a>
+
+
+        <div class="portals">
+
+
+            <!-- RECENT RECORDS -->
+
+            <a href="/finance-payment-records/recent"
+               class="card">
+
+                <div class="icon">
+                    📋
+                </div>
+
+                <h2>
+                    Recent Records
+                </h2>
+
+                <p>
+                    View recent payment records
+                </p>
+
+            </a>
+
+
+            <!-- SUBMITTED RECORDS -->
+
+            <a href="/finance-payment-records/submitted"
+               class="card">
+
+                <div class="icon">
+                    ✅
+                </div>
+
+                <h2>
+                    Submit Records
+                </h2>
+
+                <p>
+                    View submitted payment records
+                </p>
+
+            </a>
+
+            <!-- SEARCH RECEIPT -->
+
+<a href="/finance-search-receipt"
+   class="card">
+
+    <div class="icon">
+        🔎
+    </div>
+
+    <h2>
+        Search Receipt
+    </h2>
+
+    <p>
+        Search payment by receipt number
+    </p>
+
+</a>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

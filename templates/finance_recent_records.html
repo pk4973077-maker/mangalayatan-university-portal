@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Recent Payment Records</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            text-align: center;
+            padding: 30px 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 25px;
+            color: #16a34a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .record {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        .record h2 {
+            margin-top: 0;
+            color: #166534;
+        }
+
+        .record p {
+            margin: 10px 0;
+        }
+
+        .screenshot {
+            margin-top: 20px;
+        }
+
+        .screenshot img {
+            max-width: 350px;
+            max-height: 350px;
+            display: block;
+            margin-top: 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            color: white;
+        }
+
+        .open {
+            background: #2563eb;
+        }
+
+        .download {
+            background: #7c3aed;
+        }
+
+        .amount-form {
+            margin-top: 20px;
+        }
+
+        .amount-form input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .submit {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #16a34a;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .empty {
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            text-align: center;
+            color: #64748b;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        @media (max-width: 600px) {
+
+            .screenshot img {
+                max-width: 100%;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .action {
+                text-align: center;
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>📋 Recent Payment Records</h1>
+
+        <p>Student Payment Screenshots</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <a href="/finance-payment-records"
+           class="back">
+
+            ← Back to Payment Records
+
+        </a>
+
+
+        {% if recent_records %}
+
+
+            {% for record in recent_records %}
+
+                <div class="record">
+
+                    <h2>
+                        👨‍🎓 {{ record.student_name }}
+                    </h2>
+
+
+                    <p>
+                        <strong>
+                            Enrollment Number:
+                        </strong>
+
+                        {{ record.enrollment }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Course:
+                        </strong>
+
+                        {{ record.course }}
+                    </p>
+
+
+                    <p>
+                        <strong>
+                            Semester:
+                        </strong>
+
+                        {{ record.semester }}
+                    </p>
+
+                    <p>
+    <strong>
+        Fee Type:
+    </strong>
+
+    {{ record.fee_type or '—' }}
+</p>
+
+
+                    <p>
+                        <strong>
+                            Section:
+                        </strong>
+
+                        {{ record.section }}
+                    </p>
+
+
+                    <div class="screenshot">
+
+                        <strong>
+                            Payment Screenshot:
+                        </strong>
+
+
+                        <img
+                            src="/payment-screenshot/{{ record.screenshot }}"
+                            alt="Payment Screenshot"
+                        >
+
+
+                        <div class="actions">
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}"
+                                target="_blank"
+                                class="action open"
+                            >
+                                👁️ Open
+                            </a>
+
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}?download=1"
+                                class="action download"
+                            >
+                                ⬇️ Download
+                            </a>
+
+                        </div>
+
+                    </div>
+
+
+                    <form
+    action="/submit-payment-record/{{ record.id }}"
+    method="POST"
+    class="amount-form"
+>
+
+    <input
+        type="hidden"
+        name="source"
+        value="recent"
+    >
+
+    <input
+        type="number"
+        name="amount"
+        placeholder="Enter Payment Amount"
+        min="0"
+        step="0.01"
+        required
+    >
+
+
+    <button
+        type="submit"
+        class="submit"
+    >
+        ✅ Submit Record
+    </button>
+
+</form>
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <div class="empty">
+
+                No recent payment records found.
+
+            </div>
+
+        {% endif %}
+
+
+    </div>
+
+</body>
+
+</html>

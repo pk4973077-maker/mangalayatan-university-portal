@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Fees Payment Receipt</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .page {
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .top-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .back {
+            background: #64748b;
+            color: white;
+        }
+
+        .download {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .slip {
+            background: white;
+            padding: 45px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 5px 20px #cbd5e1;
+        }
+
+        .university {
+            text-align: center;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 20px;
+        }
+
+        .university h1 {
+            margin: 0;
+            font-size: 27px;
+        }
+
+        .university h2 {
+            margin: 12px 0 0;
+            font-size: 20px;
+            color: #2563eb;
+        }
+
+        .receipt-info {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .receipt-info h2 {
+            margin: 0;
+        }
+
+        .details {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .details td {
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .details td:first-child {
+            width: 40%;
+            font-weight: bold;
+            background: #f8fafc;
+        }
+
+        .amount {
+            margin-top: 25px;
+            padding: 18px;
+            border: 2px solid #16a34a;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .amount p {
+            margin: 0 0 7px;
+            font-weight: bold;
+        }
+
+        .amount h2 {
+            margin: 0;
+            color: #16a34a;
+        }
+
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+            color: #16a34a;
+        }
+
+        .screenshot-box {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #cbd5e1;
+        }
+
+        .screenshot-box h3 {
+            margin-top: 0;
+        }
+
+        .screenshot-box img {
+            display: block;
+            max-width: 300px;
+            max-height: 300px;
+            margin-top: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .open {
+            background: #2563eb;
+            color: white;
+        }
+
+        .footer {
+            margin-top: 45px;
+            padding-top: 15px;
+            border-top: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+
+            .page {
+                margin: 10px auto;
+                padding: 10px;
+            }
+
+            .slip {
+                padding: 22px;
+            }
+
+            .university h1 {
+                font-size: 21px;
+            }
+
+            .details td {
+                padding: 10px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+                text-align: center;
+            }
+
+            .screenshot-box img {
+                max-width: 100%;
+            }
+
+            .footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="page">
+
+
+    <!-- TOP BUTTONS -->
+
+    <div class="top-buttons">
+
+        <a
+            href="/fees-slip"
+            class="button back"
+        >
+            ← Back to Fees Slips
+        </a>
+
+
+        <a
+            href="/fees-slip/{{ payment.id }}?download=1"
+            class="button download"
+        >
+            ⬇️ Download Fees Slip
+        </a>
+
+    </div>
+
+
+    <!-- FEES SLIP -->
+
+    <div class="slip">
+
+
+        <!-- UNIVERSITY -->
+
+        <div class="university">
+
+            <h1>
+                MANGALAYATAN UNIVERSITY BESWAN, ALIGARH
+            </h1>
+
+            <h2>
+                FEES PAYMENT RECEIPT
+            </h2>
+
+        </div>
+
+
+        <!-- TITLE -->
+
+        <div class="receipt-info">
+
+            <h2>
+                Payment Details
+            </h2>
+
+        </div>
+
+
+        <!-- STUDENT DETAILS -->
+
+        <table class="details">
+
+            <tr>
+                <td>Student Name</td>
+                <td>{{ payment.student_name }}</td>
+            </tr>
+
+
+            <tr>
+                <td>Enrollment Number</td>
+                <td>{{ payment.enrollment }}</td>
+            </tr>
+
+            
+
+
+            <tr>
+                <td>Course</td>
+                <td>{{ payment.course }}</td>
+            </tr>
+
+
+            <tr>
+                <td>Semester</td>
+                <td>{{ payment.semester }}</td>
+            </tr>
+
+
+            <tr>
+                <td>Section</td>
+                <td>{{ payment.section or '—' }}</td>
+            </tr>
+
+
+            <tr>
+                <td>Group</td>
+                <td>{{ payment.group or '—' }}</td>
+            </tr>
+
+
+            <tr>
+                <td>Payment Date</td>
+                <td>{{ payment.submitted_date }}</td>
+            </tr>
+
+            <tr>
+    <td>Fee Type</td>
+    <td>{{ payment.fee_type or '—' }}</td>
+</tr>
+
+
+<tr>
+    <td>Receipt No.</td>
+    <td>{{ payment.receipt_no or '—' }}</td>
+</tr>
+
+
+            <tr>
+                <td>Payment Status</td>
+                <td>Submitted</td>
+            </tr>
+
+        </table>
+
+
+        <!-- AMOUNT -->
+
+        <div class="amount">
+
+            <p>
+                PAYMENT AMOUNT
+            </p>
+
+            <h2>
+                ₹{{ payment.amount }}
+            </h2>
+
+        </div>
+
+
+        <!-- STATUS -->
+
+        <div class="status">
+
+            ✅ PAYMENT RECORD SUBMITTED
+
+        </div>
+
+
+        <!-- SCREENSHOT -->
+
+        <div class="screenshot-box">
+
+            <h3>
+                📷 Payment Screenshot
+            </h3>
+
+
+            <img
+                src="/payment-screenshot/{{ payment.screenshot }}"
+                alt="Payment Screenshot"
+            >
+
+
+            <div class="actions">
+
+                <a
+                    href="/payment-screenshot/{{ payment.screenshot }}"
+                    target="_blank"
+                    class="button open"
+                >
+                    👁️ Open Screenshot
+                </a>
+
+
+                <a
+                    href="/payment-screenshot/{{ payment.screenshot }}?download=1"
+                    class="button download"
+                >
+                    ⬇️ Download Screenshot
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div class="footer">
+
+            <span>
+                Student Fees Receipt
+            </span>
+
+            <span>
+                Payment Date: {{ payment.submitted_date }}
+            </span>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

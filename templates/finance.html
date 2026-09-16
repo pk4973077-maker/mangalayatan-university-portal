@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Finance Portal</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 25px;
+            text-decoration: none;
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 35px 20px;
+            border-radius: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #1e293b;
+            box-shadow: 0 5px 15px #cbd5e1;
+            transition: 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: #f0fdf4;
+        }
+
+        .icon {
+            font-size: 50px;
+        }
+
+        .card h2 {
+            margin: 15px 0 8px;
+        }
+
+        .card p {
+            color: #64748b;
+            margin: 0;
+        }
+
+        @media (max-width: 700px) {
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>💰 Finance Portal</h1>
+
+        <p>University Fee & Payment Management</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <a href="/" class="back">
+            ← Back to Select Portal
+        </a>
+
+
+        <div class="grid">
+
+
+            
+
+
+            <!-- PAYMENT RECORD -->
+
+            <a href="/finance-payment-records"
+               class="card">
+
+                <div class="icon">
+                    📋
+                </div>
+
+                <h2>
+                    Payment Record
+                </h2>
+
+                <p>
+                    View payment records
+                </p>
+
+            </a>
+
+
+            <!-- SEARCH RECORD -->
+
+            <a href="/finance-search-record"
+               class="card">
+
+                <div class="icon">
+                    🔍
+                </div>
+
+                <h2>
+                    Search Record
+                </h2>
+
+                <p>
+                    Search student payment
+                </p>
+
+            </a>
+
+
+            <a href="/finance-change-credentials"
+   class="card">
+
+    <div class="icon">
+        🔐
+    </div>
+
+    <h2>
+        Change ID & Password
+    </h2>
+
+    <p>
+        Change finance login details
+    </p>
+
+</a>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

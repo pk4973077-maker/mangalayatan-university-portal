@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Search Payment Record</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            padding: 25px 15px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #16a34a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .search-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 30px;
+        }
+
+        .search-box h2 {
+            margin-top: 0;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-form input {
+            flex: 1;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .search-form button {
+            padding: 13px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .section-title {
+            margin: 30px 0 15px;
+            color: #166534;
+        }
+
+        .record {
+            background: white;
+            padding: 22px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .record h3 {
+            margin-top: 0;
+            color: #166534;
+        }
+
+        .details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .details td {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .details td:first-child {
+            width: 40%;
+            font-weight: bold;
+            background: #f8fafc;
+        }
+
+        .screenshot {
+            margin-top: 20px;
+        }
+
+        .screenshot img {
+            display: block;
+            max-width: 280px;
+            max-height: 280px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .open {
+            background: #2563eb;
+            color: white;
+        }
+
+        .download {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .submit {
+            background: #16a34a;
+            color: white;
+        }
+
+        .amount-form {
+            margin-top: 20px;
+        }
+
+        .amount-form input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 15px;
+            color: #64748b;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+
+        /* =========================
+           SEMESTER-WISE TOTAL PAID
+           ========================= */
+
+        .semester-total-box {
+            background: white;
+            padding: 22px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            border-left: 5px solid #16a34a;
+        }
+
+        .semester-total-box h2 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #166534;
+        }
+
+        .semester-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .semester-name {
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .semester-paid {
+            font-weight: bold;
+            color: #16a34a;
+        }
+
+
+        @media (max-width: 600px) {
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-form button {
+                width: 100%;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+                text-align: center;
+            }
+
+            .screenshot img {
+                max-width: 100%;
+            }
+
+            .semester-total {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>🔍 Search Payment Record</h1>
+
+    <p>Search Student Payment History</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/finance" class="back">
+        ← Back to Finance Portal
+    </a>
+
+
+    <!-- SEARCH -->
+
+    <div class="search-box">
+
+        <h2>
+            Search Student
+        </h2>
+
+        <form
+            action="/finance-search-record"
+            method="POST"
+            class="search-form"
+        >
+
+            <input
+                type="text"
+                name="enrollment"
+                placeholder="Enter Enrollment Number"
+                value="{{ searched_enrollment }}"
+                required
+            >
+
+            <button type="submit">
+                🔍 Search
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if searched_enrollment %}
+
+
+        <!-- =========================
+             SEMESTER-WISE TOTAL PAID
+             ========================= -->
+
+        {% if semester_totals %}
+
+        <div class="semester-total-box">
+
+            <h2>
+                💰 Semester-wise Total Amount Paid
+            </h2>
+
+            {% for semester, total in semester_totals.items() %}
+
+                <div class="semester-total">
+
+                    <div class="semester-name">
+                        {{ semester }}
+                    </div>
+
+                    <div class="semester-paid">
+                        Total Amount Paid: ₹{{ "%.2f"|format(total) }}
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =========================
+             RECENT RECORDS
+             ========================= -->
+
+        <h2 class="section-title">
+            📋 Recent Records
+        </h2>
+
+
+        {% if recent_records %}
+
+
+            {% for record in recent_records %}
+
+                <div class="record">
+
+                    <h3>
+                        👨‍🎓 {{ record.student_name }}
+                    </h3>
+
+
+                    <table class="details">
+
+                        <tr>
+                            <td>Enrollment Number</td>
+                            <td>{{ record.enrollment }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Course</td>
+                            <td>{{ record.course }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Semester</td>
+                            <td>{{ record.semester }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Section</td>
+                            <td>{{ record.section or '—' }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Group</td>
+                            <td>{{ record.group or '—' }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Fee Type</td>
+                            <td>{{ record.fee_type or '—' }}</td>
+                        </tr>
+
+                    </table>
+
+
+                    <div class="screenshot">
+
+                        <strong>
+                            📷 Payment Screenshot
+                        </strong>
+
+                        <img
+                            src="/payment-screenshot/{{ record.screenshot }}"
+                            alt="Payment Screenshot"
+                        >
+
+
+                        <div class="actions">
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}"
+                                target="_blank"
+                                class="button open"
+                            >
+                                👁️ Open Screenshot
+                            </a>
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}?download=1"
+                                class="button download"
+                            >
+                                ⬇️ Download Screenshot
+                            </a>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- SUBMIT RECORD -->
+
+                    <form
+                        action="/submit-payment-record/{{ record.id }}"
+                        method="POST"
+                        class="amount-form"
+                    >
+
+                        <input
+                            type="hidden"
+                            name="source"
+                            value="search"
+                        >
+
+                        <input
+                            type="number"
+                            name="amount"
+                            placeholder="Enter Payment Amount"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+
+                        <button
+                            type="submit"
+                            class="button submit"
+                        >
+                            ✅ Submit Record
+                        </button>
+
+                    </form>
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <div class="empty">
+                No recent payment records found.
+            </div>
+
+        {% endif %}
+
+
+
+        <!-- =========================
+             SUBMITTED RECORDS
+             ========================= -->
+
+        <h2 class="section-title">
+            ✅ Submitted Records
+        </h2>
+
+
+        {% if submitted_records %}
+
+
+            {% for record in submitted_records %}
+
+                <div class="record">
+
+                    <h3>
+                        👨‍🎓 {{ record.student_name }}
+                    </h3>
+
+
+                    <table class="details">
+
+                        <tr>
+                            <td>Enrollment Number</td>
+                            <td>{{ record.enrollment }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Course</td>
+                            <td>{{ record.course }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Semester</td>
+                            <td>{{ record.semester }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Section</td>
+                            <td>{{ record.section or '—' }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Group</td>
+                            <td>{{ record.group or '—' }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Fee Type</td>
+                            <td>{{ record.fee_type or '—' }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Amount</td>
+                            <td>₹{{ record.amount }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Submitted Date</td>
+                            <td>{{ record.submitted_date }}</td>
+                        </tr>
+
+                    </table>
+
+
+                    <div class="screenshot">
+
+                        <strong>
+                            📷 Payment Screenshot
+                        </strong>
+
+                        <img
+                            src="/payment-screenshot/{{ record.screenshot }}"
+                            alt="Payment Screenshot"
+                        >
+
+
+                        <div class="actions">
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}"
+                                target="_blank"
+                                class="button open"
+                            >
+                                👁️ Open Screenshot
+                            </a>
+
+                            <a
+                                href="/payment-screenshot/{{ record.screenshot }}?download=1"
+                                class="button download"
+                            >
+                                ⬇️ Download Screenshot
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <div class="empty">
+                No submitted payment records found.
+            </div>
+
+        {% endif %}
+
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

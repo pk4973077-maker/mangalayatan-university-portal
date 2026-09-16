@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Search Receipt</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #16a34a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .search-box,
+        .record,
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+            margin-bottom: 25px;
+        }
+
+        .search-box h2 {
+            margin-top: 0;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-form input {
+            flex: 1;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .search-form button {
+            padding: 13px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .record h2 {
+            margin-top: 0;
+            color: #166534;
+        }
+
+        .details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .details td {
+            padding: 11px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .details td:first-child {
+            width: 40%;
+            font-weight: bold;
+            background: #f8fafc;
+        }
+
+        .amount {
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px solid #16a34a;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .amount h2 {
+            margin: 5px 0 0;
+            color: #16a34a;
+        }
+
+        .screenshot {
+            margin-top: 25px;
+        }
+
+        .screenshot img {
+            display: block;
+            max-width: 350px;
+            max-height: 350px;
+            margin-top: 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+        }
+
+        .open {
+            background: #2563eb;
+        }
+
+        .download {
+            background: #7c3aed;
+        }
+
+        .empty {
+            text-align: center;
+            color: #64748b;
+        }
+
+        @media (max-width: 600px) {
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-form button {
+                width: 100%;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+                text-align: center;
+            }
+
+            .screenshot img {
+                max-width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+<div class="header">
+
+    <h1>🔎 Search Receipt</h1>
+
+    <p>Search Submitted Payment Receipt</p>
+
+</div>
+
+
+<div class="container">
+
+
+    <a href="/finance-payment-records"
+       class="back">
+
+        ← Back to Payment Records
+
+    </a>
+
+
+    <!-- SEARCH -->
+
+    <div class="search-box">
+
+        <h2>
+            Search Receipt Number
+        </h2>
+
+        <form
+            action="/finance-search-receipt"
+            method="POST"
+            class="search-form"
+        >
+
+            <input
+                type="text"
+                name="receipt_no"
+                placeholder="Enter Receipt Number (Example: 2026-1)"
+                value="{{ receipt_no }}"
+                required
+            >
+
+            <button type="submit">
+                🔍 Search
+            </button>
+
+        </form>
+
+    </div>
+
+
+    {% if receipt_no %}
+
+        {% if payment %}
+
+
+            <!-- PAYMENT RECORD -->
+
+            <div class="record">
+
+                <h2>
+                    🧾 Submitted Payment Receipt
+                </h2>
+
+
+                <table class="details">
+
+                    <tr>
+                        <td>Receipt No.</td>
+                        <td>{{ payment.receipt_no }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Student Name</td>
+                        <td>{{ payment.student_name }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Enrollment Number</td>
+                        <td>{{ payment.enrollment }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Course</td>
+                        <td>{{ payment.course }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Semester</td>
+                        <td>{{ payment.semester }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Section</td>
+                        <td>{{ payment.section or '—' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Group</td>
+                        <td>{{ payment.group or '—' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Fee Type</td>
+                        <td>{{ payment.fee_type or '—' }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Payment Date</td>
+                        <td>{{ payment.submitted_date }}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Payment Status</td>
+                        <td>{{ payment.status }}</td>
+                    </tr>
+
+                </table>
+
+
+                <div class="amount">
+
+                    <p>
+                        PAYMENT AMOUNT
+                    </p>
+
+                    <h2>
+                        ₹{{ payment.amount }}
+                    </h2>
+
+                </div>
+
+
+                <!-- SCREENSHOT -->
+
+                <div class="screenshot">
+
+                    <strong>
+                        📷 Payment Screenshot
+                    </strong>
+
+
+                    <img
+                        src="/payment-screenshot/{{ payment.screenshot }}"
+                        alt="Payment Screenshot"
+                    >
+
+
+                    <div class="actions">
+
+                        <a
+                            href="/payment-screenshot/{{ payment.screenshot }}"
+                            target="_blank"
+                            class="button open"
+                        >
+                            👁️ Open Screenshot
+                        </a>
+
+
+                        <a
+                            href="/payment-screenshot/{{ payment.screenshot }}?download=1"
+                            class="button download"
+                        >
+                            ⬇️ Download Screenshot
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="empty">
+
+                <h2>
+                    ❌ Receipt Not Found
+                </h2>
+
+                <p>
+                    No submitted payment receipt found for:
+                    <strong>{{ receipt_no }}</strong>
+                </p>
+
+            </div>
+
+
+        {% endif %}
+
+    {% endif %}
+
+
+</div>
+
+
+</body>
+
+</html>

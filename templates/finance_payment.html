@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Payment</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .header {
+            background: #16a34a;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #16a34a;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .payment-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .qr-section {
+            text-align: center;
+        }
+
+        .qr-section img {
+            width: 250px;
+            height: 250px;
+            object-fit: contain;
+        }
+
+        .form-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-section input {
+            width: 100%;
+            padding: 13px;
+            margin-bottom: 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #16a34a;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #15803d;
+        }
+
+        @media (max-width: 700px) {
+
+            .payment-layout {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>💳 Payment</h1>
+
+        <p>Make Your Fee Payment</p>
+
+    </div>
+
+
+    <div class="container">
+
+        <a href="/finance" class="back">
+            ← Back to Finance Portal
+        </a>
+
+
+        <div class="box">
+
+            <div class="payment-layout">
+
+
+                <!-- QR CODE -->
+
+                <div class="qr-section">
+
+                    <h2>📱 Scan QR to Pay</h2>
+
+                    <img
+                        src="/static/payment_qr.png"
+                        alt="Payment QR Code"
+                    >
+
+                    <p>
+                        Scan the QR code and complete your payment.
+                    </p>
+
+                </div>
+
+
+                <!-- PAYMENT FORM -->
+
+                <div class="form-section">
+
+                    <form
+                        action="/finance-payment"
+                        method="POST"
+                        enctype="multipart/form-data"
+                    >
+
+                        <label>
+                            Enrollment Number
+                        </label>
+
+                        <input
+                            type="text"
+                            name="enrollment"
+                            placeholder="Enter Enrollment Number"
+                            value="{{ student.enrollment }}"
+                            readonly
+                            required
+                        >
+
+
+                        <label>
+                            Upload Payment Screenshot
+                        </label>
+
+                        <input
+                            type="file"
+                            name="screenshot"
+                            accept="image/*"
+                            required
+                        >
+
+                        <label>
+    Fee Type
+</label>
+
+<select
+    name="fee_type"
+    required
+    style="
+        width: 100%;
+        padding: 13px;
+        margin-bottom: 20px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 15px;
+        background: white;
+    "
+>
+
+    <option value="" disabled selected>
+        Select Fee Type
+    </option>
+
+    <option value="Academic/Tution fees">
+        Academic/Tution fees
+    </option>
+
+    <option value="Transport fees">
+        Transport fees
+    </option>
+
+    <option value="Hostel fees">
+        Hostel fees
+    </option>
+
+    <option value="Library Fine fees">
+        Library Fine fees
+    </option>
+
+    <option value="Back paper fees">
+        Back paper fees
+    </option>
+
+    <option value="Summer semester exam Fees">
+        Summer semester exam Fees
+    </option>
+
+</select>
+
+
+                        <button type="submit">
+                            Submit Payment Screenshot
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             PAYMENT STATUS
+             ========================= -->
+
+        {% if pending_records %}
+
+        <div style="
+            margin-top: 25px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        ">
+
+            <h2 style="margin-top: 0;">
+                📋 Payment Status
+            </h2>
+
+
+            {% for record in pending_records %}
+
+            <div style="
+                border: 1px solid #e2e8f0;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 12px;
+                background: #f8fafc;
+            ">
+
+                <strong>
+                    🟡 Payment sent to Finance
+                </strong>
+
+                <p style="margin: 8px 0 0;">
+                    Enrollment: {{ record.enrollment }}
+                </p>
+
+                <p style="margin: 5px 0 0;">
+                    Course: {{ record.course }}
+                </p>
+
+                <p style="margin: 5px 0 0;">
+                    Semester: {{ record.semester }}
+                </p>
+
+                <p style="margin: 5px 0 0; color: #64748b;">
+                    Status: Waiting for Finance
+                </p>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+    </div>
+
+</body>
+
+</html>
