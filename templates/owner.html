@@ -78,19 +78,196 @@
             ← Back to Select Portal
         </a>
 
+        <a
+    href="/owner-change-password"
+    style="
+        display:inline-block;
+        margin-bottom:30px;
+        margin-left:10px;
+        padding:11px 18px;
+        background:#7c3aed;
+        color:white;
+        text-decoration:none;
+        border-radius:8px;
+        font-weight:bold;
+    "
+>
+    🔐 Change Owner Credentials
+</a>
+
+
         <div class="welcome">
 
-            <div class="icon">
-                👑
-            </div>
+            <h2>➕ Add Department Admin</h2>
 
-            <h2>
-                Welcome to Owner Portal
-            </h2>
+            <form action="/owner-add-admin" method="POST">
 
-            <p>
-                Owner management features will be added here.
-            </p>
+                <label style="display:block; margin-top:20px; font-weight:bold;">
+                    Select Department
+                </label>
+
+                <select
+                    name="department_id"
+                    required
+                    style="width:100%; padding:12px; margin-top:8px; border:1px solid #cbd5e1; border-radius:8px;"
+                >
+
+                    <option value="">Select Department</option>
+
+                    {% for department in departments %}
+
+                        <option value="{{ department.department_id }}">
+                            {{ department.name }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <button
+                    type="submit"
+                    style="width:100%; padding:13px; margin-top:25px; background:#7c3aed; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;"
+                >
+                    Add Admin
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <div class="welcome">
+
+            <h2>📋 Department Admins</h2>
+
+            {% if admins %}
+
+                {% for admin in admins %}
+
+                    <div style="
+                        background:#f8fafc;
+                        padding:20px;
+                        margin-top:15px;
+                        border-radius:10px;
+                        text-align:left;
+                        border:1px solid #e2e8f0;
+                    ">
+
+                        <h3 style="color:#7c3aed;">
+                            {{ admin.department_name }}
+                        </h3>
+
+                        <p>
+                            <strong>Admin ID:</strong>
+                            {{ admin.admin_id }}
+                        </p>
+
+                        <p>
+                            <strong>Status:</strong>
+
+                            {% if admin.is_closed %}
+                                Temporarily Closed
+                            {% else %}
+                                Open
+                            {% endif %}
+
+                        </p>
+
+
+                        <!-- Reset Password -->
+
+                        <form
+                            action="/owner-reset-admin-password/{{ admin.admin_id }}"
+                            method="POST"
+                            style="margin-top:15px;"
+                        >
+
+                            <button
+                                type="submit"
+                                style="
+                                    width:100%;
+                                    padding:10px;
+                                    background:#2563eb;
+                                    color:white;
+                                    border:none;
+                                    border-radius:8px;
+                                    cursor:pointer;
+                                "
+                            >
+                                🔑 Reset Password
+                            </button>
+
+                        </form>
+
+
+                        <!-- Temporary Close / Open -->
+
+                        <form
+                            action="/owner-toggle-admin/{{ admin.admin_id }}"
+                            method="POST"
+                            style="margin-top:10px;"
+                        >
+
+                            <button
+                                type="submit"
+                                style="
+                                    width:100%;
+                                    padding:10px;
+                                    background:#f59e0b;
+                                    color:white;
+                                    border:none;
+                                    border-radius:8px;
+                                    cursor:pointer;
+                                "
+                            >
+
+                                {% if admin.is_closed %}
+                                    🔓 Open Department
+                                {% else %}
+                                    🔒 Temporary Close
+                                {% endif %}
+
+                            </button>
+
+                        </form>
+
+
+                        <!-- Delete Admin -->
+
+                        <form
+                            action="/owner-delete-admin/{{ admin.admin_id }}"
+                            method="POST"
+                            style="margin-top:10px;"
+                            onsubmit="return confirm('Are you sure you want to delete this Department Admin?');"
+                        >
+
+                            <button
+                                type="submit"
+                                style="
+                                    width:100%;
+                                    padding:10px;
+                                    background:#dc2626;
+                                    color:white;
+                                    border:none;
+                                    border-radius:8px;
+                                    cursor:pointer;
+                                "
+                            >
+                                🗑️ Delete Admin
+                            </button>
+
+                        </form>
+
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <p>No Department Admin added yet.</p>
+
+            {% endif %}
 
         </div>
 

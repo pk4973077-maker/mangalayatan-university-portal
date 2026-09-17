@@ -130,16 +130,60 @@ def protect_private_routes():
 
 def admin_required():
 
-    admin_data = get_admin_data()
+    admin_id = session.get("admin_id")
+    department_id = session.get("admin_department_id")
 
-    if (
-        not session.get("admin_id")
-        or
-        session.get("admin_id")
-        != admin_data.get("admin_id")
-    ):
+    if not admin_id or not department_id:
+        session.pop("admin_id", None)
+        session.pop("admin_department", None)
+        session.pop("admin_department_id", None)
+
+        return redirect(
+            url_for("admin_login")
+        )
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    admin_id,
+                    department_id,
+                    department_name,
+                    is_closed
+                FROM department_admins
+                WHERE admin_id = %s
+                  AND department_id = %s
+            """, (
+                admin_id,
+                department_id
+            ))
+
+            admin_data = cur.fetchone()
+
+    finally:
+        conn.close()
+
+    # Admin account exist nahi karta
+    if not admin_data:
 
         session.pop("admin_id", None)
+        session.pop("admin_department", None)
+        session.pop("admin_department_id", None)
+
+        return redirect(
+            url_for("admin_login")
+        )
+
+    # Department temporarily closed hai
+    if admin_data["is_closed"]:
+
+        session.pop("admin_id", None)
+        session.pop("admin_department", None)
+        session.pop("admin_department_id", None)
 
         return redirect(
             url_for("admin_login")
@@ -6195,90 +6239,203 @@ def student_information():
 @app.route("/admin-login", methods=["GET", "POST"])
 def admin_login():
 
+    # Departments load karo
+    departments = []
+
+    if os.path.exists(DEPARTMENTS_FILE):
+
+        try:
+            with open(DEPARTMENTS_FILE, "r") as file:
+                departments = json.load(file)
+
+        except:
+            departments = []
+
     if request.method == "POST":
 
-        admin_id = request.form.get("admin_id", "").strip()
-        password = request.form.get("password", "").strip()
+        admin_id = request.form.get(
+            "admin_id", ""
+        ).strip()
 
-        # Admin data load karo
-        admin_data = get_admin_data()
+        department = request.form.get(
+            "department", ""
+        ).strip()
 
-        if (
-            admin_id == admin_data["admin_id"]
-            and check_password_hash(admin_data["password"], password)
+        password = request.form.get(
+            "password", ""
+        ).strip()
+
+        if not admin_id or not department or not password:
+            return "Please enter Admin ID, Department and Password."
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT
+                        admin_id,
+                        department_id,
+                        department_name,
+                        password,
+                        is_closed
+                    FROM department_admins
+                    WHERE admin_id = %s
+                      AND department_name = %s
+                """, (
+                    admin_id,
+                    department
+                ))
+
+                admin_data = cur.fetchone()
+
+        finally:
+            conn.close()
+
+        # Admin account check
+        if not admin_data:
+            return "Invalid Admin ID, Password or Department"
+
+        # Temporarily closed check
+        if admin_data["is_closed"]:
+            return "This Department is temporarily closed."
+
+        # Password check
+        if not check_password_hash(
+            admin_data["password"],
+            password
         ):
-            # -------------------------
-            # ROLE SESSION ISOLATION
-            # -------------------------
-            # Admin login ke time purane Student/Faculty session keys hatao.
-            session.pop("student_id", None)
-            session.pop("student_enrollment", None)
-            session.pop("student_course", None)
-            session.pop("student_semester", None)
-            session.pop("student_section", None)
-            session.pop("faculty_id", None)
-            session.pop("faculty_name", None)
+            return "Invalid Admin ID, Password or Department"
 
-            session["admin_id"] = admin_id
-            return redirect("/admin-dashboard")
+        # -------------------------
+        # ROLE SESSION ISOLATION
+        # -------------------------
 
-        return "Invalid Admin ID or Password"
+        session.pop("student_id", None)
+        session.pop("student_enrollment", None)
+        session.pop("student_course", None)
+        session.pop("student_semester", None)
+        session.pop("student_section", None)
+        session.pop("faculty_id", None)
+        session.pop("faculty_name", None)
 
-    return render_template("admin_login.html")
+        # Admin session
+        session["admin_id"] = admin_data["admin_id"]
+        session["admin_department"] = admin_data["department_name"]
+        session["admin_department_id"] = admin_data["department_id"]
+
+        return redirect("/admin-dashboard")
+
+    return render_template(
+        "admin_login.html",
+        departments=departments
+    )
+
 
 @app.route("/admin-change-password", methods=["GET", "POST"])
 def admin_change_password():
 
-    # केवल logged-in Admin
+    # Logged-in Admin check
     if not session.get("admin_id"):
         return redirect(url_for("admin_login"))
 
     message = ""
 
+    admin_id = session.get("admin_id")
+    admin_department = session.get("admin_department")
+
     if request.method == "POST":
 
-        current_password = request.form.get("current_password", "")
-        new_password = request.form.get("new_password", "")
-        confirm_password = request.form.get("confirm_password", "")
+        current_password = request.form.get(
+            "current_password", ""
+        ).strip()
 
-        admin_data = get_admin_data()
+        new_password = request.form.get(
+            "new_password", ""
+        ).strip()
 
-        # Current password check
-        if not check_password_hash(
-            admin_data["password"],
-            current_password
-        ):
-            message = "Current password is incorrect."
+        confirm_password = request.form.get(
+            "confirm_password", ""
+        ).strip()
 
-        # New password confirmation
-        elif new_password != confirm_password:
-            message = "New passwords do not match."
+        conn = get_connection()
 
-        # Empty/too short password
-        elif len(new_password) < 6:
-            message = "New password must be at least 6 characters."
+        try:
 
-        # Same password
-        elif check_password_hash(
-            admin_data["password"],
-            new_password
-        ):
-            message = "New password must be different from the current password."
+            with conn.cursor() as cur:
 
-        else:
+                cur.execute("""
+                    SELECT
+                        admin_id,
+                        department_name,
+                        password
+                    FROM department_admins
+                    WHERE admin_id = %s
+                      AND department_name = %s
+                """, (
+                    admin_id,
+                    admin_department
+                ))
 
-            admin_data["password"] = generate_password_hash(
-                new_password
-            )
+                admin_data = cur.fetchone()
 
-            with open(ADMIN_FILE, "w") as file:
-                json.dump(admin_data, file, indent=4)
+                if not admin_data:
 
-            message = "Admin password changed successfully."
+                    message = "Admin account not found."
+
+                elif not check_password_hash(
+                    admin_data["password"],
+                    current_password
+                ):
+
+                    message = "Current password is incorrect."
+
+                elif new_password != confirm_password:
+
+                    message = "New passwords do not match."
+
+                elif len(new_password) < 6:
+
+                    message = "New password must be at least 6 characters."
+
+                elif check_password_hash(
+                    admin_data["password"],
+                    new_password
+                ):
+
+                    message = "New password must be different from the current password."
+
+                else:
+
+                    new_password_hash = generate_password_hash(
+                        new_password
+                    )
+
+                    cur.execute("""
+                        UPDATE department_admins
+                        SET password = %s
+                        WHERE admin_id = %s
+                          AND department_name = %s
+                    """, (
+                        new_password_hash,
+                        admin_id,
+                        admin_department
+                    ))
+
+                    conn.commit()
+
+                    message = "Admin password changed successfully."
+
+        finally:
+            conn.close()
 
     return render_template(
         "admin_change_password.html",
-        message=message
+        message=message,
+        admin_id=admin_id,
+        admin_department=admin_department
     )
 
 @app.route("/admin-logout")
@@ -6308,12 +6465,11 @@ def admin_dashboard():
     # =========================
     # ADMIN LOGIN CHECK
     # =========================
-    # Extra route-level protection: even if this URL is opened
-    # directly, only a valid Admin session can enter.
-    admin_data = get_admin_data()
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
 
     # =========================
     # STUDENTS COUNT
@@ -11441,9 +11597,477 @@ def finance_search_receipt():
         payment=payment
     )
 
+
+# =========================
+# OWNER LOGIN
+# =========================
+
+@app.route("/owner-login", methods=["GET", "POST"])
+def owner_login():
+
+    message = ""
+
+    if request.method == "POST":
+
+        verification_name = request.form.get(
+            "verification_name", ""
+        ).strip()
+
+        password = request.form.get(
+            "password", ""
+        ).strip()
+
+        if not verification_name or not password:
+
+            message = "Please enter Verification Name and Password."
+
+        else:
+
+            conn = get_connection()
+
+            try:
+
+                with conn.cursor() as cur:
+
+                    cur.execute("""
+                        SELECT
+                            verification_name,
+                            password
+                        FROM owner_credentials
+                        WHERE id = 1
+                    """)
+
+                    owner_data = cur.fetchone()
+
+                    # First time Owner login
+                    if not owner_data:
+
+                        default_name = "OWNER"
+                        default_password = "owner123"
+
+                        cur.execute("""
+                            INSERT INTO owner_credentials (
+                                id,
+                                verification_name,
+                                password
+                            )
+                            VALUES (1, %s, %s)
+                        """, (
+                            default_name,
+                            generate_password_hash(
+                                default_password
+                            )
+                        ))
+
+                        conn.commit()
+
+                        owner_data = {
+                            "verification_name": default_name,
+                            "password": generate_password_hash(
+                                default_password
+                            )
+                        }
+
+            finally:
+                conn.close()
+
+            if (
+                verification_name
+                != owner_data["verification_name"]
+            ):
+
+                message = "Invalid Verification Name or Password."
+
+            elif not check_password_hash(
+                owner_data["password"],
+                password
+            ):
+
+                message = "Invalid Verification Name or Password."
+
+            else:
+
+                # Purane roles ki session clear
+                session.pop("admin_id", None)
+                session.pop("admin_department", None)
+                session.pop("admin_department_id", None)
+
+                session.pop("student_id", None)
+                session.pop("student_enrollment", None)
+                session.pop("student_course", None)
+                session.pop("student_semester", None)
+                session.pop("student_section", None)
+
+                session.pop("faculty_id", None)
+                session.pop("faculty_name", None)
+
+                session["owner_logged_in"] = True
+
+                return redirect("/owner")
+
+    return render_template(
+        "owner_login.html",
+        message=message
+    )
+
+
+# =========================
+# OWNER LOGIN SECURITY
+# =========================
+
+def owner_required():
+
+    if not session.get("owner_logged_in"):
+
+        session.pop("owner_logged_in", None)
+
+        return redirect(
+            url_for("owner_login")
+        )
+
+    return None
+
 @app.route("/owner")
 def owner():
-    return render_template("owner.html")
+
+    security_check = owner_required()
+
+    if security_check:
+        return security_check
+
+    departments = []
+    admins = []
+
+    if os.path.exists(DEPARTMENTS_FILE):
+
+        try:
+            with open(DEPARTMENTS_FILE, "r") as file:
+                departments = json.load(file)
+
+        except:
+            departments = []
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    department_id,
+                    department_name,
+                    admin_id,
+                    is_closed
+                FROM department_admins
+                ORDER BY id
+            """)
+
+            admins = cur.fetchall()
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "owner.html",
+        departments=departments,
+        admins=admins
+    )
+
+
+# =========================
+# OWNER - CHANGE CREDENTIALS
+# =========================
+
+@app.route("/owner-change-password", methods=["GET", "POST"])
+def owner_change_password():
+
+    security_check = owner_required()
+
+    if security_check:
+        return security_check
+
+    message = ""
+
+    if request.method == "POST":
+
+        current_name = request.form.get(
+            "current_name", ""
+        ).strip()
+
+        current_password = request.form.get(
+            "current_password", ""
+        ).strip()
+
+        new_name = request.form.get(
+            "new_name", ""
+        ).strip()
+
+        new_password = request.form.get(
+            "new_password", ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password", ""
+        ).strip()
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM owner_credentials
+                    WHERE id = 1
+                """)
+
+                owner_data = cur.fetchone()
+
+                if not owner_data:
+
+                    message = "Owner account not found."
+
+                elif current_name != owner_data["verification_name"]:
+
+                    message = "Current Verification Name is incorrect."
+
+                elif not check_password_hash(
+                    owner_data["password"],
+                    current_password
+                ):
+
+                    message = "Current Password is incorrect."
+
+                elif not new_name or not new_password:
+
+                    message = "Please enter new Verification Name and Password."
+
+                elif new_password != confirm_password:
+
+                    message = "New passwords do not match."
+
+                elif len(new_password) < 6:
+
+                    message = "New password must be at least 6 characters."
+
+                else:
+
+                    cur.execute("""
+                        UPDATE owner_credentials
+                        SET
+                            verification_name = %s,
+                            password = %s
+                        WHERE id = 1
+                    """, (
+                        new_name,
+                        generate_password_hash(new_password)
+                    ))
+
+                    conn.commit()
+
+                    message = "Owner credentials changed successfully."
+
+        finally:
+            conn.close()
+
+    return render_template(
+        "owner_change_password.html",
+        message=message
+    )
+
+# =========================
+# OWNER - ADD ADMIN
+# =========================
+
+@app.route("/owner-add-admin", methods=["POST"])
+def owner_add_admin():
+
+    department_id = request.form.get("department_id", "").strip()
+
+    if not department_id:
+        return "Please select a department."
+
+    # Existing departments load karo
+    departments = []
+
+    if os.path.exists(DEPARTMENTS_FILE):
+        try:
+            with open(DEPARTMENTS_FILE, "r") as file:
+                departments = json.load(file)
+        except:
+            departments = []
+
+    # Selected department find karo
+    selected_department = None
+
+    for department in departments:
+
+        if department.get("department_id") == department_id:
+            selected_department = department
+            break
+
+    if not selected_department:
+        return "Invalid Department."
+
+    department_name = selected_department.get("name", "").strip()
+
+    if not department_name:
+        return "Invalid Department."
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            # Check department already has an Admin
+            cur.execute("""
+                SELECT id
+                FROM department_admins
+                WHERE department_id = %s
+            """, (department_id,))
+
+            existing_admin = cur.fetchone()
+
+            if existing_admin:
+                return "Admin already exists for this Department."
+
+            # Next Admin ID
+            cur.execute("""
+                SELECT admin_id
+                FROM department_admins
+                ORDER BY id DESC
+                LIMIT 1
+            """)
+
+            last_admin = cur.fetchone()
+
+            if last_admin:
+                last_id = last_admin["admin_id"]
+
+                try:
+                    number = int(
+                        last_id.replace("ADMIN", "")
+                    ) + 1
+                except:
+                    number = 1
+
+            else:
+                number = 1
+
+            admin_id = "ADMIN" + str(number).zfill(3)
+
+            # Initial password = Admin ID
+            password_hash = generate_password_hash(admin_id)
+
+            cur.execute("""
+                INSERT INTO department_admins (
+                    department_id,
+                    department_name,
+                    admin_id,
+                    password,
+                    is_closed
+                )
+                VALUES (%s, %s, %s, %s, FALSE)
+            """, (
+                department_id,
+                department_name,
+                admin_id,
+                password_hash
+            ))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return redirect("/owner")
+
+# =========================
+# OWNER - RESET ADMIN PASSWORD
+# =========================
+
+@app.route("/owner-reset-admin-password/<admin_id>", methods=["POST"])
+def owner_reset_admin_password(admin_id):
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                UPDATE department_admins
+                SET password = %s
+                WHERE admin_id = %s
+            """, (
+                generate_password_hash(admin_id),
+                admin_id
+            ))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return redirect("/owner")
+
+
+# =========================
+# OWNER - TEMPORARY CLOSE / OPEN ADMIN
+# =========================
+
+@app.route("/owner-toggle-admin/<admin_id>", methods=["POST"])
+def owner_toggle_admin(admin_id):
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                UPDATE department_admins
+                SET is_closed = NOT is_closed
+                WHERE admin_id = %s
+            """, (admin_id,))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return redirect("/owner")
+
+
+# =========================
+# OWNER - DELETE ADMIN
+# =========================
+
+@app.route("/owner-delete-admin/<admin_id>", methods=["POST"])
+def owner_delete_admin(admin_id):
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                DELETE FROM department_admins
+                WHERE admin_id = %s
+            """, (admin_id,))
+
+        conn.commit()
+
+    finally:
+        conn.close()
+
+    return redirect("/owner")
 
 
 

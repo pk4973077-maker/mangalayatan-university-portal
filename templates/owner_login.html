@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Change Admin Password</title>
+    <title>Owner Login</title>
 
     <style>
         * {
             box-sizing: border-box;
+            font-family: Arial, sans-serif;
         }
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
             background: #f1f5f9;
             min-height: 100vh;
 
@@ -35,7 +36,7 @@
 
         h2 {
             text-align: center;
-            color: #1e3a8a;
+            color: #7c3aed;
             margin-bottom: 25px;
         }
 
@@ -57,11 +58,6 @@
             font-size: 15px;
         }
 
-        input:focus {
-            outline: none;
-            border-color: #2563eb;
-        }
-
         button {
             width: 100%;
             margin-top: 25px;
@@ -71,28 +67,13 @@
             border: none;
             border-radius: 8px;
 
-            background: #1e3a8a;
+            background: #7c3aed;
             color: white;
 
             font-size: 16px;
             font-weight: bold;
 
             cursor: pointer;
-        }
-
-        button:hover {
-            background: #172554;
-        }
-
-        .back {
-            display: block;
-            text-align: center;
-
-            margin-top: 18px;
-
-            color: #1e3a8a;
-            text-decoration: none;
-            font-weight: bold;
         }
 
         .message {
@@ -106,17 +87,15 @@
             text-align: center;
         }
 
-        .info-box {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
+        .back {
+            display: block;
+            text-align: center;
 
-        .info-box p {
-            margin: 5px 0;
-            color: #1e3a8a;
+            margin-top: 18px;
+
+            color: #7c3aed;
+            text-decoration: none;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -125,7 +104,7 @@
 
 <div class="container">
 
-    <h2>🔐 Change Admin Password</h2>
+    <h2>👑 Owner Login</h2>
 
     {% if message %}
         <div class="message">
@@ -133,65 +112,38 @@
         </div>
     {% endif %}
 
-
-    <!-- Admin Information -->
-
-    <div class="info-box">
-
-        <p>
-            <strong>Admin ID:</strong>
-            {{ admin_id }}
-        </p>
-
-        <p>
-            <strong>Department:</strong>
-            {{ admin_department }}
-        </p>
-
-    </div>
-
-
     <form method="POST">
 
-        <label>Current Password</label>
+        <label>Verification Name</label>
 
         <input
-            type="password"
-            name="current_password"
+            type="text"
+            name="verification_name"
+            placeholder="Enter Verification Name"
             required
         >
 
-
-        <label>New Password</label>
-
-        <input
-            type="password"
-            name="new_password"
-            required
-        >
-
-
-        <label>Confirm New Password</label>
+        <label>Password</label>
 
         <input
             type="password"
-            name="confirm_password"
+            name="password"
+            placeholder="Enter Password"
             required
         >
-
 
         <button type="submit">
-            Change Password
+            Login
         </button>
 
     </form>
 
-
-    <a href="/admin-dashboard" class="back">
-        ← Back to Admin Dashboard
+    <a href="/" class="back">
+        ← Back to Select Portal
     </a>
 
 </div>
 
 </body>
+
 </html>

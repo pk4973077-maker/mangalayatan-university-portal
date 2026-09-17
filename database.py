@@ -82,6 +82,26 @@ def init_database():
     )
 """)
 
+            cur.execute("""
+    CREATE TABLE IF NOT EXISTS department_admins (
+        id SERIAL PRIMARY KEY,
+        department_id TEXT UNIQUE NOT NULL,
+        department_name TEXT NOT NULL,
+        admin_id TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+""")
+
+            cur.execute("""
+    CREATE TABLE IF NOT EXISTS owner_credentials (
+        id INTEGER PRIMARY KEY,
+        verification_name TEXT NOT NULL,
+        password TEXT NOT NULL
+    )
+""")            
+
         conn.commit()
 
     finally:

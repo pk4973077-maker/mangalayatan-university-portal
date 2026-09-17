@@ -117,6 +117,23 @@
                     required
                 >
 
+                <label>Department</label>
+
+<select
+    name="department"
+    required
+    style="width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 8px;"
+>
+    <option value="">Select Department</option>
+
+    {% for department in departments %}
+        <option value="{{ department.name }}">
+            {{ department.name }}
+        </option>
+    {% endfor %}
+
+</select>
+
                 <label>Password</label>
 
                 <input
