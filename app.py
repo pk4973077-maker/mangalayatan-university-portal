@@ -802,10 +802,35 @@ def student_registration_qr():
         download_name="student-registration-qr.png"
     )
 
+
 @app.route("/student-register", methods=["GET", "POST"])
 def student_register():
 
     courses = get_admin_courses()
+
+    departments = []
+
+    if os.path.exists(DEPARTMENTS_FILE):
+
+        try:
+
+            with open(
+                DEPARTMENTS_FILE,
+                "r"
+            ) as file:
+
+                departments = json.load(file)
+
+            if not isinstance(
+                departments,
+                list
+            ):
+
+                departments = []
+
+        except:
+
+            departments = []
 
     students = []
 
@@ -817,10 +842,18 @@ def student_register():
 
         try:
 
-            with open(STUDENTS_FILE, "r") as file:
+            with open(
+                STUDENTS_FILE,
+                "r"
+            ) as file:
+
                 students = json.load(file)
 
-            if not isinstance(students, list):
+            if not isinstance(
+                students,
+                list
+            ):
+
                 students = []
 
         except:
@@ -834,31 +867,43 @@ def student_register():
     if request.method == "POST":
 
         student_name = request.form.get(
-            "student_name", ""
+            "student_name",
+            ""
         ).strip()
 
         enrollment = request.form.get(
-            "enrollment", ""
+            "enrollment",
+            ""
+        ).strip()
+
+        department = request.form.get(
+            "department",
+            ""
         ).strip()
 
         course = request.form.get(
-            "course", ""
+            "course",
+            ""
         ).strip()
 
         semester = request.form.get(
-            "semester", ""
+            "semester",
+            ""
         ).strip()
 
         branch = request.form.get(
-            "branch", ""
+            "branch",
+            ""
         ).strip().upper()
 
         section = request.form.get(
-            "section", ""
+            "section",
+            ""
         ).strip().upper()
 
         group = request.form.get(
-            "group", ""
+            "group",
+            ""
         ).strip().upper()
 
         # -------------------------
@@ -869,6 +914,7 @@ def student_register():
         if (
             not student_name
             or not enrollment
+            or not department
             or not course
             or not semester
         ):
@@ -876,12 +922,50 @@ def student_register():
             return "Please fill all required fields."
 
         # -------------------------
+        # DEPARTMENT CHECK
+        # -------------------------
+
+        valid_department = None
+
+        for item in departments:
+
+            if isinstance(
+                item,
+                dict
+            ):
+
+                department_name = str(
+                    item.get(
+                        "name",
+                        ""
+                    )
+                ).strip()
+
+                if (
+                    department_name.lower()
+                    == department.lower()
+                ):
+
+                    valid_department = (
+                        department_name
+                    )
+
+                    break
+
+        if not valid_department:
+
+            return "Invalid Department."
+
+        department = valid_department
+
+        # -------------------------
         # SEMESTER CHECK
         # -------------------------
 
         if semester not in [
             "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "5", "6", "7", "8",
+            "9", "10"
         ]:
 
             return "Invalid Semester."
@@ -894,10 +978,16 @@ def student_register():
 
         for item in courses:
 
-            if isinstance(item, dict):
+            if isinstance(
+                item,
+                dict
+            ):
 
                 course_name = str(
-                    item.get("name", "")
+                    item.get(
+                        "name",
+                        ""
+                    )
                 ).strip()
 
                 if (
@@ -1054,7 +1144,9 @@ def student_register():
 
         if numbers:
 
-            next_number = max(numbers) + 1
+            next_number = max(
+                numbers
+            ) + 1
 
         else:
 
@@ -1062,7 +1154,9 @@ def student_register():
 
         student_id = (
             "STU"
-            + str(next_number).zfill(3)
+            + str(
+                next_number
+            ).zfill(3)
         )
 
         # -------------------------
@@ -1076,6 +1170,8 @@ def student_register():
             "name": student_name,
 
             "enrollment": enrollment,
+
+            "department": department,
 
             "course": course,
 
@@ -1129,9 +1225,11 @@ def student_register():
     return render_template(
         "student_register.html",
         courses=courses,
+        departments=departments,
         semesters=[
             "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "5", "6", "7", "8",
+            "9", "10"
         ],
         branches=[
             "CSE",
@@ -1346,6 +1444,50 @@ def student_login():
             return (
                 "Invalid Enrollment Number "
                 "or Password"
+            )
+
+        # =================================================
+        # DEPARTMENT LOCK CHECK
+        # =================================================
+
+        student_department = str(
+            student.get(
+                "department",
+                ""
+            )
+        ).strip()
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT is_closed
+                    FROM department_admins
+                    WHERE LOWER(department_name) = LOWER(%s)
+                """, (
+                    student_department,
+                ))
+
+                department_data = cur.fetchone()
+
+        finally:
+
+            conn.close()
+
+        # Department Owner ke system me nahi hai
+        # OR Department temporarily closed hai
+
+        if (
+            not department_data
+            or department_data["is_closed"]
+        ):
+
+            return (
+                "Your service is locked. "
+                "First payment by department then use this service."
             )
 
         # =================================================
@@ -3689,6 +3831,50 @@ def faculty_login():
                     indent=4
                 )
 
+        # =================================================
+        # DEPARTMENT LOCK CHECK
+        # =================================================
+
+        faculty_department = str(
+            faculty.get(
+                "department",
+                ""
+            )
+        ).strip()
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT is_closed
+                    FROM department_admins
+                    WHERE LOWER(department_name) = LOWER(%s)
+                """, (
+                    faculty_department,
+                ))
+
+                department_data = cur.fetchone()
+
+        finally:
+
+            conn.close()
+
+        # Department Owner ke system me nahi hai
+        # OR Department temporarily closed hai
+
+        if (
+            not department_data
+            or department_data["is_closed"]
+        ):
+
+            return (
+                "Your service is locked. "
+                "First payment by department then use this service."
+            )
+
         # -------------------------
         # ROLE SESSION ISOLATION
         # -------------------------
@@ -3704,8 +3890,9 @@ def faculty_login():
 
         session["faculty_id"] = actual_faculty_id
         session["faculty_name"] = str(
-    faculty.get("name", "")
-).strip()
+            faculty.get("name", "")
+        ).strip()
+
         return redirect(
             "/faculty-dashboard"
         )
@@ -6679,6 +6866,31 @@ def admin_students():
     courses = get_admin_courses()
 
     # =====================================================
+    # LOAD DEPARTMENTS
+    # =====================================================
+
+    departments = []
+
+    if os.path.exists(DEPARTMENTS_FILE):
+
+        try:
+
+            with open(
+                DEPARTMENTS_FILE,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                departments = json.load(file)
+
+            if not isinstance(departments, list):
+                departments = []
+
+        except Exception:
+
+            departments = []
+
+    # =====================================================
     # LOAD STUDENTS
     # =====================================================
 
@@ -6765,6 +6977,15 @@ def admin_students():
             ""
         ).strip()
 
+        # =================================================
+        # NEW: DEPARTMENT
+        # =================================================
+
+        department = request.form.get(
+            "department",
+            ""
+        ).strip()
+
         course = request.form.get(
             "course",
             ""
@@ -6797,6 +7018,7 @@ def admin_students():
         if (
             not student_name
             or not enrollment
+            or not department
             or not course
             or not semester
         ):
@@ -6805,6 +7027,38 @@ def admin_students():
                 "Please fill all required fields.",
                 400
             )
+
+        # =================================================
+        # DEPARTMENT VALIDATION
+        # =================================================
+
+        valid_department = None
+
+        for item in departments:
+
+            if isinstance(item, dict):
+
+                department_name = str(
+                    item.get("name", "")
+                ).strip()
+
+                if (
+                    department_name.lower()
+                    == department.lower()
+                ):
+
+                    valid_department = department_name
+
+                    break
+
+        if not valid_department:
+
+            return (
+                "Invalid Department.",
+                400
+            )
+
+        department = valid_department
 
         # =================================================
         # SEMESTER VALIDATION
@@ -6818,7 +7072,9 @@ def admin_students():
             "5",
             "6",
             "7",
-            "8"
+            "8",
+            "9",
+            "10"
         ]:
 
             return (
@@ -6830,38 +7086,59 @@ def admin_students():
         # COURSE VALIDATION
         # =================================================
 
-        valid_courses = []
+        valid_course = None
 
         for item in courses:
 
-            name = get_course_name(item)
+            if isinstance(item, dict):
 
-            if name:
+                name = get_course_name(item)
 
-                valid_courses.append(name)
+                course_department = str(
+                    item.get(
+                        "department",
+                        ""
+                    )
+                ).strip()
 
-        course_found = False
+                if (
+                    name
+                    and
+                    name.lower()
+                    == course.lower()
+                    and
+                    course_department.lower()
+                    == department.lower()
+                ):
 
-        for valid_course in valid_courses:
+                    valid_course = name
 
-            if (
-                valid_course.lower()
-                == course.lower()
-            ):
+                    break
 
-                course_found = True
+            else:
 
-                # Save the official course name
-                course = valid_course
+                name = get_course_name(item)
 
-                break
+                if (
+                    name
+                    and
+                    name.lower()
+                    == course.lower()
+                ):
 
-        if not course_found:
+                    valid_course = name
+
+                    break
+
+        if not valid_course:
 
             return (
-                "Invalid Course.",
+                "Invalid Course for selected Department.",
                 400
             )
+
+        # Save official course name
+        course = valid_course
 
         # =================================================
         # BRANCH VALIDATION
@@ -7052,25 +7329,6 @@ def admin_students():
         # =================================================
         # CREATE STUDENT
         # =================================================
-        #
-        # IMPORTANT FIX:
-        #
-        # New student's default password
-        # is Student ID.
-        #
-        # We immediately save the HASH.
-        #
-        # Example:
-        #
-        # Student ID = STU005
-        # Password   = STU005
-        #
-        # But database/json stores only
-        # the password HASH.
-        #
-        # Therefore after changing password,
-        # old Student ID will NOT work.
-        # =================================================
 
         student = {
 
@@ -7082,6 +7340,10 @@ def admin_students():
 
             "enrollment":
                 enrollment,
+
+            # NEW: DEPARTMENT
+            "department":
+                department,
 
             "course":
                 course,
@@ -7211,7 +7473,9 @@ def admin_students():
             "5",
             "6",
             "7",
-            "8"
+            "8",
+            "9",
+            "10"
         ]:
 
             continue
@@ -7429,6 +7693,8 @@ def admin_students():
         students=students,
 
         courses=courses,
+
+        departments=departments,
 
         course_structure=course_structure
 

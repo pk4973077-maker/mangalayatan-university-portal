@@ -124,8 +124,6 @@
             background: #15803d;
         }
 
-        /* BRANCH */
-
         #branch-field {
             display: none;
         }
@@ -387,6 +385,36 @@
 
                 </div>
 
+                <!-- DEPARTMENT -->
+
+                <div>
+
+                    <label>Department</label>
+
+                    <select
+                        name="department"
+                        id="department"
+                        required
+                    >
+
+                        <option value="">
+                            Select Department
+                        </option>
+
+                        {% for department in departments %}
+
+                            <option value="{{ department.name }}">
+
+                                {{ department.name }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
                 <div>
 
                     <label>Course</label>
@@ -405,6 +433,7 @@
 
                             <option
                                 value="{{ course.name if course.name is defined else course }}"
+                                data-department="{{ course.department if course.department is defined else '' }}"
                             >
 
                                 {{ course.name if course.name is defined else course }}
@@ -439,6 +468,8 @@
                         <option value="6">6th Semester</option>
                         <option value="7">7th Semester</option>
                         <option value="8">8th Semester</option>
+                        <option value="9">9th Semester</option>
+                        <option value="10">10th Semester</option>
 
                     </select>
 
@@ -586,7 +617,6 @@
 
     </div>
 
-
     <div class="box">
 
         <h2>👨‍🎓 Students List</h2>
@@ -612,6 +642,7 @@
                                 📖 Semester {{ semester_number }}
 
                             </div>
+
                             {% for section_name, section_student_list in semester_data.items() %}
 
                                 {% if section_student_list %}
@@ -634,7 +665,6 @@
 
                                             </span>
 
-
                                             {% if section_name == "No Section" %}
 
                                                 Students Without Section
@@ -647,7 +677,6 @@
 
                                         </div>
 
-
                                         {% for student in section_student_list %}
 
                                             <div class="student-card">
@@ -657,7 +686,6 @@
                                                     👤 {{ student.get("name", "") }}
 
                                                 </div>
-
 
                                                 <div class="student-info">
 
@@ -669,7 +697,6 @@
 
                                                     <br>
 
-
                                                     <strong>
                                                         Student ID:
                                                     </strong>
@@ -678,6 +705,13 @@
 
                                                     <br>
 
+                                                    <strong>
+                                                        Department:
+                                                    </strong>
+
+                                                    {{ student.get("department", "") }}
+
+                                                    <br>
 
                                                     <strong>
                                                         Course:
@@ -690,7 +724,6 @@
 
                                                     <br>
 
-
                                                     <strong>
                                                         Semester:
                                                     </strong>
@@ -699,19 +732,17 @@
 
                                                     <br>
 
-
                                                     {% if student.get("branch") and student.get("semester")|int <= 2 %}
 
-    <strong>
-        Branch:
-    </strong>
+                                                        <strong>
+                                                            Branch:
+                                                        </strong>
 
-    {{ student.get("branch") }}
+                                                        {{ student.get("branch") }}
 
-    <br>
+                                                        <br>
 
-{% endif %}
-
+                                                    {% endif %}
 
                                                     {% if student.get("section") %}
 
@@ -725,7 +756,6 @@
 
                                                     {% endif %}
 
-
                                                     {% if student.get("group") %}
 
                                                         <strong>
@@ -738,7 +768,6 @@
 
                                                     {% endif %}
 
-
                                                     <strong>
                                                         Password:
                                                     </strong>
@@ -746,7 +775,6 @@
                                                     {{ student.get("password", "") }}
 
                                                 </div>
-
 
                                                 <div class="buttons">
 
@@ -759,7 +787,6 @@
 
                                                     </a>
 
-
                                                     <a
                                                         href="/admin-reset-student-password/{{ student.get('student_id', '') }}"
                                                         class="btn reset-btn"
@@ -768,7 +795,6 @@
                                                         🔑 Reset Password
 
                                                     </a>
-
 
                                                     <a
                                                         href="/admin-delete-student/{{ student.get('student_id', '') }}"
@@ -830,6 +856,9 @@
 
 <script>
 
+    const departmentSelect =
+        document.getElementById("department");
+
     const courseSelect =
         document.getElementById("course");
 
@@ -841,6 +870,82 @@
 
     const branchSelect =
         document.getElementById("branch");
+
+
+    const allCourseOptions =
+        Array.from(courseSelect.options).slice(1);
+
+
+    function updateCourses() {
+
+        const selectedDepartment =
+            departmentSelect.value
+                .trim()
+                .toLowerCase();
+
+        courseSelect.innerHTML = "";
+
+
+        const defaultOption =
+            document.createElement("option");
+
+        defaultOption.value = "";
+
+        if (selectedDepartment) {
+
+            defaultOption.textContent =
+                "Select Course";
+
+        } else {
+
+            defaultOption.textContent =
+                "Select Department First";
+
+        }
+
+        courseSelect.appendChild(
+            defaultOption
+        );
+
+
+        if (!selectedDepartment) {
+
+            checkBranchVisibility();
+
+            return;
+        }
+
+
+        allCourseOptions.forEach(
+            function(option) {
+
+                const courseDepartment =
+                    (
+                        option.dataset.department
+                        || ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+                if (
+                    courseDepartment
+                    === selectedDepartment
+                ) {
+
+                    courseSelect.appendChild(
+                        option.cloneNode(true)
+                    );
+
+                }
+
+            }
+        );
+
+
+        checkBranchVisibility();
+
+    }
 
 
     function checkBranchVisibility() {
@@ -865,23 +970,34 @@
             )
         ) {
 
-            branchField.style.display = "block";
+            branchField.style.display =
+                "block";
 
-            branchSelect.required = true;
+            branchSelect.required =
+                true;
 
         }
 
         else {
 
-            branchField.style.display = "none";
+            branchField.style.display =
+                "none";
 
-            branchSelect.required = false;
+            branchSelect.required =
+                false;
 
-            branchSelect.value = "";
+            branchSelect.value =
+                "";
 
         }
 
     }
+
+
+    departmentSelect.addEventListener(
+        "change",
+        updateCourses
+    );
 
 
     courseSelect.addEventListener(
@@ -896,79 +1012,10 @@
     );
 
 
-    checkBranchVisibility();
+    updateCourses();
 
 </script>
 
-
-<script>
-
-function updateBranchVisibility() {
-
-    const course = document.getElementById("course");
-    const semester = document.getElementById("semester");
-    const branchField = document.getElementById("branch-field");
-    const branch = document.getElementById("branch");
-
-    if (!course || !semester || !branchField) {
-        return;
-    }
-
-    const selectedCourse =
-        course.value.trim().toUpperCase();
-
-    const selectedSemester =
-        parseInt(semester.value);
-
-    /*
-       B.TECH ALL + Semester 1/2
-       = Branch show
-
-       B.TECH ALL + Semester 3+
-       = Branch hide
-    */
-
-    if (
-        selectedCourse === "B.TECH ALL" &&
-        (selectedSemester === 1 || selectedSemester === 2)
-    ) {
-
-        branchField.style.display = "block";
-
-    } else {
-
-        branchField.style.display = "none";
-
-        if (branch) {
-            branch.value = "";
-        }
-    }
-}
-
-
-/* Course change */
-
-document.getElementById("course")
-    ?.addEventListener(
-        "change",
-        updateBranchVisibility
-    );
-
-
-/* Semester change */
-
-document.getElementById("semester")
-    ?.addEventListener(
-        "change",
-        updateBranchVisibility
-    );
-
-
-/* Page load */
-
-updateBranchVisibility();
-
-</script>
 
 </body>
 

@@ -288,6 +288,37 @@
         >
 
 
+        <!-- DEPARTMENT -->
+
+        <label>
+            Department
+        </label>
+
+        <select
+            name="department"
+            id="department"
+            required
+        >
+
+            <option value="">
+                Select Department
+            </option>
+
+            {% for department in departments %}
+
+                <option
+                    value="{{ department.name }}"
+                >
+
+                    {{ department.name }}
+
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+
         <!-- COURSE -->
 
         <label>
@@ -301,13 +332,14 @@
         >
 
             <option value="">
-                Select Course
+                Select Department First
             </option>
 
             {% for course in courses %}
 
                 <option
                     value="{{ course.name if course.name is defined else course }}"
+                    data-department="{{ course.department if course.department is defined else '' }}"
                 >
 
                     {{ course.name if course.name is defined else course }}
@@ -365,6 +397,14 @@
 
             <option value="8">
                 8th Semester
+            </option>
+
+            <option value="9">
+                9th Semester
+            </option>
+
+            <option value="10">
+                10th Semester
             </option>
 
         </select>
@@ -572,13 +612,106 @@
 
 
 <!-- =============================
-     BRANCH AUTO SHOW/HIDE
+     DEPARTMENT → COURSE
 ============================== -->
 
 <script>
 
+    const departmentSelect =
+        document.getElementById("department");
+
     const courseSelect =
         document.getElementById("course");
+
+    const allCourseOptions =
+        Array.from(courseSelect.options).slice(1);
+
+
+    function updateCourses() {
+
+        const selectedDepartment =
+            departmentSelect.value
+                .trim()
+                .toLowerCase();
+
+        courseSelect.innerHTML = "";
+
+
+        const defaultOption =
+            document.createElement("option");
+
+        defaultOption.value = "";
+
+
+        if (selectedDepartment) {
+
+            defaultOption.textContent =
+                "Select Course";
+
+        }
+
+        else {
+
+            defaultOption.textContent =
+                "Select Department First";
+
+        }
+
+
+        courseSelect.appendChild(
+            defaultOption
+        );
+
+
+        if (!selectedDepartment) {
+
+            updateBranchVisibility();
+
+            return;
+        }
+
+
+        allCourseOptions.forEach(
+            function(option) {
+
+                const courseDepartment =
+                    (
+                        option.dataset.department
+                        || ""
+                    )
+                    .trim()
+                    .toLowerCase();
+
+
+                if (
+                    courseDepartment
+                    === selectedDepartment
+                ) {
+
+                    courseSelect.appendChild(
+                        option.cloneNode(true)
+                    );
+
+                }
+
+            }
+        );
+
+
+        updateBranchVisibility();
+
+    }
+
+
+    departmentSelect.addEventListener(
+        "change",
+        updateCourses
+    );
+
+
+    /* -----------------------------
+       BRANCH AUTO SHOW/HIDE
+    ----------------------------- */
 
     const semesterSelect =
         document.getElementById("semester");
@@ -619,17 +752,21 @@
             )
         ) {
 
-            branchField.style.display = "block";
+            branchField.style.display =
+                "block";
 
-            branchSelect.required = true;
+            branchSelect.required =
+                true;
 
         }
 
         else {
 
-            branchField.style.display = "none";
+            branchField.style.display =
+                "none";
 
-            branchSelect.required = false;
+            branchSelect.required =
+                false;
 
             branchSelect.value = "";
 
@@ -653,6 +790,8 @@
     /*
      * Run once when page loads
      */
+
+    updateCourses();
 
     updateBranchVisibility();
 
