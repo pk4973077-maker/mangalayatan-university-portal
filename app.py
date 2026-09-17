@@ -478,6 +478,8 @@ def get_admin_courses():
 
     return courses
 
+
+
 @app.route("/admin-subjects", methods=["GET", "POST"])
 def admin_subjects():
 
@@ -485,11 +487,10 @@ def admin_subjects():
     # ADMIN LOGIN CHECK
     # =========================
 
-    admin_data = get_admin_data()
+    security_check = admin_required()
 
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if security_check:
+        return security_check
 
     subjects = []
     courses = []
@@ -549,7 +550,7 @@ def admin_subjects():
 
         if semester not in [
             "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "5", "6", "7", "8", "9", "10"
         ]:
 
             return "Invalid Semester."
@@ -2137,7 +2138,7 @@ def manage_attendance():
         # =========================
         if semester not in [
             "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "5", "6", "7", "8", "9", "10"
         ]:
             return "Invalid Semester."
 
@@ -4868,7 +4869,7 @@ def upload_notes():
         if not valid_course:
             return "Invalid course"
 
-        if semester not in [str(i) for i in range(1, 9)]:
+        if semester not in [str(i) for i in range(1, 11)]:
             return "Invalid semester"
 
         if section not in ["A", "B", "C", "D"]:
@@ -5127,7 +5128,7 @@ def faculty_syllabus():
         # -----------------------------
 
         if semester not in [
-            str(i) for i in range(1, 9)
+            str(i) for i in range(1, 11)
         ]:
             return "Invalid semester"
 
@@ -5489,7 +5490,7 @@ def send_notice():
         # -------------------------
         if semester not in [
             "1", "2", "3", "4",
-            "5", "6", "7", "8"
+            "5", "6", "7", "8", "9", "10"
         ]:
             return "Invalid Semester."
 
@@ -6751,11 +6752,10 @@ def admin_search_faculty():
     # ADMIN LOGIN CHECK
     # ==============================
 
-    admin_data = get_admin_data()
+    security_check = admin_required()
 
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if security_check:
+        return security_check
 
 
     faculty_list = []
@@ -6856,11 +6856,10 @@ def admin_students():
     # ADMIN LOGIN CHECK
     # =====================================================
 
-    admin_data = get_admin_data()
+    security_check = admin_required()
 
-    if session.get("admin_id") != admin_data.get("admin_id"):
-        session.pop("admin_id", None)
-        return redirect(url_for("admin_login"))
+    if security_check:
+        return security_check
 
     students = []
     courses = get_admin_courses()
@@ -7699,7 +7698,6 @@ def admin_students():
         course_structure=course_structure
 
     )
-
 
 @app.route(
     "/student-change-password",
@@ -10003,7 +10001,10 @@ def create_excel_sheet():
             "5": "5TH SEM",
             "6": "6TH SEM",
             "7": "7TH SEM",
-            "8": "8TH SEM"
+            "8": "8TH SEM",
+            "9": "9TH SEM",
+            "10": "10TH SEM"
+            
         }
 
         semester_text = semester_names.get(
