@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>DCEA Student Admission Cards</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .topbar {
+            background: #1e3a8a;
+            color: white;
+            padding: 18px 30px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .back {
+            background: white;
+            color: #1e3a8a;
+
+            padding: 9px 16px;
+
+            border-radius: 8px;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1100px;
+
+            margin: 35px auto;
+
+            padding: 20px;
+        }
+
+        .student-card {
+
+            background: white;
+
+            padding: 25px;
+
+            margin-bottom: 20px;
+
+            border-radius: 15px;
+
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        .student-card h2 {
+
+            margin-top: 0;
+
+            color: #1e3a8a;
+        }
+
+        .details {
+
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 12px;
+
+            margin-top: 20px;
+        }
+
+        .detail {
+
+            background: #f8fafc;
+
+            padding: 12px;
+
+            border-radius: 8px;
+        }
+
+        .detail strong {
+
+            display: block;
+
+            color: #475569;
+
+            font-size: 13px;
+
+            margin-bottom: 5px;
+        }
+
+        .pdf-btn {
+
+            display: inline-block;
+
+            margin-top: 20px;
+
+            background: #1e3a8a;
+
+            color: white;
+
+            padding: 11px 18px;
+
+            border-radius: 8px;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        .no-students {
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            text-align: center;
+
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        @media (max-width: 700px) {
+
+            .details {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="topbar">
+
+        <h2>🎓 DCEA Student Admission Cards</h2>
+
+        <a href="/admin-dashboard"
+           class="back">
+            ← Dashboard
+        </a>
+
+    </div>
+
+
+    <div class="container">
+
+        {% if students %}
+
+            {% for student in students %}
+
+                <div class="student-card">
+
+                    <h2>
+                        {{ student.get("name", "") }}
+                    </h2>
+
+                    <div class="details">
+
+                        <div class="detail">
+                            <strong>Student ID</strong>
+                            {{ student.get("student_id", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Enrollment Number</strong>
+                            {{ student.get("enrollment", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Department</strong>
+                            {{ student.get("department", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Course</strong>
+                            {{ student.get("course", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Semester</strong>
+                            {{ student.get("semester", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Branch</strong>
+                            {{ student.get("branch", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Section</strong>
+                            {{ student.get("section", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Group</strong>
+                            {{ student.get("group", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Admission Type</strong>
+                            {{ student.get("admission_type", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Admission Date</strong>
+                            {{ student.get("admission_date", "") }}
+                        </div>
+
+                        <div class="detail">
+                            <strong>Application Number</strong>
+                            {{ student.get("application_no", "") }}
+                        </div>
+
+                    </div>
+
+
+                    {% if student.get("admission_card") %}
+
+                        <a
+                            href="/admission-card-file/{{ student.get('admission_card') }}"
+                            target="_blank"
+                            class="pdf-btn"
+                        >
+                            📄 View Admission Card
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="no-students">
+
+                <h2>No DCEA Students Found</h2>
+
+                <p>
+                    No DCEA student admission records are available.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

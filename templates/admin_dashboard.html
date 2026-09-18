@@ -634,6 +634,29 @@
 
     </div>
 
+    {% if session.get("admin_department") == "DCEA" %}
+
+<a
+    href="/student-admission-cards"
+    class="card"
+>
+
+    <div class="icon">
+        🎓
+    </div>
+
+    <h3>
+        Student Admission Card
+    </h3>
+
+    <p>
+        View DCEA student admission details
+    </p>
+
+</a>
+
+{% endif %}
+
 
 </body>
 

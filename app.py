@@ -908,6 +908,34 @@ def student_register():
         ).strip().upper()
 
         # -------------------------
+        # DCEA SEMESTER 1/2 ADMISSION FLOW
+        # -------------------------
+
+        admission_type = request.form.get(
+            "admission_type",
+            ""
+        ).strip()
+
+        admission_date = request.form.get(
+            "admission_date",
+            ""
+        ).strip()
+
+        application_no = request.form.get(
+            "application_no",
+            ""
+        ).strip()
+
+        admission_card = request.files.get(
+            "admission_card"
+        )
+
+        is_dcea_sem_1_2 = (
+            department.strip().lower() == "dcea"
+            and semester in ["1", "2"]
+        )
+
+        # -------------------------
         # REQUIRED FIELDS
         # -------------------------
         # Section and Group are optional.
@@ -1114,6 +1142,179 @@ def student_register():
                     "already exists."
                 )
 
+
+            # -------------------------
+        # OPEN ADMISSION PROGRAM PAGE
+        # -------------------------
+
+        if (
+            is_dcea_sem_1_2
+            and not admission_type
+        ):
+
+            return render_template(
+                "student_admission_type.html",
+
+                form_action="/student-register",
+
+                student_name=student_name,
+
+                enrollment=enrollment,
+
+                department=department,
+
+                course=course,
+
+                semester=semester,
+
+                branch=branch,
+
+                section=section,
+
+                group=group
+            )
+
+        # -------------------------
+        # DCEA ADMISSION VALIDATION
+        # -------------------------
+
+        if is_dcea_sem_1_2:
+
+            if admission_type not in [
+                "orientation",
+                "after_orientation"
+            ]:
+
+                return (
+                    "Invalid admission type.",
+                    400
+                )
+
+            if not admission_date:
+
+                return (
+                    "Please fill Date of Admission.",
+                    400
+                )
+
+            try:
+
+                from datetime import date
+
+                admission_date_obj = (
+                    date.fromisoformat(
+                        admission_date
+                    )
+                )
+
+            except ValueError:
+
+                return (
+                    "Invalid admission date.",
+                    400
+                )
+
+            orientation_start = date(
+                2026,
+                6,
+                1
+            )
+
+            orientation_end = date(
+                2026,
+                8,
+                23
+            )
+
+            after_orientation_start = date(
+                2026,
+                8,
+                24
+            )
+
+            # Before 1 June 2026
+
+            if (
+                admission_date_obj
+                < orientation_start
+            ):
+
+                return (
+                    "Admission date cannot be before 1 June 2026.",
+                    400
+                )
+
+            # Orientation Program
+
+            if admission_type == "orientation":
+
+                if (
+                    admission_date_obj
+                    >= after_orientation_start
+                ):
+
+                    return (
+                        "Please go to After Orientation Program side.",
+                        400
+                    )
+
+            # After Orientation Program
+
+            if admission_type == "after_orientation":
+
+                if (
+                    admission_date_obj
+                    <= orientation_end
+                ):
+
+                    return (
+                        "Please use Orientation Program side for this date.",
+                        400
+                    )
+
+                if not application_no:
+
+                    return (
+                        "Please enter Application No.",
+                        400
+                    )
+
+                if not admission_card:
+
+                    return (
+                        "Please upload Admission Card PDF.",
+                        400
+                    )
+
+                if not admission_card.filename:
+
+                    return (
+                        "Please upload Admission Card PDF.",
+                        400
+                    )
+
+                if not admission_card.filename.lower().endswith(
+                    ".pdf"
+                ):
+
+                    return (
+                        "Only PDF Admission Card is allowed.",
+                        400
+                    )
+
+        else:
+
+            # Existing QR registrations:
+            # No admission flow.
+
+            admission_type = ""
+
+            admission_date = ""
+
+            application_no = ""
+
+            admission_card = None
+
         # -------------------------
         # GENERATE STUDENT ID
         # -------------------------
@@ -1182,9 +1383,50 @@ def student_register():
 
             "section": section,
 
-            "group": group
+            "group": group,
+
+            "admission_type": admission_type,
+
+            "admission_date": admission_date,
+
+            "application_no": application_no,
+
+            "admission_card": ""
 
         }
+
+        # -------------------------
+        # SAVE ADMISSION CARD
+        # -------------------------
+
+        if (
+            is_dcea_sem_1_2
+            and admission_type == "after_orientation"
+        ):
+
+            try:
+
+                card_filename = (
+                    "admission_card_"
+                    + student_id
+                    + ".pdf"
+                )
+
+                save_uploaded_file(
+                    admission_card,
+                    card_filename
+                )
+
+                student["admission_card"] = (
+                    card_filename
+                )
+
+            except Exception as e:
+
+                return (
+                    f"Admission Card could not be saved: {e}",
+                    500
+                )
 
         students.append(student)
 
@@ -6711,6 +6953,68 @@ def admin_dashboard():
         total_faculty=total_faculty
     )
 
+
+# =========================
+# DCEA STUDENT ADMISSION CARDS
+# =========================
+
+@app.route("/student-admission-cards")
+def student_admission_cards():
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    # =========================
+    # ONLY DCEA ACCESS
+    # =========================
+
+    if session.get("admin_department") != "DCEA":
+        return "Access Denied"
+
+    # =========================
+    # LOAD STUDENTS
+    # =========================
+
+    students = []
+
+    try:
+        students = json_load(
+            os.path.basename(STUDENTS_FILE)
+        )
+
+        if not isinstance(students, list):
+            students = []
+
+    except Exception:
+        students = []
+
+    # =========================
+    # ONLY DCEA STUDENTS
+    # =========================
+
+    dcea_students = []
+
+    for student in students:
+
+        if student.get("department") == "DCEA":
+
+            dcea_students.append(student)
+
+    # =========================
+    # ADMISSION CARD PAGE
+    # =========================
+
+    return render_template(
+        "student_admission_cards.html",
+        students=dcea_students
+    )
+
 # =========================================================
 # HEAD - DELETE WHOLE ATTENDANCE RECORD
 # =========================================================
@@ -7248,7 +7552,6 @@ def admin_students():
                 old_student,
                 dict
             ):
-
                 continue
 
             old_enrollment = str(
@@ -7268,6 +7571,250 @@ def admin_students():
                     "already exists.",
                     400
                 )
+
+        # =================================================
+        # DCEA SEMESTER 1/2 ADMISSION FLOW
+        # =================================================
+
+        admission_type = request.form.get(
+            "admission_type",
+            ""
+        ).strip()
+
+        admission_date = request.form.get(
+            "admission_date",
+            ""
+        ).strip()
+
+        application_no = request.form.get(
+            "application_no",
+            ""
+        ).strip()
+
+        admission_card = request.files.get(
+            "admission_card"
+        )
+
+        is_dcea_sem_1_2 = (
+            department.strip().lower() == "dcea"
+            and semester in ["1", "2"]
+        )
+
+        # -------------------------------------------------
+        # FIRST STEP: OPEN ADMISSION PROGRAM PAGE
+        # -------------------------------------------------
+
+        if (
+            is_dcea_sem_1_2
+            and not admission_type
+        ):
+
+            return render_template(
+                "student_admission_type.html",
+
+                form_action="/admin-students",
+
+                student_name=student_name,
+
+                enrollment=enrollment,
+
+                department=department,
+
+                course=course,
+
+                semester=semester,
+
+                branch=branch,
+
+                section=section,
+
+                group=group
+            )
+
+        # -------------------------------------------------
+        # DCEA SEMESTER 1/2 FINAL VALIDATION
+        # -------------------------------------------------
+
+        if is_dcea_sem_1_2:
+
+            if admission_type not in [
+                "orientation",
+                "after_orientation"
+            ]:
+
+                return (
+                    "Invalid admission type.",
+                    400
+                )
+
+            if not admission_date:
+
+                return (
+                    "Please fill Date of Admission.",
+                    400
+                )
+
+            try:
+
+                from datetime import date
+
+                admission_date_obj = (
+                    date.fromisoformat(
+                        admission_date
+                    )
+                )
+
+            except ValueError:
+
+                return (
+                    "Invalid admission date.",
+                    400
+                )
+
+            orientation_start = date(
+                2026,
+                6,
+                1
+            )
+
+            orientation_end = date(
+                2026,
+                8,
+                23
+            )
+
+            after_orientation_start = date(
+                2026,
+                8,
+                24
+            )
+
+            # -------------------------------------------------
+            # BEFORE 1 JUNE 2026
+            # -------------------------------------------------
+
+            if (
+                admission_date_obj
+                < orientation_start
+            ):
+
+                return (
+                    "Admission date cannot be before 1 June 2026.",
+                    400
+                )
+
+            # -------------------------------------------------
+            # ORIENTATION PROGRAM
+            # -------------------------------------------------
+
+            if admission_type == "orientation":
+
+                if (
+                    admission_date_obj
+                    >= after_orientation_start
+                ):
+
+                    return (
+                        "Please go to After Orientation Program side.",
+                        400
+                    )
+
+            # -------------------------------------------------
+            # AFTER ORIENTATION PROGRAM
+            # -------------------------------------------------
+
+            if admission_type == "after_orientation":
+
+                if (
+                    admission_date_obj
+                    <= orientation_end
+                ):
+
+                    return (
+                        "Please use Orientation Program side for this date.",
+                        400
+                    )
+
+                if not application_no:
+
+                    return (
+                        "Please enter Application No.",
+                        400
+                    )
+
+                if not admission_card:
+
+                    return (
+                        "Please upload Admission Card PDF.",
+                        400
+                    )
+
+                if not admission_card.filename:
+
+                    return (
+                        "Please upload Admission Card PDF.",
+                        400
+                    )
+
+                if not admission_card.filename.lower().endswith(
+                    ".pdf"
+                ):
+
+                    return (
+                        "Only PDF Admission Card is allowed.",
+                        400
+                    )
+
+        else:
+
+            # Existing students:
+            # No admission flow.
+
+            admission_type = ""
+
+            admission_date = ""
+
+            application_no = ""
+
+            admission_card = None
+
+        # =================================================
+        # CREATE NEXT STUDENT ID
+        # =================================================
+
+        numbers = []
+
+        for old_student in students:
+
+            if not isinstance(
+                old_student,
+                dict
+            ):
+                continue
+
+            old_id = str(
+                old_student.get(
+                    "student_id",
+                    ""
+                )
+            ).strip().upper()
+
+            if old_id.startswith("STU"):
+
+                try:
+
+                    number = int(
+                        old_id[3:]
+                    )
+
+                    numbers.append(
+                        number
+                    )
+
+                except Exception:
+
+                    pass
+            
 
         # =================================================
         # CREATE NEXT STUDENT ID
@@ -7340,7 +7887,6 @@ def admin_students():
             "enrollment":
                 enrollment,
 
-            # NEW: DEPARTMENT
             "department":
                 department,
 
@@ -7359,6 +7905,18 @@ def admin_students():
             "group":
                 group,
 
+            "admission_type":
+                admission_type,
+
+            "admission_date":
+                admission_date,
+
+            "application_no":
+                application_no,
+
+            "admission_card":
+                "",
+
             "password_hash":
                 generate_password_hash(
                     student_id
@@ -7369,6 +7927,30 @@ def admin_students():
         # =================================================
         # ADD TO LIST
         # =================================================
+
+        if (
+            is_dcea_sem_1_2
+            and admission_type == "after_orientation"
+        ):
+            try:
+
+                card_filename = (
+                    "admission_card_" + student_id + ".pdf"
+                )
+
+                save_uploaded_file(
+                    admission_card,
+                    card_filename
+                )
+
+                student["admission_card"] = card_filename
+
+            except Exception as e:
+
+                return (
+                    f"Admission Card could not be saved: {e}",
+                    500
+                )
 
         students.append(
             student
