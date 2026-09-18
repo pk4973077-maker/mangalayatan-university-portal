@@ -245,15 +245,23 @@
 
                     {% if student.get("admission_card") %}
 
-                        <a
-                            href="/admission-card-file/{{ student.get('admission_card') }}"
-                            target="_blank"
-                            class="pdf-btn"
-                        >
-                            📄 View Admission Card
-                        </a>
+    <a
+        href="/admission-card-file/{{ student.get('admission_card') }}"
+        target="_blank"
+        class="pdf-btn"
+    >
+        📄 View Admission Card
+    </a>
 
-                    {% endif %}
+    <a
+        href="/admission-card-file/{{ student.get('admission_card') }}"
+        download
+        class="pdf-btn"
+    >
+        ⬇️ Download Admission Card
+    </a>
+
+{% endif %}
 
                 </div>
 

@@ -6984,27 +6984,42 @@ def student_admission_cards():
     students = []
 
     try:
-        students = json_load(
-            os.path.basename(STUDENTS_FILE)
-        )
 
-        if not isinstance(students, list):
-            students = []
+        if os.path.exists(STUDENTS_FILE):
 
-    except Exception:
-        students = []
+            with open(STUDENTS_FILE, "r") as file:
+                students = json.load(file)
+
+            if not isinstance(students, list):
+                students = []
+
+    except Exception as e:
+
+        return f"Student data could not be loaded: {e}", 500
+
 
     # =========================
-    # ONLY DCEA STUDENTS
+    # ONLY DCEA AFTER ORIENTATION STUDENTS
     # =========================
 
     dcea_students = []
 
     for student in students:
 
-        if student.get("department") == "DCEA":
+        if (
+            str(
+                student.get("department", "")
+            ).strip().upper() == "DCEA"
+            and
+            str(
+                student.get("admission_type", "")
+            ).strip().lower() == "after_orientation"
+            and
+            student.get("admission_card")
+        ):
 
             dcea_students.append(student)
+
 
     # =========================
     # ADMISSION CARD PAGE
@@ -7013,6 +7028,36 @@ def student_admission_cards():
     return render_template(
         "student_admission_cards.html",
         students=dcea_students
+    )
+
+
+# =========================
+# VIEW / DOWNLOAD ADMISSION CARD
+# =========================
+
+@app.route("/admission-card-file/<filename>")
+def admission_card_file(filename):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    if session.get("admin_department") != "DCEA":
+        return "Access Denied", 403
+
+    stored = get_uploaded_file(filename)
+
+    if not stored:
+        return "Admission Card not found", 404
+
+    return send_file(
+        io.BytesIO(
+            bytes(stored["content"])
+        ),
+        mimetype=stored["content_type"],
+        download_name=filename,
+        as_attachment=False
     )
 
 # =========================================================
