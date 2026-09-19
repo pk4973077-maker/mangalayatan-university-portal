@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Fees Structure</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .topbar {
+            background: #1e3a8a;
+            color: white;
+            padding: 18px 30px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .back {
+            background: white;
+            color: #1e3a8a;
+            padding: 9px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h2 {
+            color: #1e3a8a;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        button {
+            margin-top: 20px;
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #172554;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+            color: #1e3a8a;
+        }
+
+        .empty {
+            color: #64748b;
+        }
+
+        @media (max-width: 700px) {
+
+            .container {
+                padding: 12px;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+
+            table {
+                min-width: 600px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="topbar">
+
+        <h2>💰 Fees Structure</h2>
+
+        <a
+            href="/admin-dashboard"
+            class="back"
+        >
+            ← Dashboard
+        </a>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- =========================
+             ADD FEES STRUCTURE
+        ========================= -->
+
+        <div class="box">
+
+            <h2>
+                Add Fees Structure
+            </h2>
+
+            <form
+                action="/admin-fees-structure"
+                method="POST"
+            >
+
+
+                <!-- DEPARTMENT -->
+
+                <label>
+                    Department
+                </label>
+
+                <input
+                    type="text"
+                    value="{{ session.get('admin_department', '') }}"
+                    readonly
+                >
+
+
+                <!-- COURSE -->
+
+                <label>
+                    Course
+                </label>
+
+                <select
+                    name="course"
+                    id="course"
+                    required
+                >
+
+                    <option value="">
+                        Select Course
+                    </option>
+
+                    {% for course in courses %}
+
+                    <option
+                        value="{{ course.get('name', '') }}"
+                        data-semesters="{{ course.get('total_semesters', 0) }}"
+                    >
+                        {{ course.get('name', '') }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <!-- SEMESTER -->
+
+                <label>
+                    Semester
+                </label>
+
+                <select
+                    name="semester"
+                    id="semester"
+                    required
+                >
+
+                    <option value="">
+                        Select Semester
+                    </option>
+
+                </select>
+
+
+                <!-- TOTAL FEES -->
+
+                <label>
+                    Total Fees
+                </label>
+
+                <input
+                    type="number"
+                    name="total_fees"
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter total fees"
+                    required
+                >
+
+
+                <button type="submit">
+                    💾 Save Fees Structure
+                </button>
+
+            </form>
+
+        </div>
+
+
+
+        <!-- =========================
+             SAVED STRUCTURES
+        ========================= -->
+
+        <div class="box">
+
+            <h2>
+                Saved Fees Structures
+            </h2>
+
+
+            {% if fee_structures %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Course
+                            </th>
+
+                            <th>
+                                Semester
+                            </th>
+
+                            <th>
+                                Total Fees
+                            </th>
+
+                            <th>
+                                Action
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for structure in fee_structures %}
+
+                        <tr>
+
+                            <td>
+                                {{ structure.get('course', '') }}
+                            </td>
+
+                            <td>
+                                {{ structure.get('semester', '') }}
+                            </td>
+
+                            <td>
+                                ₹{{ structure.get('total_fees', 0) }}
+                            </td>
+
+                            <td>
+
+    <a
+        href="/admin-fees-structure/edit/{{ structure.get('id', '') }}"
+        style="
+            display:inline-block;
+            padding:7px 12px;
+            background:#1e3a8a;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+            margin-right:5px;
+        "
+    >
+        Edit
+    </a>
+
+    <form
+        action="/admin-fees-structure/delete/{{ structure.get('id', '') }}"
+        method="POST"
+        style="display:inline;"
+        onsubmit="return confirm('Are you sure you want to delete this fees structure?');"
+    >
+
+        <button
+            type="submit"
+            style="
+                margin:0;
+                padding:7px 12px;
+                background:#dc2626;
+            "
+        >
+            Delete
+        </button>
+
+    </form>
+
+</td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <p class="empty">
+                No fees structure added yet.
+            </p>
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================
+         SEMESTER DROPDOWN
+    ========================= -->
+
+    <script>
+
+        const courseSelect =
+            document.getElementById("course");
+
+        const semesterSelect =
+            document.getElementById("semester");
+
+
+        courseSelect.addEventListener(
+            "change",
+            function () {
+
+                semesterSelect.innerHTML =
+                    '<option value="">Select Semester</option>';
+
+
+                const selectedOption =
+                    this.options[this.selectedIndex];
+
+                const totalSemesters =
+                    parseInt(
+                        selectedOption.dataset.semesters || 0
+                    );
+
+
+                for (
+                    let i = 1;
+                    i <= totalSemesters;
+                    i++
+                ) {
+
+                    const option =
+                        document.createElement("option");
+
+                    option.value =
+                        "Semester " + i;
+
+                    option.textContent =
+                        "Semester " + i;
+
+                    semesterSelect.appendChild(
+                        option
+                    );
+
+                }
+
+            }
+        );
+
+    </script>
+
+
+</body>
+
+</html>

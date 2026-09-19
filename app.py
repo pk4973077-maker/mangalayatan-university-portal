@@ -462,6 +462,7 @@ SYLLABUS_FILE = "syllabus.json"
 SUBJECTS_FILE = "subjects.json"
 DEPARTMENTS_FILE = "departments.json"
 COURSES_FILE = "courses.json"
+FEES_STRUCTURE_FILE = "fees_structure.json"
 
 def get_admin_courses():
 
@@ -9568,6 +9569,1353 @@ def admin_courses():
         courses=courses,
         departments=departments
     )
+
+@app.route("/admin-fees-structure", methods=["GET", "POST"])
+def admin_fees_structure():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    courses = []
+    fee_structures = []
+
+    # =========================
+    # LOAD COURSES
+    # =========================
+
+    if os.path.exists(COURSES_FILE):
+
+        try:
+
+            with open(
+                COURSES_FILE,
+                "r"
+            ) as file:
+
+                all_courses = json.load(file)
+
+            if not isinstance(all_courses, list):
+                all_courses = []
+
+        except Exception:
+
+            all_courses = []
+
+    else:
+
+        all_courses = []
+
+
+    # =========================
+    # ONLY ADMIN DEPARTMENT COURSES
+    # =========================
+
+    for course in all_courses:
+
+        if not isinstance(course, dict):
+            continue
+
+        if (
+            str(
+                course.get("department", "")
+            ).strip().lower()
+            == admin_department.lower()
+        ):
+
+            courses.append(course)
+
+
+    # =========================
+    # LOAD FEES STRUCTURE
+    # =========================
+
+    if os.path.exists(FEES_STRUCTURE_FILE):
+
+        try:
+
+            with open(
+                FEES_STRUCTURE_FILE,
+                "r"
+            ) as file:
+
+                fee_structures = json.load(file)
+
+            if not isinstance(fee_structures, list):
+                fee_structures = []
+
+        except Exception:
+
+            fee_structures = []
+
+    else:
+
+        fee_structures = []
+
+
+    # =========================
+    # SAVE FEES STRUCTURE
+    # =========================
+
+    if request.method == "POST":
+
+        course = request.form.get(
+            "course",
+            ""
+        ).strip()
+
+        semester = request.form.get(
+            "semester",
+            ""
+        ).strip()
+
+        total_fees = request.form.get(
+            "total_fees",
+            ""
+        ).strip()
+
+
+        if not course or not semester or not total_fees:
+
+            return "Please fill all fields.", 400
+
+
+        try:
+
+            total_fees = float(total_fees)
+
+        except ValueError:
+
+            return "Total Fees must be a number.", 400
+
+
+        if total_fees < 0:
+
+            return "Total Fees cannot be negative.", 400
+
+
+        # =========================
+        # COURSE DEPARTMENT CHECK
+        # =========================
+
+        valid_course = False
+
+        for item in courses:
+
+            if (
+                str(
+                    item.get("name", "")
+                ).strip().lower()
+                == course.lower()
+            ):
+
+                valid_course = True
+                break
+
+
+        if not valid_course:
+
+            return "Invalid Course.", 400
+
+
+        # =========================
+        # DUPLICATE CHECK
+        # =========================
+
+        for structure in fee_structures:
+
+            if (
+                str(
+                    structure.get("department", "")
+                ).strip().lower()
+                == admin_department.lower()
+                and
+                str(
+                    structure.get("course", "")
+                ).strip().lower()
+                == course.lower()
+                and
+                str(
+                    structure.get("semester", "")
+                ).strip().lower()
+                == semester.lower()
+            ):
+
+                return "Fees Structure already exists for this Course and Semester.", 400
+
+
+        # =========================
+        # CREATE RECORD
+        # =========================
+
+        fee_structures.append({
+
+    "id": uuid.uuid4().hex,
+
+    "department": admin_department,
+
+    "course": course,
+
+    "semester": semester,
+
+    "total_fees": total_fees
+
+})
+
+
+        # =========================
+        # SAVE
+        # =========================
+
+        with open(
+            FEES_STRUCTURE_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                fee_structures,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+
+        return redirect("/admin-fees-structure")
+
+
+    # =========================
+    # ONLY CURRENT DEPARTMENT
+    # =========================
+
+    department_fee_structures = [
+
+        item
+
+        for item in fee_structures
+
+        if str(
+            item.get("department", "")
+        ).strip().lower()
+        == admin_department.lower()
+
+    ]
+
+
+    return render_template(
+        "admin_fees_structure.html",
+        courses=courses,
+        fee_structures=department_fee_structures
+    )
+
+
+@app.route("/admin-fees-structure/edit/<fee_id>", methods=["GET", "POST"])
+def edit_admin_fees_structure(fee_id):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    fee_structures = []
+
+    if os.path.exists(FEES_STRUCTURE_FILE):
+
+        try:
+
+            with open(
+                FEES_STRUCTURE_FILE,
+                "r"
+            ) as file:
+
+                fee_structures = json.load(file)
+
+            if not isinstance(fee_structures, list):
+                fee_structures = []
+
+        except Exception:
+
+            fee_structures = []
+
+
+    structure = None
+
+    for item in fee_structures:
+
+        if (
+            str(item.get("id", "")).strip() == str(fee_id).strip()
+            and
+            str(item.get("department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            structure = item
+            break
+
+
+    if not structure:
+        return "Fees Structure not found.", 404
+
+
+    if request.method == "POST":
+
+        total_fees = request.form.get(
+            "total_fees",
+            ""
+        ).strip()
+
+
+        if not total_fees:
+            return "Please enter Total Fees.", 400
+
+
+        try:
+
+            total_fees = float(total_fees)
+
+        except ValueError:
+
+            return "Total Fees must be a number.", 400
+
+
+        if total_fees < 0:
+            return "Total Fees cannot be negative.", 400
+
+
+        structure["total_fees"] = total_fees
+
+
+        with open(
+            FEES_STRUCTURE_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                fee_structures,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+
+        return redirect("/admin-fees-structure")
+
+
+    return render_template(
+        "edit_admin_fees_structure.html",
+        structure=structure
+    )
+
+
+@app.route(
+    "/admin-fees-structure/delete/<fee_id>",
+    methods=["POST"]
+)
+def delete_admin_fees_structure(fee_id):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    fee_structures = []
+
+    if os.path.exists(FEES_STRUCTURE_FILE):
+
+        try:
+
+            with open(
+                FEES_STRUCTURE_FILE,
+                "r"
+            ) as file:
+
+                fee_structures = json.load(file)
+
+            if not isinstance(fee_structures, list):
+                fee_structures = []
+
+        except Exception:
+
+            fee_structures = []
+
+
+    new_structures = []
+
+    found = False
+
+    for item in fee_structures:
+
+        if (
+            str(item.get("id", "")).strip() == str(fee_id).strip()
+            and
+            str(item.get("department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            found = True
+            continue
+
+        new_structures.append(item)
+
+
+    if not found:
+        return "Fees Structure not found.", 404
+
+
+    with open(
+        FEES_STRUCTURE_FILE,
+        "w"
+    ) as file:
+
+        json.dump(
+            new_structures,
+            file,
+            indent=4,
+            ensure_ascii=False
+        )
+
+
+    return redirect("/admin-fees-structure")
+
+
+
+@app.route("/admin-student-fees", methods=["GET", "POST"])
+def admin_student_fees():
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    selected_course = request.values.get(
+        "course", ""
+    ).strip()
+
+    selected_semester = request.values.get(
+        "semester", ""
+    ).strip()
+
+    selected_section = request.values.get(
+        "section", ""
+    ).strip()
+
+    students = []
+    courses = []
+    fee_structures = []
+
+    # -----------------------------
+    # LOAD STUDENTS
+    # -----------------------------
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(
+                STUDENTS_FILE,
+                "r"
+            ) as file:
+
+                all_students = json.load(file)
+
+            if not isinstance(all_students, list):
+                all_students = []
+
+        except Exception:
+
+            all_students = []
+
+    else:
+
+        all_students = []
+
+
+    # -----------------------------
+    # LOAD COURSES
+    # -----------------------------
+
+    if os.path.exists(COURSES_FILE):
+
+        try:
+
+            with open(
+                COURSES_FILE,
+                "r"
+            ) as file:
+
+                all_courses = json.load(file)
+
+            if not isinstance(all_courses, list):
+                all_courses = []
+
+        except Exception:
+
+            all_courses = []
+
+    else:
+
+        all_courses = []
+
+
+    # Only logged-in admin department courses
+    for course in all_courses:
+
+        if not isinstance(course, dict):
+            continue
+
+        if (
+            str(course.get("department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            courses.append(course)
+
+
+    # -----------------------------
+    # LOAD FEES STRUCTURE
+    # -----------------------------
+
+    if os.path.exists(FEES_STRUCTURE_FILE):
+
+        try:
+
+            with open(
+                FEES_STRUCTURE_FILE,
+                "r"
+            ) as file:
+
+                fee_structures = json.load(file)
+
+            if not isinstance(fee_structures, list):
+                fee_structures = []
+
+        except Exception:
+
+            fee_structures = []
+
+    else:
+
+        fee_structures = []
+
+
+    # -----------------------------
+    # GET SELECTED STUDENTS
+    # -----------------------------
+
+    if (
+        selected_course
+        and selected_semester
+        and selected_section
+    ):
+
+        for student in all_students:
+
+            if not isinstance(student, dict):
+                continue
+
+            student_department = str(
+                student.get("department", "")
+            ).strip()
+
+            student_course = str(
+                student.get("course", "")
+            ).strip()
+
+            student_semester = str(
+                student.get("semester", "")
+            ).strip()
+
+            student_section = str(
+                student.get("section", "")
+            ).strip()
+
+            if (
+                student_department.lower()
+                == admin_department.lower()
+                and
+                student_course.lower()
+                == selected_course.lower()
+                and
+                student_semester.lower()
+                == selected_semester.lower()
+                and
+                student_section.lower()
+                == selected_section.lower()
+            ):
+
+                students.append(student)
+
+
+    # -----------------------------
+    # FINANCE PAYMENT DATA
+    # -----------------------------
+
+    payment_data = {}
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    enrollment,
+                    amount,
+                    semester
+                FROM payment_records
+                WHERE status = 'Submitted'
+            """)
+
+            payment_records = cur.fetchall()
+
+    finally:
+
+        conn.close()
+
+
+    for record in payment_records:
+
+        enrollment = str(
+            record["enrollment"]
+        ).strip()
+
+        semester = str(
+            record["semester"]
+        ).strip()
+
+        amount = float(
+            record["amount"] or 0
+        )
+
+        if enrollment not in payment_data:
+            payment_data[enrollment] = {}
+
+        if semester not in payment_data[enrollment]:
+            payment_data[enrollment][semester] = 0
+
+        payment_data[enrollment][semester] += amount
+
+
+    # -----------------------------
+    # CALCULATE STUDENT FEES
+    # -----------------------------
+
+    fee_by_semester = {}
+
+    for structure in fee_structures:
+
+        if (
+            str(structure.get("department", "")).strip().lower()
+            != admin_department.lower()
+        ):
+            continue
+
+        course = str(
+            structure.get("course", "")
+        ).strip()
+
+        semester = str(
+            structure.get("semester", "")
+        ).strip()
+
+        total_fees = float(
+            structure.get("total_fees", 0) or 0
+        )
+
+        key = (
+            course.lower(),
+            semester.lower()
+        )
+
+        fee_by_semester[key] = total_fees
+
+
+    def semester_number(semester):
+
+        try:
+
+            return int(
+                ''.join(
+                    filter(
+                        str.isdigit,
+                        str(semester)
+                    )
+                )
+            )
+
+        except:
+
+            return 999
+
+
+    for student in students:
+
+        enrollment = str(
+            student.get("enrollment", "")
+        ).strip()
+
+        course = str(
+            student.get("course", "")
+        ).strip()
+
+        current_semester = str(
+            student.get("semester", "")
+        ).strip()
+
+        paid_by_semester = payment_data.get(
+            enrollment,
+            {}
+        )
+
+        total_paid = sum(
+            paid_by_semester.values()
+        )
+
+        current_semester_number = semester_number(
+            current_semester
+        )
+
+        total_fees_till_current = 0
+
+        for (
+            fee_key,
+            fee_amount
+        ) in fee_by_semester.items():
+
+            fee_course = fee_key[0]
+            fee_semester = fee_key[1]
+
+            if fee_course != course.lower():
+                continue
+
+            fee_semester_number = semester_number(
+                fee_semester
+            )
+
+            if (
+                fee_semester_number
+                <= current_semester_number
+            ):
+
+                total_fees_till_current += fee_amount
+
+
+        remaining_dues = (
+            total_fees_till_current
+            - total_paid
+        )
+
+        if remaining_dues < 0:
+            remaining_dues = 0
+
+
+        # Check whether Admin has cleared this student's fees record
+        clear_file = "fees_clear_records.json"
+        student_cleared = False
+
+        if os.path.exists(clear_file):
+
+            try:
+
+                with open(
+                    clear_file,
+                    "r"
+                ) as file:
+
+                    clear_records = json.load(file)
+
+                if not isinstance(clear_records, list):
+                    clear_records = []
+
+            except Exception:
+
+                clear_records = []
+
+        else:
+
+            clear_records = []
+
+
+        for clear_record in clear_records:
+
+            if (
+                str(clear_record.get("enrollment", "")).strip()
+                == enrollment
+                and
+                str(clear_record.get("department", "")).strip().lower()
+                == admin_department.lower()
+            ):
+
+                student_cleared = True
+                break
+
+
+        if student_cleared:
+            remaining_dues = 0
+
+
+        student["total_amount_paid"] = total_paid
+        student["remaining_dues"] = remaining_dues
+
+
+    return render_template(
+        "admin_student_fees.html",
+        courses=courses,
+        students=students,
+        selected_course=selected_course,
+        selected_semester=selected_semester,
+        selected_section=selected_section
+    )    
+
+
+@app.route(
+    "/admin-student-fees/clear/<enrollment>",
+    methods=["POST"]
+)
+def clear_admin_student_fees(enrollment):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    clear_records = []
+
+    clear_file = "fees_clear_records.json"
+
+    if os.path.exists(clear_file):
+
+        try:
+
+            with open(
+                clear_file,
+                "r"
+            ) as file:
+
+                clear_records = json.load(file)
+
+            if not isinstance(clear_records, list):
+                clear_records = []
+
+        except Exception:
+
+            clear_records = []
+
+
+    # Check student belongs to logged-in admin department
+    student_found = False
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(
+                STUDENTS_FILE,
+                "r"
+            ) as file:
+
+                all_students = json.load(file)
+
+            if not isinstance(all_students, list):
+                all_students = []
+
+        except Exception:
+
+            all_students = []
+
+    else:
+
+        all_students = []
+
+
+    for student in all_students:
+
+        if (
+            str(student.get("enrollment", "")).strip()
+            == str(enrollment).strip()
+            and
+            str(student.get("department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            student_found = True
+            break
+
+
+    if not student_found:
+
+        return "Student not found.", 404
+
+
+    # Save clear record
+    already_cleared = False
+
+    for item in clear_records:
+
+        if (
+            str(item.get("enrollment", "")).strip()
+            == str(enrollment).strip()
+            and
+            str(item.get("department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            already_cleared = True
+            break
+
+
+    if not already_cleared:
+
+        clear_records.append({
+            "enrollment": str(enrollment).strip(),
+            "department": admin_department
+        })
+
+        with open(
+            clear_file,
+            "w"
+        ) as file:
+
+            json.dump(
+                clear_records,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+
+    # Return to same fees record page
+    course = request.args.get("course", "").strip()
+    semester = request.args.get("semester", "").strip()
+    section = request.args.get("section", "").strip()
+
+    return redirect(
+        "/admin-student-fees"
+        + "?course=" + course
+        + "&semester=" + semester
+        + "&section=" + section
+    )
+
+
+@app.route("/admin-student-fees/export")
+def export_admin_student_fees():
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    selected_course = request.args.get(
+        "course", ""
+    ).strip()
+
+    selected_semester = request.args.get(
+        "semester", ""
+    ).strip()
+
+    selected_section = request.args.get(
+        "section", ""
+    ).strip()
+
+    # -----------------------------
+    # LOAD STUDENTS
+    # -----------------------------
+
+    all_students = []
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(
+                STUDENTS_FILE,
+                "r"
+            ) as file:
+
+                all_students = json.load(file)
+
+            if not isinstance(all_students, list):
+                all_students = []
+
+        except Exception:
+
+            all_students = []
+
+
+    selected_students = []
+
+    for student in all_students:
+
+        if not isinstance(student, dict):
+            continue
+
+        if (
+            str(student.get("department", "")).strip().lower()
+            == admin_department.lower()
+            and
+            str(student.get("course", "")).strip().lower()
+            == selected_course.lower()
+            and
+            str(student.get("semester", "")).strip().lower()
+            == selected_semester.lower()
+            and
+            str(student.get("section", "")).strip().lower()
+            == selected_section.lower()
+        ):
+
+            selected_students.append(student)
+
+
+    # -----------------------------
+    # LOAD FEES STRUCTURE
+    # -----------------------------
+
+    fee_structures = []
+
+    if os.path.exists(FEES_STRUCTURE_FILE):
+
+        try:
+
+            with open(
+                FEES_STRUCTURE_FILE,
+                "r"
+            ) as file:
+
+                fee_structures = json.load(file)
+
+            if not isinstance(fee_structures, list):
+                fee_structures = []
+
+        except Exception:
+
+            fee_structures = []
+
+
+    def semester_number(semester):
+
+        try:
+
+            return int(
+                ''.join(
+                    filter(
+                        str.isdigit,
+                        str(semester)
+                    )
+                )
+            )
+
+        except:
+
+            return 999
+
+
+    fee_by_semester = {}
+
+    for structure in fee_structures:
+
+        if (
+            str(structure.get("department", "")).strip().lower()
+            != admin_department.lower()
+        ):
+            continue
+
+        course = str(
+            structure.get("course", "")
+        ).strip()
+
+        semester = str(
+            structure.get("semester", "")
+        ).strip()
+
+        total_fees = float(
+            structure.get("total_fees", 0) or 0
+        )
+
+        fee_by_semester[
+            (
+                course.lower(),
+                semester.lower()
+            )
+        ] = total_fees
+
+
+    # -----------------------------
+    # LOAD FINANCE PAYMENTS
+    # -----------------------------
+
+    payment_data = {}
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                SELECT
+                    enrollment,
+                    amount,
+                    semester
+                FROM payment_records
+                WHERE status = 'Submitted'
+            """)
+
+            payment_records = cur.fetchall()
+
+    finally:
+
+        conn.close()
+
+
+    for record in payment_records:
+
+        enrollment = str(
+            record["enrollment"]
+        ).strip()
+
+        semester = str(
+            record["semester"]
+        ).strip()
+
+        amount = float(
+            record["amount"] or 0
+        )
+
+        if enrollment not in payment_data:
+            payment_data[enrollment] = {}
+
+        if semester not in payment_data[enrollment]:
+            payment_data[enrollment][semester] = 0
+
+        payment_data[enrollment][semester] += amount
+
+
+    # -----------------------------
+    # CLEAR RECORDS
+    # -----------------------------
+
+    clear_records = []
+
+    clear_file = "fees_clear_records.json"
+
+    if os.path.exists(clear_file):
+
+        try:
+
+            with open(
+                clear_file,
+                "r"
+            ) as file:
+
+                clear_records = json.load(file)
+
+            if not isinstance(clear_records, list):
+                clear_records = []
+
+        except Exception:
+
+            clear_records = []
+
+
+    # -----------------------------
+    # CREATE EXCEL
+    # -----------------------------
+
+    workbook = Workbook()
+
+    sheet = workbook.active
+
+    sheet.title = "Student Fees Record"
+
+
+    sheet.append([
+        "Department",
+        "Course",
+        "Semester",
+        "Section",
+        "Student Name",
+        "Enrollment No.",
+        "Total Amount Paid",
+        "Remaining Dues"
+    ])
+
+
+    for student in selected_students:
+
+        enrollment = str(
+            student.get("enrollment", "")
+        ).strip()
+
+        course = str(
+            student.get("course", "")
+        ).strip()
+
+        current_semester = str(
+            student.get("semester", "")
+        ).strip()
+
+
+        paid_by_semester = payment_data.get(
+            enrollment,
+            {}
+        )
+
+        total_paid = sum(
+            paid_by_semester.values()
+        )
+
+
+        current_semester_number = semester_number(
+            current_semester
+        )
+
+        total_fees_till_current = 0
+
+
+        for (
+            fee_key,
+            fee_amount
+        ) in fee_by_semester.items():
+
+            fee_course = fee_key[0]
+            fee_semester = fee_key[1]
+
+            if fee_course != course.lower():
+                continue
+
+            fee_semester_number = semester_number(
+                fee_semester
+            )
+
+            if (
+                fee_semester_number
+                <= current_semester_number
+            ):
+
+                total_fees_till_current += fee_amount
+
+
+        remaining_dues = (
+            total_fees_till_current
+            - total_paid
+        )
+
+
+        if remaining_dues < 0:
+            remaining_dues = 0
+
+
+        # Check Admin Clear Record
+        for clear_record in clear_records:
+
+            if (
+                str(
+                    clear_record.get(
+                        "enrollment",
+                        ""
+                    )
+                ).strip()
+                == enrollment
+                and
+                str(
+                    clear_record.get(
+                        "department",
+                        ""
+                    )
+                ).strip().lower()
+                == admin_department.lower()
+            ):
+
+                remaining_dues = 0
+                break
+
+
+        sheet.append([
+            admin_department,
+            course,
+            current_semester,
+            str(
+                student.get("section", "")
+            ).strip(),
+            str(
+                student.get("name", "")
+            ).strip(),
+            enrollment,
+            total_paid,
+            remaining_dues
+        ])
+
+
+    # -----------------------------
+    # FORMAT EXCEL
+    # -----------------------------
+
+    for column in sheet.columns:
+
+        max_length = 0
+
+        column_letter = column[0].column_letter
+
+        for cell in column:
+
+            if cell.value is not None:
+
+                max_length = max(
+                    max_length,
+                    len(str(cell.value))
+                )
+
+        sheet.column_dimensions[
+            column_letter
+        ].width = max_length + 3
+
+
+    # -----------------------------
+    # SEND EXCEL FILE
+    # -----------------------------
+
+    excel_file = io.BytesIO()
+
+    workbook.save(excel_file)
+
+    excel_file.seek(0)
+
+
+    return send_file(
+        excel_file,
+        as_attachment=True,
+        download_name="student_fees_record.xlsx",
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        )
+    )
+
+
 
 @app.route("/edit-course/<course_id>", methods=["GET", "POST"])
 def edit_course(course_id):
