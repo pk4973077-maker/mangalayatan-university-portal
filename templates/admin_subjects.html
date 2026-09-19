@@ -179,6 +179,26 @@
 
         <form action="/admin-subjects" method="POST">
 
+            <!-- DEPARTMENT -->
+
+<label>Department</label>
+
+<select
+    name="department"
+    id="department"
+    required
+    disabled
+>
+
+    <option
+        value="{{ session.get('admin_department', '') }}"
+        selected
+    >
+        {{ session.get('admin_department', '') }}
+    </option>
+
+</select>
+
 
             <!-- SUBJECT NAME -->
 

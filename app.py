@@ -493,6 +493,10 @@ def admin_subjects():
     if security_check:
         return security_check
 
+    admin_department = str(
+    session.get("admin_department", "")
+).strip()
+
     subjects = []
     courses = []
 
@@ -622,6 +626,13 @@ def admin_subjects():
                     )
                 ).strip()
                 == semester
+
+                and str(
+    subject.get(
+        "department", ""
+    )
+).strip().lower()
+== admin_department.lower()
             ):
 
                 return (
@@ -669,18 +680,21 @@ def admin_subjects():
 
         subject = {
 
-            "subject_id":
-                subject_id,
+    "subject_id":
+        subject_id,
 
-            "subject_name":
-                subject_name,
+    "subject_name":
+        subject_name,
 
-            "course":
-                valid_course,
+    "course":
+        valid_course,
 
-            "semester":
-                semester
-        }
+    "semester":
+        semester,
+
+    "department":
+        admin_department
+}
 
 
         subjects.append(subject)
@@ -5939,6 +5953,246 @@ def notice_file(filename):
     )
 
 
+@app.route("/admin-send-notice", methods=["GET", "POST"])
+def admin_send_notice():
+
+    # =========================
+    # ADMIN LOGIN CHECK
+    # =========================
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    # =========================
+    # SEND NOTICE
+    # =========================
+
+    if request.method == "POST":
+
+        title = request.form.get(
+            "title",
+            ""
+        ).strip()
+
+        message = request.form.get(
+            "message",
+            ""
+        ).strip()
+
+        pdf_file = request.files.get(
+            "pdf_file"
+        )
+
+        # =========================
+        # REQUIRED FIELDS
+        # =========================
+
+        if not title or not message:
+
+            return "Please fill all fields."
+
+        # =========================
+        # OPTIONAL PDF
+        # =========================
+
+        pdf_filename = ""
+
+        if pdf_file and pdf_file.filename:
+
+            if not pdf_file.filename.lower().endswith(".pdf"):
+
+                return "Only PDF files are allowed."
+
+            import uuid
+
+            original_name = secure_filename(
+                pdf_file.filename
+            )
+
+            if not original_name:
+
+                return "Invalid PDF filename."
+
+            pdf_filename = (
+                str(uuid.uuid4())
+                + "_"
+                + original_name
+            )
+
+            save_uploaded_file(
+                pdf_file,
+                pdf_filename
+            )
+
+        # =========================
+        # EXISTING NOTICES
+        # =========================
+
+        notices = []
+
+        if os.path.exists(NOTICES_FILE):
+
+            try:
+
+                with open(
+                    NOTICES_FILE,
+                    "r"
+                ) as file:
+
+                    notices = json.load(file)
+
+                if not isinstance(
+                    notices,
+                    list
+                ):
+                    notices = []
+
+            except:
+
+                notices = []
+
+        # =========================
+        # ADMIN / HOD NOTICE
+        # =========================
+
+        notice = {
+            "sender_type": "admin",
+            "notice_id": str(uuid.uuid4()),
+            "admin_id": str(
+                session.get(
+                    "admin_id",
+                    ""
+                )
+            ).strip(),
+            "admin_department": admin_department,
+            "title": title,
+            "message": message,
+            "pdf_filename": pdf_filename
+        }
+
+        notices.append(notice)
+
+        # =========================
+        # SAVE
+        # =========================
+
+        with open(
+            NOTICES_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                notices,
+                file,
+                indent=4
+            )
+
+        return redirect(
+            "/admin-send-notice"
+        )
+
+    notices = []
+
+    if os.path.exists(NOTICES_FILE):
+
+        try:
+
+            with open(NOTICES_FILE, "r") as file:
+                all_notices = json.load(file)
+
+            if not isinstance(all_notices, list):
+                all_notices = []
+
+        except:
+
+            all_notices = []
+
+    else:
+
+        all_notices = []
+
+
+    for notice in all_notices:
+
+        if (
+            str(notice.get("sender_type", "")).strip().lower()
+            == "admin"
+            and
+            str(notice.get("admin_department", "")).strip().lower()
+            == admin_department.lower()
+        ):
+
+            notices.append(notice)
+
+
+    return render_template(
+        "admin_send_notice.html",
+        admin_department=admin_department,
+        notices=notices
+    )
+
+
+@app.route("/admin-delete-notice/<notice_id>", methods=["POST"])
+def admin_delete_notice(notice_id):
+
+    security_check = admin_required()
+
+    if security_check:
+        return security_check
+
+    admin_department = str(
+        session.get("admin_department", "")
+    ).strip()
+
+    notices = []
+
+    if os.path.exists(NOTICES_FILE):
+        try:
+            with open(NOTICES_FILE, "r") as file:
+                notices = json.load(file)
+
+            if not isinstance(notices, list):
+                notices = []
+
+        except:
+            notices = []
+
+    new_notices = []
+
+    for notice in notices:
+
+        sender_type = str(
+            notice.get("sender_type", "")
+        ).strip().lower()
+
+        notice_department = str(
+            notice.get("admin_department", "")
+        ).strip()
+
+        # Sirf apne department ka admin notice delete hoga
+        if (
+            str(notice.get("notice_id", "")).strip() == str(notice_id).strip()
+            and sender_type == "admin"
+            and notice_department.lower() == admin_department.lower()
+        ):
+            continue
+
+        new_notices.append(notice)
+
+    with open(NOTICES_FILE, "w") as file:
+        json.dump(new_notices, file, indent=4)
+
+    return redirect("/admin-send-notice")
+
+
+
+
 @app.route("/head-delete-faculty-records", methods=["GET"])
 def head_delete_faculty_records():
 
@@ -6127,10 +6381,38 @@ def student_notices():
             notice.get("section", "")
         ).strip().upper()
 
+        # =========================
+        # FACULTY NOTICE
+        # =========================
+
         if (
             notice_course == student_course
             and notice_semester == student_semester
             and notice_section == student_section
+        ):
+            filtered_notices.append(notice)
+            continue
+
+        # =========================
+        # ADMIN / HOD NOTICE
+        # =========================
+
+        notice_sender_type = str(
+            notice.get("sender_type", "")
+        ).strip().lower()
+
+        notice_department = str(
+            notice.get("admin_department", "")
+        ).strip().lower()
+
+        student_department = str(
+            student.get("department", "")
+        ).strip().lower()
+
+        if (
+            notice_sender_type == "admin"
+            and notice_department
+            and notice_department == student_department
         ):
             filtered_notices.append(notice)
 
@@ -7211,6 +7493,10 @@ def admin_students():
     if security_check:
         return security_check
 
+    admin_department = str(
+    session.get("admin_department", "")
+).strip()
+
     students = []
     courses = get_admin_courses()
 
@@ -7330,10 +7616,7 @@ def admin_students():
         # NEW: DEPARTMENT
         # =================================================
 
-        department = request.form.get(
-            "department",
-            ""
-        ).strip()
+        department = admin_department
 
         course = request.form.get(
             "course",
@@ -9050,6 +9333,10 @@ def admin_faculty():
     if security_check:
         return security_check
 
+    admin_department = str(
+    session.get("admin_department", "")
+).strip()
+
     faculty_list = []
     departments = []
 
@@ -9097,9 +9384,7 @@ def admin_faculty():
             "name", ""
         ).strip()
 
-        department = request.form.get(
-            "department", ""
-        ).strip()
+        department = admin_department
 
 
         if not name or not department:
@@ -9321,6 +9606,9 @@ def admin_departments():
     if security_check:
         return security_check
 
+    if session.get("admin_department") != "DCEA":
+        return "Exists only for DCEA department.", 403
+
     departments = []
 
     if os.path.exists(DEPARTMENTS_FILE):
@@ -9384,6 +9672,10 @@ def admin_courses():
     if security_check:
         return security_check
 
+    admin_department = str(
+    session.get("admin_department", "")
+).strip()
+
     courses = []
     departments = []
 
@@ -9436,10 +9728,7 @@ def admin_courses():
             ""
         ).strip()
 
-        department = request.form.get(
-            "department",
-            ""
-        ).strip()
+        department = admin_department
 
         total_semesters = request.form.get(
             "total_semesters",

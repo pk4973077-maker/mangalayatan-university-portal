@@ -387,33 +387,26 @@
 
                 <!-- DEPARTMENT -->
 
-                <div>
+<div>
 
-                    <label>Department</label>
+    <label>Department</label>
 
-                    <select
-                        name="department"
-                        id="department"
-                        required
-                    >
+    <select
+        name="department"
+        id="department"
+        required
+        disabled
+    >
 
-                        <option value="">
-                            Select Department
-                        </option>
+        <option value="{{ session.get('admin_department', '') }}" selected>
 
-                        {% for department in departments %}
+            {{ session.get('admin_department', '') }}
 
-                            <option value="{{ department.name }}">
+        </option>
 
-                                {{ department.name }}
+    </select>
 
-                            </option>
-
-                        {% endfor %}
-
-                    </select>
-
-                </div>
+</div>
 
                 <div>
 

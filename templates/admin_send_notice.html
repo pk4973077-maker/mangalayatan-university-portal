@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Send Notice</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        /* =========================
+           TOP BAR
+        ========================= */
+
+        .topbar {
+            background: #1e3a8a;
+            color: white;
+            padding: 18px 30px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        .back {
+            background: white;
+            color: #1e3a8a;
+            padding: 9px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+
+        /* =========================
+           CONTAINER
+        ========================= */
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+
+        /* =========================
+           BOX
+        ========================= */
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px #cbd5e1;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+
+
+        /* =========================
+           FORM
+        ========================= */
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        select:disabled {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .pdf-info {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+
+        /* =========================
+           SEND BUTTON
+        ========================= */
+
+        .send-btn {
+            width: 100%;
+            margin-top: 25px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #1e3a8a;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .send-btn:hover {
+            background: #172554;
+        }
+
+
+        /* =========================
+           SENT NOTICES
+        ========================= */
+
+        .sent-notice {
+            margin-top: 20px;
+            padding: 18px;
+            background: #f8fafc;
+            border-left: 5px solid #1e3a8a;
+            border-radius: 8px;
+        }
+
+        .sent-notice h3 {
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+
+        .sent-notice p {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+
+        /* =========================
+           DELETE BUTTON
+        ========================= */
+
+        .delete-btn {
+            margin-top: 12px;
+            padding: 9px 14px;
+            border: none;
+            border-radius: 7px;
+            background: #dc2626;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+
+        /* =========================
+           NO NOTICES
+        ========================= */
+
+        .no-notices {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 700px) {
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .container {
+                margin: 20px auto;
+                padding: 15px;
+            }
+
+            .box {
+                padding: 20px;
+            }
+
+            .topbar h2 {
+                font-size: 18px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         TOP BAR
+    ========================= -->
+
+    <div class="topbar">
+
+        <h2>
+            📢 Send Notice
+        </h2>
+
+        <a
+            href="/admin-dashboard"
+            class="back"
+        >
+            Back
+        </a>
+
+    </div>
+
+
+
+    <div class="container">
+
+
+        <!-- =========================
+             SEND NOTICE BOX
+        ========================= -->
+
+        <div class="box">
+
+            <h1>
+                Send Notice to Students
+            </h1>
+
+            <p>
+                This notice will be sent to all students
+                of your department.
+            </p>
+
+
+            <form
+                action="/admin-send-notice"
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+
+                <!-- DEPARTMENT -->
+
+                <label>
+                    Department
+                </label>
+
+                <select disabled>
+
+                    <option selected>
+                        {{ admin_department }}
+                    </option>
+
+                </select>
+
+
+
+                <!-- NOTICE TITLE -->
+
+                <label>
+                    Notice Title
+                </label>
+
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Enter notice title"
+                    required
+                >
+
+
+
+                <!-- NOTICE MESSAGE -->
+
+                <label>
+                    Notice Message
+                </label>
+
+                <textarea
+                    name="message"
+                    placeholder="Enter notice message"
+                    required
+                ></textarea>
+
+
+
+                <!-- PDF -->
+
+                <label>
+                    PDF Attachment (Optional)
+                </label>
+
+                <input
+                    type="file"
+                    name="pdf_file"
+                    accept="application/pdf"
+                >
+
+                <div class="pdf-info">
+
+                    Only PDF files are allowed.
+                    Attachment is optional.
+
+                </div>
+
+
+
+                <!-- SEND -->
+
+                <button
+                    type="submit"
+                    class="send-btn"
+                >
+
+                    📢 Send Notice
+
+                </button>
+
+
+            </form>
+
+        </div>
+
+
+
+        <!-- =========================
+             SENT NOTICES
+        ========================= -->
+
+        <div
+            class="box"
+            style="margin-top: 25px;"
+        >
+
+            <h2>
+                📋 Sent Notices
+            </h2>
+
+
+            {% if notices %}
+
+
+                {% for notice in notices %}
+
+
+                    <div class="sent-notice">
+
+
+                        <h3>
+
+                            📢
+                            {{ notice.get('title', '') }}
+
+                        </h3>
+
+
+                        <p>
+
+                            {{ notice.get('message', '') }}
+
+                        </p>
+
+
+
+                        {% if notice.get('pdf_filename') %}
+
+                            <p class="pdf-info">
+
+                                📄 Attached PDF:
+                                {{ notice.get('pdf_filename') }}
+
+                            </p>
+
+                        {% endif %}
+
+
+
+                        <!-- DELETE -->
+
+                        <form
+                            action="/admin-delete-notice/{{ notice.get('notice_id', '') }}"
+                            method="POST"
+                            onsubmit="return confirm('Are you sure you want to delete this notice?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="delete-btn"
+                            >
+
+                                🗑️ Delete Notice
+
+                            </button>
+
+                        </form>
+
+
+                    </div>
+
+
+                {% endfor %}
+
+
+            {% else %}
+
+
+                <div class="no-notices">
+
+                    📭 No notices sent yet.
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>

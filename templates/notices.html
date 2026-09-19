@@ -144,9 +144,17 @@
 
                     <div class="notice">
 
-                        <h3>
-                            📢 {{ notice.get('title', '') }}
-                        </h3>
+    {% if notice.get('sender_type', '')|lower == 'admin' %}
+
+        <h4 style="margin: 0 0 10px 0; color: #dc2626;">
+            HOD SIR NOTICE
+        </h4>
+
+    {% endif %}
+
+    <h3>
+        📢 {{ notice.get('title', '') }}
+    </h3>
 
 
                         <p>
