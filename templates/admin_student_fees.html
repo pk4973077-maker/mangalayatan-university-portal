@@ -7,88 +7,100 @@
     <title>Student Fees Record</title>
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .filter-box {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
-        }
-
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 7px;
+        * {
             box-sizing: border-box;
         }
 
-        .buttons {
-            margin-top: 18px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #222;
         }
 
-        button,
+        .container {
+            width: 95%;
+            margin: 30px auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .header h2 {
+            margin: 0 0 8px;
+        }
+
+        .department {
+            color: #555;
+            font-size: 15px;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-box label {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        select {
+            min-width: 180px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: white;
+        }
+
         .btn {
-            padding: 10px 18px;
             border: none;
-            border-radius: 7px;
+            padding: 10px 18px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 14px;
             text-decoration: none;
             display: inline-block;
-            font-size: 14px;
         }
 
-        .search-btn {
+        .btn-search {
             background: #2563eb;
             color: white;
         }
 
-        .reset-btn {
-            background: #6b7280;
+        .btn-excel {
+            background: #198754;
             color: white;
         }
 
-        .export-btn {
-            background: #16803c;
+        .btn-reset {
+            background: #6c757d;
             color: white;
         }
 
         .table-box {
             background: white;
-            padding: 20px;
-            border-radius: 12px;
+            padding: 15px;
+            border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             overflow-x: auto;
         }
@@ -96,44 +108,72 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
+            min-width: 850px;
         }
 
         th,
         td {
+            border: 1px solid #ddd;
             padding: 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
+            text-align: center;
         }
 
         th {
-            background: #f1f5f9;
+            background: #f1f3f5;
+            font-size: 14px;
         }
 
-        .paid {
-            color: #16803c;
+        td {
+            font-size: 14px;
+        }
+
+        .student-info {
+            text-align: left;
+        }
+
+        .student-name {
             font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        .due {
-            color: #dc2626;
-            font-weight: bold;
-        }
-
-        .clear-btn {
-            background: #dc2626;
-            color: white;
-        }
-
-        .empty {
-            text-align: center;
-            padding: 25px;
+        .enrollment {
             color: #666;
+            font-size: 13px;
+        }
+
+        .fee-amount {
+            font-weight: bold;
+        }
+
+        .zero {
+            color: #777;
+        }
+
+        .no-record {
+            text-align: center;
+            padding: 30px;
+            color: #777;
         }
 
         @media (max-width: 700px) {
+
+            .container {
+                width: 98%;
+                margin: 15px auto;
+            }
+
             .filters {
-                grid-template-columns: 1fr;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            select,
+            .btn {
+                width: 100%;
+            }
+
+            .header h2 {
+                font-size: 20px;
             }
         }
     </style>
@@ -143,212 +183,257 @@
 
 <div class="container">
 
-    <h1>Student Fees Record</h1>
+    <!-- HEADER -->
 
-    <div class="filter-box">
+    <div class="header">
 
-        <form method="GET" action="/admin-student-fees">
+        <h2>Student Fees Record</h2>
 
-            <div class="filters">
-
-                <div>
-                    <label>Department</label>
-
-                    <select disabled>
-                        <option>
-                            {{ session.get("admin_department", "") }}
-                        </option>
-                    </select>
-                </div>
-
-                <div>
-                    <label>Course</label>
-
-                    <select name="course" required>
-
-                        <option value="">
-                            Select Course
-                        </option>
-
-                        {% for course in courses %}
-
-                            <option
-                                value="{{ course.get('name', '') }}"
-                                {% if selected_course|lower == course.get('name', '')|lower %}
-                                    selected
-                                {% endif %}
-                            >
-                                {{ course.get('name', '') }}
-                            </option>
-
-                        {% endfor %}
-
-                    </select>
-                </div>
-
-                <div>
-                    <label>Semester</label>
-
-                    <select name="semester" required>
-
-                        <option value="">
-                            Select Semester
-                        </option>
-
-                        {% for i in range(1, 9) %}
-
-                            <option
-                                value="{{ i }}"
-                                {% if selected_semester == i|string %}
-                                    selected
-                                {% endif %}
-                            >
-                                Semester {{ i }}
-                            </option>
-
-                        {% endfor %}
-
-                    </select>
-                </div>
-
-                <div>
-                    <label>Section</label>
-
-                    <select name="section" required>
-
-                        <option value="">
-                            Select Section
-                        </option>
-
-                        <option value="A"
-                            {% if selected_section == "A" %}selected{% endif %}>
-                            A
-                        </option>
-
-                        <option value="B"
-                            {% if selected_section == "B" %}selected{% endif %}>
-                            B
-                        </option>
-
-                        <option value="C"
-                            {% if selected_section == "C" %}selected{% endif %}>
-                            C
-                        </option>
-
-                        <option value="D"
-                            {% if selected_section == "D" %}selected{% endif %}>
-                            D
-                        </option>
-
-                    </select>
-                </div>
-
-            </div>
-
-            <div class="buttons">
-
-                <button
-                    type="submit"
-                    class="search-btn">
-                    Search Students
-                </button>
-
-                <a
-                    href="/admin-student-fees"
-                    class="btn reset-btn">
-                    Reset
-                </a>
-
-                {% if students %}
-
-                    <a
-                        href="/admin-student-fees/export?course={{ selected_course|urlencode }}&semester={{ selected_semester|urlencode }}&section={{ selected_section|urlencode }}"
-                        class="btn export-btn">
-                        Export Excel
-                    </a>
-
-                {% endif %}
-
-            </div>
-
-        </form>
+        <div class="department">
+            Department:
+            <strong>{{ admin_department }}</strong>
+        </div>
 
     </div>
 
 
+    <!-- FILTERS -->
+
+    <form method="GET" action="{{ url_for('admin_student_fees') }}" class="filters">
+
+        <div class="filter-box">
+
+            <label>Course</label>
+
+            <select name="course">
+
+                <option value="">All Courses</option>
+
+                {% for course in courses %}
+
+                    <option
+                        value="{{ course }}"
+                        {% if selected_course == course %}selected{% endif %}
+                    >
+                        {{ course }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <div class="filter-box">
+
+            <label>Semester</label>
+
+            <select name="semester">
+
+                <option value="">Select Semester</option>
+
+                {% for sem in range(1, 9) %}
+
+                    <option
+                        value="{{ sem }}"
+                        {% if selected_semester == sem|string %}selected{% endif %}
+                    >
+                        Semester {{ sem }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <button type="submit" class="btn btn-search">
+            Search
+        </button>
+
+
+        <a
+            href="{{ url_for('admin_student_fees') }}"
+            class="btn btn-reset"
+        >
+            Reset
+        </a>
+
+
+        <a
+            href="{{ url_for('admin_student_fees_export',
+                             course=selected_course,
+                             semester=selected_semester) }}"
+            class="btn btn-excel"
+        >
+            Export Excel
+        </a>
+
+    </form>
+
+
+    <!-- TABLE -->
+
     <div class="table-box">
 
-        {% if students %}
+        <table>
 
-            <table>
+            <thead>
 
-                <thead>
+                <tr>
 
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Enrollment No.</th>
-                        <th>Total Amount Paid</th>
-                        <th>Remaining Dues</th>
-                        <th>Clear Record</th>
-                    </tr>
+                    <th>
+                        Student
+                    </th>
 
-                </thead>
+                    <th>
+                        Academic Fees
+                    </th>
 
-                <tbody>
+                    <th>
+                        Transport Fees
+                    </th>
+
+                    <th>
+                        Hostel Fees
+                    </th>
+
+                    <th>
+                        Major Exam Fees
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% if students %}
 
                     {% for student in students %}
 
-                        <tr>
+                    <tr>
 
-                            <td>
+                        <!-- STUDENT -->
+
+                        <td class="student-info">
+
+                            <div class="student-name">
                                 {{ student.get("name", "") }}
-                            </td>
+                            </div>
 
-                            <td>
+                            <div class="enrollment">
                                 {{ student.get("enrollment", "") }}
-                            </td>
+                            </div>
 
-                            <td class="paid">
-                                ₹{{ "%.2f"|format(student.get("total_amount_paid", 0)) }}
-                            </td>
+                        </td>
 
-                            <td class="due">
-                                ₹{{ "%.2f"|format(student.get("remaining_dues", 0)) }}
-                            </td>
 
-                            <td>
+                        <!-- ACADEMIC -->
 
-                                <form
-                                    method="POST"
-                                    action="/admin-student-fees/clear/{{ student.get('enrollment', '') }}"
-                                    onsubmit="return confirm('Are you sure you want to clear this student fees record?');"
-                                >
+                        <td>
 
-                                    <button
-                                        type="submit"
-                                        class="clear-btn">
-                                        Clear Record
-                                    </button>
+                            {% if student.get("academic_total", 0) > 0 %}
 
-                                </form>
+                                <span class="fee-amount">
+                                    ₹{{ "%.2f"|format(student.get("academic_total", 0)) }}
+                                </span>
 
-                            </td>
+                            {% else %}
 
-                        </tr>
+                                <span class="zero">
+                                    ₹0.00
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- TRANSPORT -->
+
+                        <td>
+
+                            {% if student.get("transport_total", 0) > 0 %}
+
+                                <span class="fee-amount">
+                                    ₹{{ "%.2f"|format(student.get("transport_total", 0)) }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="zero">
+                                    ₹0.00
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- HOSTEL -->
+
+                        <td>
+
+                            {% if student.get("hostel_total", 0) > 0 %}
+
+                                <span class="fee-amount">
+                                    ₹{{ "%.2f"|format(student.get("hostel_total", 0)) }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="zero">
+                                    ₹0.00
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- MAJOR EXAM -->
+
+                        <td>
+
+                            {% if student.get("major_exam_total", 0) > 0 %}
+
+                                <span class="fee-amount">
+                                    ₹{{ "%.2f"|format(student.get("major_exam_total", 0)) }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="zero">
+                                    ₹0.00
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
 
                     {% endfor %}
 
-                </tbody>
+                {% else %}
 
-            </table>
+                    <tr>
 
-        {% else %}
+                        <td colspan="5" class="no-record">
+                            No student record found.
+                        </td>
 
-            <div class="empty">
-                Select Course, Semester and Section to view students.
-            </div>
+                    </tr>
 
-        {% endif %}
+                {% endif %}
+
+            </tbody>
+
+        </table>
 
     </div>
 

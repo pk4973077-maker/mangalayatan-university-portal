@@ -632,7 +632,7 @@
 <!-- STUDENT FEES RECORD -->
 
 <a
-    href="/admin-student-fees"
+    href="{{ url_for('admin_student_fees') }}"
     class="card"
 >
 
@@ -645,29 +645,7 @@
     </h3>
 
     <p>
-        View student fees and remaining dues
-    </p>
-
-</a>
-
-
-<!-- FEES STRUCTURE -->
-
-<a
-    href="/admin-fees-structure"
-    class="card"
->
-
-    <div class="icon">
-        💵
-    </div>
-
-    <h3>
-        Fees Structure
-    </h3>
-
-    <p>
-        Manage course and semester fees
+        View semester-wise student fees
     </p>
 
 </a>
