@@ -722,12 +722,37 @@ def admin_subjects():
 
 
     # =========================
+    # DEPARTMENT-WISE SUBJECTS
+    # =========================
+
+    display_subjects = []
+
+    for subject in subjects:
+
+        subject_department = str(
+            subject.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
+
+        if (
+            subject_department == admin_department.lower()
+            or not subject_department
+        ):
+
+            display_subjects.append(
+                subject
+            )
+
+
+    # =========================
     # SHOW PAGE
     # =========================
 
     return render_template(
         "admin_subjects.html",
-        subjects=subjects,
+        subjects=display_subjects,
         courses=courses
     )
 
@@ -6009,7 +6034,6 @@ def admin_send_notice():
 
                 return "Only PDF files are allowed."
 
-            import uuid
 
             original_name = secure_filename(
                 pdf_file.filename
@@ -7425,6 +7449,13 @@ def admin_search_faculty():
 
     results = []
 
+    admin_department = str(
+        session.get(
+            "admin_department",
+            ""
+        )
+    ).strip().lower()
+
     if query:
 
         for faculty in faculty_list:
@@ -7452,9 +7483,12 @@ def admin_search_faculty():
 
 
             if (
-                query in faculty_id
-                or query in name
-                or query in department
+                (
+                    query in faculty_id
+                    or query in name
+                    or query in department
+                )
+                and department == admin_department
             ):
 
                 results.append(faculty)
@@ -8333,6 +8367,22 @@ def admin_students():
 
             continue
 
+# =================================================
+        # DEPARTMENT-WISE FILTER
+        # =================================================
+
+        student_department = str(
+            student.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
+
+        if student_department != admin_department.lower():
+
+            continue
+
+
         student_course = str(
             student.get(
                 "course",
@@ -8609,6 +8659,10 @@ def admin_students():
         course_structure=course_structure
 
     )
+
+
+
+
 
 @app.route(
     "/student-change-password",
@@ -9234,18 +9288,52 @@ def admin_search_student():
 
     results = []
 
+    admin_department = str(
+        session.get(
+            "admin_department",
+            ""
+        )
+    ).strip().lower()
+
     if search:
 
         for student in students:
 
-            name = str(student.get("name", "")).lower()
-            enrollment = str(student.get("enrollment", "")).lower()
-            student_id = str(student.get("student_id", "")).lower()
+            name = str(
+                student.get(
+                    "name",
+                    ""
+                )
+            ).lower()
+
+            enrollment = str(
+                student.get(
+                    "enrollment",
+                    ""
+                )
+            ).lower()
+
+            student_id = str(
+                student.get(
+                    "student_id",
+                    ""
+                )
+            ).lower()
+
+            department = str(
+                student.get(
+                    "department",
+                    ""
+                )
+            ).strip().lower()
 
             if (
-                search in name
-                or search in enrollment
-                or search in student_id
+                (
+                    search in name
+                    or search in enrollment
+                    or search in student_id
+                )
+                and department == admin_department
             ):
                 results.append(student)
 
@@ -9497,6 +9585,27 @@ def admin_faculty():
 
 
     # ==============================
+    # DEPARTMENT-WISE FACULTY
+    # ==============================
+
+    faculty_list = [
+
+        faculty
+
+        for faculty in faculty_list
+
+        if str(
+            faculty.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
+        == admin_department.lower()
+
+    ]
+
+
+    # ==============================
     # FACULTY SEARCH
     # ==============================
 
@@ -9506,46 +9615,48 @@ def admin_faculty():
     ).strip().lower()
 
 
-    if search:
+    filtered_faculty = []
 
-        filtered_faculty = []
+    for faculty in faculty_list:
 
-        for faculty in faculty_list:
+        faculty_id = str(
+            faculty.get(
+                "faculty_id",
+                ""
+            )
+        ).lower()
 
-            faculty_id = str(
-                faculty.get(
-                    "faculty_id",
-                    ""
-                )
-            ).lower()
+        name = str(
+            faculty.get(
+                "name",
+                ""
+            )
+        ).lower()
 
-            name = str(
-                faculty.get(
-                    "name",
-                    ""
-                )
-            ).lower()
-
-            department = str(
-                faculty.get(
-                    "department",
-                    ""
-                )
-            ).lower()
+        department = str(
+            faculty.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
 
 
-            if (
-                search in faculty_id
+        if (
+            department == admin_department.lower()
+            and (
+                not search
+                or search in faculty_id
                 or search in name
                 or search in department
-            ):
+            )
+        ):
 
-                filtered_faculty.append(
-                    faculty
-                )
+            filtered_faculty.append(
+                faculty
+            )
 
 
-        faculty_list = filtered_faculty
+    faculty_list = filtered_faculty
 
 
     # ==============================
@@ -9850,12 +9961,40 @@ def admin_courses():
 
 
     # =========================
+    # DEPARTMENT-WISE COURSES
+    # =========================
+
+    display_courses = []
+
+    for course in courses:
+
+        if not isinstance(
+            course,
+            dict
+        ):
+            continue
+
+        course_department = str(
+            course.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
+
+        if course_department == admin_department.lower():
+
+            display_courses.append(
+                course
+            )
+
+
+    # =========================
     # PAGE
     # =========================
 
     return render_template(
         "admin_courses.html",
-        courses=courses,
+        courses=display_courses,
         departments=departments
     )
 
