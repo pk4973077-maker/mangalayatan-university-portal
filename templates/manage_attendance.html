@@ -384,6 +384,43 @@
             </select>
 
 
+            <!-- GROUP -->
+
+            <label>
+                Group
+                <span style="font-weight: normal;">
+                    (Optional)
+                </span>
+            </label>
+
+            <select
+                name="group"
+                id="group"
+            >
+
+                <option value="">
+                    All Groups
+                </option>
+
+                <option value="G1">
+                    Group G1
+                </option>
+
+                <option value="G2">
+                    Group G2
+                </option>
+
+                <option value="G3">
+                    Group G3
+                </option>
+
+                <option value="G4">
+                    Group G4
+                </option>
+
+            </select>
+
+
             <!-- DATE -->
 
             <label>Date</label>
@@ -400,7 +437,7 @@
             <div class="info">
 
                 👨‍🎓 Students will appear after selecting
-                <strong>Course + Semester + Section</strong>.
+                <strong>Course + Semester + Section + Group</strong>.
 
             </div>
 
@@ -444,6 +481,7 @@
                             data-course="{{ student.get('course', '') }}"
                             data-semester="{{ student.get('semester', '') }}"
                             data-section="{{ student.get('section', '') }}"
+                            data-group="{{ student.get('group', '') }}"
                         >
 
 
@@ -491,7 +529,7 @@
                         <td colspan="3">
 
                             No students found for the selected
-                            Course + Semester + Section.
+                            Course + Semester + Section + Group.
 
                         </td>
 
@@ -512,18 +550,18 @@
             </button>
 
             <a href="/faculty-attendance-history"
-   style="
-       display:inline-block;
-       margin-top:15px;
-       padding:12px 20px;
-       background:#2563eb;
-       color:white;
-       text-decoration:none;
-       border-radius:8px;
-       font-weight:bold;
-   ">
-    📋 Attendance History
-</a>
+               style="
+                   display:inline-block;
+                   margin-top:15px;
+                   padding:12px 20px;
+                   background:#2563eb;
+                   color:white;
+                   text-decoration:none;
+                   border-radius:8px;
+                   font-weight:bold;
+               ">
+                📋 Attendance History
+            </a>
 
             <a href="/faculty-attendance-record"
                style="
@@ -563,6 +601,10 @@ const semesterSelect =
 
 const sectionSelect =
     document.getElementById("section");
+
+
+const groupSelect =
+    document.getElementById("group");
 
 
 const subjectSelect =
@@ -626,11 +668,9 @@ const subjects = [
 
 ];
 
-
-
 /* =========================
    FILTER STUDENTS
-   COURSE + SEMESTER + SECTION
+   COURSE + SEMESTER + SECTION + GROUP
    ========================= */
 
 function filterStudents() {
@@ -649,6 +689,12 @@ function filterStudents() {
 
     const section =
         sectionSelect.value
+            .trim()
+            .toUpperCase();
+
+
+    const group =
+        groupSelect.value
             .trim()
             .toUpperCase();
 
@@ -676,6 +722,12 @@ function filterStudents() {
                 .toUpperCase();
 
 
+        const studentGroup =
+            (row.dataset.group || "")
+                .trim()
+                .toUpperCase();
+
+
         if (
 
             course
@@ -689,6 +741,12 @@ function filterStudents() {
             studentSemester === semester
             &&
             studentSection === section
+            &&
+            (
+                !group
+                ||
+                studentGroup === group
+            )
 
         ) {
 
@@ -1069,6 +1127,20 @@ sectionSelect.addEventListener(
     }
 );
 
+
+
+/* =========================
+   GROUP CHANGE
+   ========================= */
+
+groupSelect.addEventListener(
+    "change",
+    function() {
+
+        filterStudents();
+
+    }
+);
 
 
 /* =========================

@@ -2393,6 +2393,10 @@ def manage_attendance():
             "section", ""
         ).strip()
 
+        group = request.form.get(
+            "group", ""
+        ).strip().upper()
+
         date = request.form.get(
             "date", ""
         ).strip()
@@ -2490,7 +2494,7 @@ def manage_attendance():
 
         # =========================
         # FIND STUDENTS
-        # COURSE + SEMESTER + SECTION
+        # COURSE + SEMESTER + SECTION + GROUP
         # =========================
         selected_students = []
 
@@ -2508,6 +2512,10 @@ def manage_attendance():
                 student.get("section", "")
             ).strip().upper()
 
+            student_group = str(
+                student.get("group", "")
+            ).strip().upper()
+
 
             if (
                 student_course.lower()
@@ -2522,6 +2530,13 @@ def manage_attendance():
 
                 student_section
                 == section.upper()
+
+                and
+
+                (
+                    not group
+                    or student_group == group
+                )
             ):
                 selected_students.append(student)
 
@@ -2544,7 +2559,7 @@ def manage_attendance():
             except:
                 attendance_data = []
 
-                # =========================
+        # =========================
         # DUPLICATE ATTENDANCE CHECK
         # =========================
         for old_record in attendance_data:
@@ -2572,6 +2587,11 @@ def manage_attendance():
 
                 str(old_record.get("section", "")).strip().upper()
                 == section.upper()
+
+                and
+
+                str(old_record.get("group", "")).strip().upper()
+                == group
             ):
 
                 return (
@@ -2610,6 +2630,7 @@ def manage_attendance():
 
                 "semester": semester,
                 "section": section,
+                "group": group,
 
                 "student_id": enrollment,
                 "student_name": student_name,
