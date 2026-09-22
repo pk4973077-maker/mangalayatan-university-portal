@@ -2369,7 +2369,25 @@ def manage_attendance():
     # =========================
     # COURSES FROM ADMIN
     # =========================
-    courses = get_admin_courses()
+    faculty_department = str(
+        session.get("faculty_department", "")
+    ).strip()
+
+    all_courses = get_admin_courses()
+
+    courses = []
+
+    for item in all_courses:
+
+        course_department = str(
+            item.get("department", "")
+        ).strip()
+
+        if (
+            course_department.lower()
+            == faculty_department.lower()
+        ):
+            courses.append(item)
 
 
     # =========================
@@ -4197,6 +4215,10 @@ def faculty_login():
             faculty.get("name", "")
         ).strip()
 
+        session["faculty_department"] = str(
+    faculty.get("department", "")
+).strip()
+
         return redirect(
             "/faculty-dashboard"
         )
@@ -5112,7 +5134,30 @@ def upload_notes():
                 break
 
     # Admin courses
-    courses = get_admin_courses()
+    faculty_department = str(
+        session.get("faculty_department", "")
+    ).strip()
+
+    all_courses = get_admin_courses()
+
+    courses = []
+
+    for item in all_courses:
+
+        if isinstance(item, dict):
+
+            course_department = str(
+                item.get("department", "")
+            ).strip()
+
+            if (
+                course_department.lower()
+                == faculty_department.lower()
+            ):
+                courses.append(item)
+
+        else:
+            courses.append(item)
 
     # Admin subjects
     subjects = []
@@ -5362,7 +5407,30 @@ def faculty_syllabus():
                 break
 
     # Admin Course Management से courses
-    courses = get_admin_courses()
+    faculty_department = str(
+        session.get("faculty_department", "")
+    ).strip()
+
+    all_courses = get_admin_courses()
+
+    courses = []
+
+    for item in all_courses:
+
+        if isinstance(item, dict):
+
+            course_department = str(
+                item.get("department", "")
+            ).strip()
+
+            if (
+                course_department.lower()
+                == faculty_department.lower()
+            ):
+                courses.append(item)
+
+        else:
+            courses.append(item)
 
     # Admin Subject Management से subjects
     subjects = []
@@ -5724,7 +5792,30 @@ def send_notice():
     # -------------------------
     # Admin Course Management
     # -------------------------
-    courses = get_admin_courses()
+    faculty_department = str(
+        session.get("faculty_department", "")
+    ).strip()
+
+    all_courses = get_admin_courses()
+
+    courses = []
+
+    for item in all_courses:
+
+        if isinstance(item, dict):
+
+            course_department = str(
+                item.get("department", "")
+            ).strip()
+
+            if (
+                course_department.lower()
+                == faculty_department.lower()
+            ):
+                courses.append(item)
+
+        else:
+            courses.append(item)
 
     clean_courses = []
 
@@ -6595,7 +6686,32 @@ def holiday_information():
     # ADMIN COURSES READ
     # =========================
 
-    courses = get_admin_courses()
+    faculty_department = str(
+        session.get("faculty_department", "")
+    ).strip()
+
+    all_courses = get_admin_courses()
+
+    courses = []
+
+    for course in all_courses:
+
+        if isinstance(course, dict):
+
+            course_department = str(
+                course.get("department", "")
+            ).strip()
+
+            if (
+                course_department.lower()
+                == faculty_department.lower()
+            ):
+                courses.append(course)
+
+        else:
+
+            courses.append(course)
+
 
     course_names = []
 
@@ -10660,7 +10776,24 @@ def create_excel_sheet():
 
     if request.method == "GET":
 
-        courses = get_admin_courses()
+        faculty_department = str(
+            session.get("faculty_department", "")
+        ).strip().lower()
+
+        all_courses = get_admin_courses()
+
+        courses = []
+
+        for item in all_courses:
+
+            if isinstance(item, dict):
+
+                course_department = str(
+                    item.get("department", "")
+                ).strip().lower()
+
+                if course_department == faculty_department:
+                    courses.append(item)
 
         valid_courses = []
 
