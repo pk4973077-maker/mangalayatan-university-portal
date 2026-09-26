@@ -4,6 +4,7 @@ import base64
 import qrcode
 import os
 import io
+import csv
 import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -11,7 +12,7 @@ import json
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from database import (
     get_connection,
@@ -463,6 +464,7 @@ SUBJECTS_FILE = "subjects.json"
 DEPARTMENTS_FILE = "departments.json"
 COURSES_FILE = "courses.json"
 FEES_STRUCTURE_FILE = "fees_structure.json"
+ROOMS_FILE = "university_rooms.json"
 
 def get_admin_courses():
 
@@ -14574,6 +14576,6640 @@ def admin_student_fees_export():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     
+# ============================================================
+# EXAM ARRANGEMENT LOGIN
+# ============================================================
+
+def exam_arrangement_required(view_func):
+
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+
+        if not session.get(
+            "exam_arrangement_logged_in"
+        ):
+            return redirect(
+                "/exam-arrangement-login"
+            )
+
+        return view_func(
+            *args,
+            **kwargs
+        )
+
+    return wrapped_view
+
+
+# ============================================================
+# EXAM ARRANGEMENT PORTAL
+# ============================================================
+
+@app.route(
+    "/exam-arrangement"
+)
+@exam_arrangement_required
+def exam_arrangement():
+
+    response = make_response(
+        render_template(
+            "exam_arrangement.html"
+        )
+    )
+
+    response.headers[
+        "Cache-Control"
+    ] = (
+        "no-store, no-cache, "
+        "must-revalidate, max-age=0"
+    )
+
+    response.headers[
+        "Pragma"
+    ] = "no-cache"
+
+    response.headers[
+        "Expires"
+    ] = "0"
+
+    return response
+
+
+# ============================================================
+# EXAM ARRANGEMENT LOGIN
+# ============================================================
+
+@app.route(
+    "/exam-arrangement-login",
+    methods=["GET", "POST"]
+)
+def exam_arrangement_login():
+
+    if request.method == "POST":
+
+        verification_name = request.form.get(
+            "verification_name",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
+
+        if (
+            not verification_name
+            or not password
+        ):
+
+            return render_template(
+                "exam_arrangement_login.html",
+                error=(
+                    "Please enter "
+                    "verification name and password."
+                )
+            )
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                # ------------------------------------------------
+                # CREATE EXAM ARRANGEMENT CREDENTIAL TABLE
+                # ------------------------------------------------
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS
+                    exam_arrangement_credentials (
+                        id INTEGER PRIMARY KEY,
+                        verification_name TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )
+                """)
+
+                # ------------------------------------------------
+                # GET CURRENT CREDENTIALS
+                # ------------------------------------------------
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM exam_arrangement_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+                # ------------------------------------------------
+                # FIRST TIME LOGIN
+                # ------------------------------------------------
+
+                if not credentials:
+
+                    cur.execute("""
+                        INSERT INTO
+                        exam_arrangement_credentials
+                        (
+                            id,
+                            verification_name,
+                            password
+                        )
+                        VALUES
+                        (
+                            1,
+                            %s,
+                            %s
+                        )
+                    """, (
+                        verification_name,
+                        password
+                    ))
+
+                    conn.commit()
+
+                    session[
+                        "exam_arrangement_logged_in"
+                    ] = True
+
+                    return redirect(
+                        "/exam-arrangement"
+                    )
+
+                # ------------------------------------------------
+                # NORMAL LOGIN
+                # ------------------------------------------------
+
+                if (
+                    str(
+                        verification_name
+                    ).strip()
+                    ==
+                    str(
+                        credentials[
+                            "verification_name"
+                        ]
+                    ).strip()
+                    and
+                    str(
+                        password
+                    ).strip()
+                    ==
+                    str(
+                        credentials[
+                            "password"
+                        ]
+                    ).strip()
+                ):
+
+                    session[
+                        "exam_arrangement_logged_in"
+                    ] = True
+
+                    return redirect(
+                        "/exam-arrangement"
+                    )
+
+                return render_template(
+                    "exam_arrangement_login.html",
+                    error=(
+                        "Invalid verification "
+                        "name or password."
+                    )
+                )
+
+        finally:
+
+            conn.close()
+
+    return render_template(
+        "exam_arrangement_login.html"
+    )
+
+
+# ============================================================
+# EXAM ARRANGEMENT CHANGE ID & PASSWORD
+# ============================================================
+
+@app.route(
+    "/exam-arrangement-change-credentials",
+    methods=["GET", "POST"]
+)
+@exam_arrangement_required
+def exam_arrangement_change_credentials():
+
+    if not session.get(
+        "exam_arrangement_logged_in"
+    ):
+
+        return redirect(
+            "/exam-arrangement-login"
+        )
+
+    if request.method == "POST":
+
+        current_name = request.form.get(
+            "current_name",
+            ""
+        ).strip()
+
+        current_password = request.form.get(
+            "current_password",
+            ""
+        ).strip()
+
+        new_name = request.form.get(
+            "new_name",
+            ""
+        ).strip()
+
+        new_password = request.form.get(
+            "new_password",
+            ""
+        ).strip()
+
+        confirm_password = request.form.get(
+            "confirm_password",
+            ""
+        ).strip()
+
+        # ------------------------------------------------
+        # CURRENT DETAILS
+        # ------------------------------------------------
+
+        if (
+            not current_name
+            or not current_password
+        ):
+
+            return render_template(
+                "exam_arrangement_change_credentials.html",
+                error=(
+                    "Please enter current "
+                    "verification name and password."
+                )
+            )
+
+        # ------------------------------------------------
+        # NEW DETAILS
+        # ------------------------------------------------
+
+        if (
+            not new_name
+            or not new_password
+        ):
+
+            return render_template(
+                "exam_arrangement_change_credentials.html",
+                error=(
+                    "Please enter new "
+                    "verification name and password."
+                )
+            )
+
+        # ------------------------------------------------
+        # PASSWORD CONFIRM
+        # ------------------------------------------------
+
+        if (
+            new_password
+            != confirm_password
+        ):
+
+            return render_template(
+                "exam_arrangement_change_credentials.html",
+                error=(
+                    "New passwords do not match."
+                )
+            )
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS
+                    exam_arrangement_credentials (
+                        id INTEGER PRIMARY KEY,
+                        verification_name TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )
+                """)
+
+                cur.execute("""
+                    SELECT
+                        verification_name,
+                        password
+                    FROM exam_arrangement_credentials
+                    WHERE id = 1
+                    LIMIT 1
+                """)
+
+                credentials = cur.fetchone()
+
+                if not credentials:
+
+                    return render_template(
+                        "exam_arrangement_change_credentials.html",
+                        error=(
+                            "Exam Arrangement "
+                            "credentials not found."
+                        )
+                    )
+
+                # ------------------------------------------------
+                # VERIFY CURRENT DETAILS
+                # ------------------------------------------------
+
+                if (
+                    current_name
+                    != str(
+                        credentials[
+                            "verification_name"
+                        ]
+                    ).strip()
+                    or
+                    current_password
+                    != str(
+                        credentials[
+                            "password"
+                        ]
+                    ).strip()
+                ):
+
+                    return render_template(
+                        "exam_arrangement_change_credentials.html",
+                        error=(
+                            "Current verification "
+                            "name or password is incorrect."
+                        )
+                    )
+
+                # ------------------------------------------------
+                # UPDATE
+                # ------------------------------------------------
+
+                cur.execute("""
+                    UPDATE
+                    exam_arrangement_credentials
+                    SET
+                        verification_name = %s,
+                        password = %s
+                    WHERE id = 1
+                """, (
+                    new_name,
+                    new_password
+                ))
+
+            conn.commit()
+
+        finally:
+
+            conn.close()
+
+        session[
+            "exam_arrangement_logged_in"
+        ] = True
+
+        return """
+        <script>
+
+            alert(
+                "Exam Arrangement ID & Password changed successfully."
+            );
+
+            window.location.href =
+                "/exam-arrangement";
+
+        </script>
+        """
+
+    return render_template(
+        "exam_arrangement_change_credentials.html"
+    )
+
+
+# ============================================================
+# EXAM ARRANGEMENT LOGOUT
+# ============================================================
+
+@app.route(
+    "/exam-arrangement-logout"
+)
+def exam_arrangement_logout():
+
+    session.pop(
+        "exam_arrangement_logged_in",
+        None
+    )
+
+    return redirect(
+        "/exam-arrangement-login"
+    )
+
+
+@app.route("/university-room-capacity", methods=["GET", "POST"])
+@exam_arrangement_required
+def university_room_capacity():
+
+    rooms = []
+
+    # ==============================
+    # ROOM DATA LOAD
+    # ==============================
+
+    if os.path.exists(ROOMS_FILE):
+
+        try:
+
+            with open(ROOMS_FILE, "r") as file:
+
+                rooms = json.load(file)
+
+            if not isinstance(rooms, list):
+
+                rooms = []
+
+        except:
+
+            rooms = []
+
+
+    # ==============================
+    # ADD ROOM
+    # ==============================
+
+    if request.method == "POST":
+
+        room_name = request.form.get(
+            "room_name",
+            ""
+        ).strip()
+
+        capacity = request.form.get(
+            "capacity",
+            ""
+        ).strip()
+
+
+        if not room_name or not capacity:
+
+            return "Please fill all fields."
+
+
+        # ==============================
+        # CAPACITY VALIDATION
+        # ==============================
+
+        try:
+
+            capacity = int(capacity)
+
+        except:
+
+            return "Capacity must be a number."
+
+
+        if capacity <= 0:
+
+            return "Capacity must be greater than 0."
+
+
+        # ==============================
+        # DUPLICATE ROOM CHECK
+        # ==============================
+
+        for room in rooms:
+
+            existing_room = str(
+                room.get(
+                    "room_name",
+                    ""
+                )
+            ).strip()
+
+            if existing_room.lower() == room_name.lower():
+
+                return "Room already exists."
+
+
+        # ==============================
+        # ROOM DATA
+        # ==============================
+
+        room = {
+
+            "room_name": room_name,
+
+            "capacity": capacity
+
+        }
+
+
+        rooms.append(room)
+
+
+        # ==============================
+        # SAVE ROOM
+        # ==============================
+
+        with open(
+            ROOMS_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                rooms,
+                file,
+                indent=4
+            )
+
+
+        return redirect(
+            "/university-room-capacity"
+        )
+
+
+    # ==============================
+    # ALPHABETICAL ORDER
+    # ==============================
+
+    rooms.sort(
+        key=lambda x: str(
+            x.get(
+                "room_name",
+                ""
+            )
+        ).strip().lower()
+    )
+
+
+    return render_template(
+        "university_room_capacity.html",
+        rooms=rooms
+    )
+
+
+# ==========================================
+# EDIT ROOM
+# ==========================================
+
+@app.route(
+    "/edit-university-room/<int:index>",
+    methods=["GET", "POST"]
+)
+def edit_university_room(index):
+
+    rooms = []
+
+    if os.path.exists(ROOMS_FILE):
+
+        try:
+
+            with open(
+                ROOMS_FILE,
+                "r"
+            ) as file:
+
+                rooms = json.load(file)
+
+            if not isinstance(rooms, list):
+
+                rooms = []
+
+        except:
+
+            rooms = []
+
+
+    if index < 0 or index >= len(rooms):
+
+        return "Room not found."
+
+
+    if request.method == "POST":
+
+        room_name = request.form.get(
+            "room_name",
+            ""
+        ).strip()
+
+        capacity = request.form.get(
+            "capacity",
+            ""
+        ).strip()
+
+
+        if not room_name or not capacity:
+
+            return "Please fill all fields."
+
+
+        try:
+
+            capacity = int(capacity)
+
+        except:
+
+            return "Capacity must be a number."
+
+
+        if capacity <= 0:
+
+            return "Capacity must be greater than 0."
+
+
+        for i, room in enumerate(rooms):
+
+            if i == index:
+                continue
+
+            existing_room = str(
+                room.get(
+                    "room_name",
+                    ""
+                )
+            ).strip()
+
+
+            if (
+                existing_room.lower()
+                == room_name.lower()
+            ):
+
+                return "Room already exists."
+
+
+        rooms[index] = {
+
+            "room_name": room_name,
+
+            "capacity": capacity
+
+        }
+
+
+        with open(
+            ROOMS_FILE,
+            "w"
+        ) as file:
+
+            json.dump(
+                rooms,
+                file,
+                indent=4
+            )
+
+
+        return redirect(
+            "/university-room-capacity"
+        )
+
+
+    room = rooms[index]
+
+
+    return render_template(
+        "edit_university_room.html",
+        room=room,
+        index=index
+    )
+
+
+# ==========================================
+# DELETE ROOM
+# ==========================================
+
+@app.route(
+    "/delete-university-room/<int:index>"
+)
+def delete_university_room(index):
+
+    rooms = []
+
+    if os.path.exists(ROOMS_FILE):
+
+        try:
+
+            with open(
+                ROOMS_FILE,
+                "r"
+            ) as file:
+
+                rooms = json.load(file)
+
+            if not isinstance(rooms, list):
+
+                rooms = []
+
+        except:
+
+            rooms = []
+
+
+    if index < 0 or index >= len(rooms):
+
+        return "Room not found."
+
+
+    rooms.pop(index)
+
+
+    with open(
+        ROOMS_FILE,
+        "w"
+    ) as file:
+
+        json.dump(
+            rooms,
+            file,
+            indent=4
+        )
+
+
+    return redirect(
+        "/university-room-capacity"
+    )
+
+
+
+# ============================================================
+# SEATING ARRANGEMENT SYSTEM
+# ============================================================
+
+from datetime import date, datetime
+
+
+# ============================================================
+# COMPLETE SEATING ARRANGEMENT SYSTEM
+# ============================================================
+
+# ------------------------------------------------------------
+# COMMON HELPERS
+# ------------------------------------------------------------
+
+def seating_load_json(filename):
+
+    data = []
+
+    try:
+
+        if os.path.exists(filename):
+
+            with open(filename, "r") as file:
+
+                data = json.load(file)
+
+    except Exception:
+
+        data = []
+
+    if not isinstance(data, list):
+
+        data = []
+
+    return data
+
+
+def seating_text(value):
+
+    return str(
+        value or ""
+    ).strip()
+
+
+def seating_course_key(student):
+
+    return (
+        seating_text(
+            student.get("course", "")
+        ).lower(),
+        seating_text(
+            student.get("semester", "")
+        )
+    )
+
+
+def seating_department_match(value, department):
+
+    return (
+        seating_text(value).lower()
+        ==
+        seating_text(department).lower()
+    )
+
+
+def seating_get_room_list():
+
+    rooms = seating_load_json(
+        ROOMS_FILE
+    )
+
+    result = []
+
+    for room in rooms:
+
+        if not isinstance(room, dict):
+
+            continue
+
+        room_name = seating_text(
+            room.get("room_name", "")
+        )
+
+        try:
+
+            capacity = int(
+                room.get(
+                    "capacity",
+                    0
+                )
+            )
+
+        except Exception:
+
+            capacity = 0
+
+        if not room_name:
+            continue
+
+        if capacity <= 0:
+            continue
+
+        result.append({
+            "room_name": room_name,
+            "capacity": capacity
+        })
+
+    result.sort(
+        key=lambda x:
+            x["room_name"].lower()
+    )
+
+    return result
+
+
+def seating_get_departments():
+
+    departments = seating_load_json(
+        DEPARTMENTS_FILE
+    )
+
+    result = []
+
+    for department in departments:
+
+        if not isinstance(
+            department,
+            dict
+        ):
+            continue
+
+        department_id = seating_text(
+            department.get(
+                "department_id",
+                ""
+            )
+        )
+
+        name = seating_text(
+            department.get(
+                "name",
+                ""
+            )
+        )
+
+        if not name:
+            continue
+
+        result.append({
+            "department_id":
+                department_id,
+            "name":
+                name
+        })
+
+    result.sort(
+        key=lambda x:
+            x["name"].lower()
+    )
+
+    return result
+
+
+def seating_get_students():
+
+    return seating_load_json(
+        STUDENTS_FILE
+    )
+
+
+def seating_get_faculty():
+
+    return seating_load_json(
+        FACULTY_FILE
+    )
+
+
+def seating_get_subjects():
+
+    return seating_load_json(
+        SUBJECTS_FILE
+    )
+
+
+def seating_department_data():
+
+    departments = (
+        seating_get_departments()
+    )
+
+    students = (
+        seating_get_students()
+    )
+
+    faculty = (
+        seating_get_faculty()
+    )
+
+    result = []
+
+    for department in departments:
+
+        department_id = seating_text(
+            department.get(
+                "department_id",
+                ""
+            )
+        )
+
+        department_name = seating_text(
+            department.get(
+                "name",
+                ""
+            )
+        )
+
+        department_students = []
+
+        for student in students:
+
+            if not isinstance(
+                student,
+                dict
+            ):
+                continue
+
+            student_department = (
+                seating_text(
+                    student.get(
+                        "department",
+                        ""
+                    )
+                )
+            )
+
+            if seating_department_match(
+                student_department,
+                department_name
+            ):
+
+                department_students.append(
+                    student
+                )
+
+            elif (
+                department_id
+                and
+                student_department.lower()
+                ==
+                department_id.lower()
+            ):
+
+                department_students.append(
+                    student
+                )
+
+        department_faculty = []
+
+        for member in faculty:
+
+            if not isinstance(
+                member,
+                dict
+            ):
+                continue
+
+            faculty_department = (
+                seating_text(
+                    member.get(
+                        "department",
+                        ""
+                    )
+                )
+            )
+
+            if (
+                seating_department_match(
+                    faculty_department,
+                    department_name
+                )
+                or
+                (
+                    department_id
+                    and
+                    faculty_department.lower()
+                    ==
+                    department_id.lower()
+                )
+            ):
+
+                department_faculty.append(
+                    member
+                )
+
+        result.append({
+
+            "department_id":
+                department_id,
+
+            "name":
+                department_name,
+
+            "student_count":
+                len(department_students),
+
+            "faculty_count":
+                len(department_faculty),
+
+            "faculty":
+                department_faculty
+
+        })
+
+    return result
+
+
+def seating_selected_rooms():
+
+    rooms = session.get(
+        "seating_rooms",
+        []
+    )
+
+    if not isinstance(
+        rooms,
+        list
+    ):
+        rooms = []
+
+    return rooms
+
+
+def seating_selected_departments():
+
+    departments = session.get(
+        "seating_departments",
+        []
+    )
+
+    if not isinstance(
+        departments,
+        list
+    ):
+        departments = []
+
+    return departments
+
+
+def seating_selected_dates():
+
+    dates = session.get(
+        "seating_dates",
+        []
+    )
+
+    if not isinstance(
+        dates,
+        list
+    ):
+        dates = []
+
+    return dates
+
+
+def seating_selected_shifts():
+
+    shifts = session.get(
+        "seating_shifts",
+        []
+    )
+
+    if not isinstance(
+        shifts,
+        list
+    ):
+        shifts = []
+
+    return shifts
+
+
+def seating_total_capacity():
+
+    total = 0
+
+    for room in seating_selected_rooms():
+
+        try:
+
+            total += int(
+                room.get(
+                    "capacity",
+                    0
+                )
+            )
+
+        except Exception:
+
+            pass
+
+    return total
+
+
+def seating_find_subjects_for_combo(
+    course,
+    semester,
+    department,
+    subjects
+):
+
+    result = []
+
+    for subject in subjects:
+
+        if not isinstance(
+            subject,
+            dict
+        ):
+            continue
+
+        subject_course = seating_text(
+            subject.get(
+                "course",
+                ""
+            )
+        )
+
+        subject_semester = seating_text(
+            subject.get(
+                "semester",
+                ""
+            )
+        )
+
+        subject_department = seating_text(
+            subject.get(
+                "department",
+                ""
+            )
+        )
+
+        if (
+            subject_course.lower()
+            !=
+            seating_text(
+                course
+            ).lower()
+        ):
+            continue
+
+        if subject_semester != seating_text(
+            semester
+        ):
+            continue
+
+        if (
+            subject_department
+            and
+            subject_department.lower()
+            !=
+            seating_text(
+                department
+            ).lower()
+        ):
+            continue
+
+        subject_name = seating_text(
+            subject.get(
+                "subject_name",
+                ""
+            )
+        )
+
+        if subject_name:
+
+            result.append(
+                subject_name
+            )
+
+    # remove duplicate subjects
+
+    final_subjects = []
+
+    seen = set()
+
+    for subject_name in result:
+
+        key = subject_name.lower()
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        final_subjects.append(
+            subject_name
+        )
+
+    final_subjects.sort(
+        key=lambda x:
+            x.lower()
+    )
+
+    return final_subjects
+
+
+# ============================================================
+# ROOM SELECTION
+# ============================================================
+
+@app.route(
+    "/seating-arrangement",
+    methods=["GET", "POST"]
+)
+@exam_arrangement_required
+def seating_arrangement():
+
+    rooms = seating_get_room_list()
+
+    if request.method == "POST":
+
+        all_rooms = request.form.get(
+            "all_rooms",
+            ""
+        ).strip()
+
+        selected_room_data = []
+
+        if all_rooms == "1":
+
+            selected_room_data = [
+                {
+                    "room_name":
+                        room["room_name"],
+
+                    "capacity":
+                        room["capacity"]
+                }
+
+                for room in rooms
+            ]
+
+        else:
+
+            selected_indexes = (
+                request.form.getlist(
+                    "selected_rooms"
+                )
+            )
+
+            for value in selected_indexes:
+
+                try:
+
+                    index = int(value)
+
+                except Exception:
+
+                    continue
+
+                if (
+                    index < 0
+                    or
+                    index >= len(rooms)
+                ):
+                    continue
+
+                room = rooms[index]
+
+                selected_room_data.append({
+                    "room_name":
+                        room["room_name"],
+
+                    "capacity":
+                        room["capacity"]
+                })
+
+        unique_rooms = {}
+
+        for room in selected_room_data:
+
+            key = seating_text(
+                room.get(
+                    "room_name",
+                    ""
+                )
+            ).lower()
+
+            if key:
+
+                unique_rooms[key] = room
+
+        selected_room_data = list(
+            unique_rooms.values()
+        )
+
+        if not selected_room_data:
+
+            return """
+            <script>
+                alert(
+                    "Please select at least one examination room."
+                );
+                history.back();
+            </script>
+            """
+
+        total_capacity = sum(
+            int(
+                room.get(
+                    "capacity",
+                    0
+                )
+            )
+            for room in selected_room_data
+        )
+
+        # SAVE IN SESSION
+
+        session[
+            "seating_rooms"
+        ] = selected_room_data
+
+        session[
+            "seating_departments"
+        ] = []
+
+        session[
+            "seating_dates"
+        ] = []
+
+        session[
+            "seating_shifts"
+        ] = []
+
+        session.pop(
+            "seating_exam_type",
+            None
+        )
+
+        # IMPORTANT:
+        # NOW GO TO DEPARTMENT PAGE
+
+        return redirect(
+            "/seating-arrangement-departments"
+        )
+
+    return render_template(
+        "seating_arrangement.html",
+        rooms=rooms,
+        selected_rooms=[],
+        total_capacity=0,
+        room_selection_done=False,
+        all_rooms_selected=False
+    )
+
+
+# ============================================================
+# DEPARTMENT SELECTION
+# ============================================================
+
+@app.route(
+    "/seating-arrangement-departments",
+    methods=["GET", "POST"]
+)
+def seating_arrangement_departments():
+
+    selected_rooms = (
+        seating_selected_rooms()
+    )
+
+    if not selected_rooms:
+
+        return redirect(
+            "/seating-arrangement"
+        )
+
+    department_data = (
+        seating_department_data()
+    )
+
+    if request.method == "POST":
+
+        selected_ids = (
+            request.form.getlist(
+                "selected_departments"
+            )
+        )
+
+        selected_ids = [
+            seating_text(x)
+            for x in selected_ids
+            if seating_text(x)
+        ]
+
+        selected_data = []
+
+        for department in department_data:
+
+            department_id = seating_text(
+                department.get(
+                    "department_id",
+                    ""
+                )
+            )
+
+            department_name = seating_text(
+                department.get(
+                    "name",
+                    ""
+                )
+            )
+
+            if (
+                department_id in selected_ids
+                or
+                department_name in selected_ids
+            ):
+
+                selected_data.append({
+                    "department_id":
+                        department_id,
+
+                    "name":
+                        department_name,
+
+                    "student_count":
+                        int(
+                            department.get(
+                                "student_count",
+                                0
+                            )
+                            or 0
+                        ),
+
+                    "faculty_count":
+                        int(
+                            department.get(
+                                "faculty_count",
+                                0
+                            )
+                            or 0
+                        )
+                })
+
+        if not selected_data:
+
+            return """
+            <script>
+                alert(
+                    "Please select at least one department."
+                );
+                history.back();
+            </script>
+            """
+
+        session[
+            "seating_departments"
+        ] = selected_data
+
+        return redirect(
+            "/seating-arrangement-dates"
+        )
+
+    total_capacity = (
+        seating_total_capacity()
+    )
+
+    return render_template(
+        "seating_arrangement_departments.html",
+
+        departments=
+            department_data,
+
+        selected_departments=[],
+
+        selected_rooms=
+            selected_rooms,
+
+        total_students=0,
+
+        total_faculty=0,
+
+        total_capacity=
+            total_capacity,
+
+        department_selection_done=False
+    )
+
+
+# ============================================================
+# DATE SELECTION
+# ============================================================
+
+@app.route(
+    "/seating-arrangement-dates",
+    methods=["GET", "POST"]
+)
+def seating_arrangement_dates():
+
+    selected_rooms = (
+        seating_selected_rooms()
+    )
+
+    selected_departments = (
+        seating_selected_departments()
+    )
+
+    if not selected_rooms:
+
+        return redirect(
+            "/seating-arrangement"
+        )
+
+    if not selected_departments:
+
+        return redirect(
+            "/seating-arrangement-departments"
+        )
+
+    total_students = sum(
+
+        int(
+            department.get(
+                "student_count",
+                0
+            )
+            or 0
+        )
+
+        for department
+        in selected_departments
+    )
+
+    total_faculty = sum(
+
+        int(
+            department.get(
+                "faculty_count",
+                0
+            )
+            or 0
+        )
+
+        for department
+        in selected_departments
+    )
+
+    total_capacity = (
+        seating_total_capacity()
+    )
+
+    if request.method == "POST":
+
+        selected_dates = (
+            request.form.getlist(
+                "selected_dates"
+            )
+        )
+
+        # JSON fallback
+
+        if not selected_dates:
+
+            dates_json = request.form.get(
+                "selected_dates_json",
+                ""
+            ).strip()
+
+            if dates_json:
+
+                try:
+
+                    temp_dates = json.loads(
+                        dates_json
+                    )
+
+                    if isinstance(
+                        temp_dates,
+                        list
+                    ):
+
+                        selected_dates = [
+                            str(x).strip()
+                            for x in temp_dates
+                            if str(x).strip()
+                        ]
+
+                except Exception:
+
+                    selected_dates = []
+
+        # EXACT DATE PARSING
+
+        exam_dates = []
+
+        for raw_date in selected_dates:
+
+            raw_date = str(
+                raw_date or ""
+            ).strip()
+
+            if not raw_date:
+                continue
+
+            try:
+
+                parsed = datetime.strptime(
+                    raw_date,
+                    "%Y-%m-%d"
+                ).date()
+
+            except Exception:
+
+                parsed = None
+
+            if parsed is not None:
+
+                exam_dates.append({
+
+                    "raw":
+                        raw_date,
+
+                    "date":
+                        parsed
+                })
+
+        unique_dates = {}
+
+        for item in exam_dates:
+
+            unique_dates[
+                item["date"]
+            ] = item
+
+        exam_dates = list(
+            unique_dates.values()
+        )
+
+        exam_dates.sort(
+            key=lambda x:
+                x["date"]
+        )
+
+        if not exam_dates:
+
+            return """
+            <script>
+                alert(
+                    "No valid examination dates were selected."
+                );
+                window.location.href =
+                    "/seating-arrangement";
+            </script>
+            """
+
+        date_strings = [
+
+            item["raw"]
+
+            for item in exam_dates
+
+        ]
+
+        session[
+            "seating_dates"
+        ] = date_strings
+
+        return redirect(
+            "/seating-arrangement-shifts"
+        )
+
+    return render_template(
+        "seating_arrangement_dates.html",
+
+        selected_rooms=
+            selected_rooms,
+
+        selected_departments=
+            selected_departments,
+
+        selected_dates=
+            seating_selected_dates(),
+
+        total_students=
+            total_students,
+
+        total_faculty=
+            total_faculty,
+
+        total_capacity=
+            total_capacity
+    )
+
+
+# ============================================================
+# SHIFT SELECTION
+# ============================================================
+
+@app.route(
+    "/seating-arrangement-shifts",
+    methods=["GET", "POST"]
+)
+def seating_arrangement_shifts():
+
+    selected_rooms = (
+        seating_selected_rooms()
+    )
+
+    selected_departments = (
+        seating_selected_departments()
+    )
+
+    selected_dates = (
+        seating_selected_dates()
+    )
+
+    if not selected_rooms:
+
+        return redirect(
+            "/seating-arrangement"
+        )
+
+    if not selected_departments:
+
+        return redirect(
+            "/seating-arrangement-departments"
+        )
+
+    if not selected_dates:
+
+        return redirect(
+            "/seating-arrangement-dates"
+        )
+
+    if request.method == "POST":
+
+        shift_names = (
+            request.form.getlist(
+                "shift_name"
+            )
+        )
+
+        start_times = (
+            request.form.getlist(
+                "start_time"
+            )
+        )
+
+        end_times = (
+            request.form.getlist(
+                "end_time"
+            )
+        )
+
+        shifts = []
+
+        max_count = max(
+            len(shift_names),
+            len(start_times),
+            len(end_times)
+        )
+
+        for index in range(
+            max_count
+        ):
+
+            name = (
+                shift_names[index].strip()
+                if index < len(shift_names)
+                else ""
+            )
+
+            start = (
+                start_times[index].strip()
+                if index < len(start_times)
+                else ""
+            )
+
+            end = (
+                end_times[index].strip()
+                if index < len(end_times)
+                else ""
+            )
+
+            if not name:
+                continue
+
+            if not start:
+                continue
+
+            if not end:
+                continue
+
+            shifts.append({
+
+                "name":
+                    name,
+
+                "start_time":
+                    start,
+
+                "end_time":
+                    end
+            })
+
+        # Remove duplicate shifts
+
+        unique_shifts = {}
+
+        for shift in shifts:
+
+            key = (
+                shift["name"].lower(),
+                shift["start_time"],
+                shift["end_time"]
+            )
+
+            unique_shifts[key] = shift
+
+        shifts = list(
+            unique_shifts.values()
+        )
+
+        if not shifts:
+
+            return """
+            <script>
+                alert(
+                    "Please add at least one examination shift."
+                );
+                history.back();
+            </script>
+            """
+
+        exam_type = request.form.get(
+            "exam_type",
+            ""
+        ).strip()
+
+        if exam_type not in [
+            "Class Test",
+            "Major Exam"
+        ]:
+
+            return """
+            <script>
+                alert(
+                    "Please select examination type."
+                );
+                history.back();
+            </script>
+            """
+
+        session[
+            "seating_shifts"
+        ] = shifts
+
+        session[
+            "seating_exam_type"
+        ] = exam_type
+
+        return redirect(
+            "/generate-seating-arrangement"
+        )
+
+    return render_template(
+        "seating_arrangement_shifts.html",
+
+        selected_rooms=
+            selected_rooms,
+
+        selected_departments=
+            selected_departments,
+
+        selected_dates=
+            selected_dates,
+
+        selected_shifts=
+            seating_selected_shifts(),
+
+        exam_type=
+            session.get(
+                "seating_exam_type",
+                ""
+            )
+    )
+
+
+
+# ============================================================
+# GENERATE SEATING ARRANGEMENT
+# ============================================================
+
+@app.route(
+    "/generate-seating-arrangement"
+)
+def generate_seating_arrangement():
+
+    selected_rooms = seating_selected_rooms()
+    selected_departments = seating_selected_departments()
+    selected_dates = seating_selected_dates()
+    selected_shifts = seating_selected_shifts()
+
+    exam_type = seating_text(
+        session.get(
+            "seating_exam_type",
+            ""
+        )
+    )
+
+    # --------------------------------------------------------
+    # BASIC VALIDATION
+    # --------------------------------------------------------
+
+    if not selected_rooms:
+        return redirect(
+            "/seating-arrangement"
+        )
+
+    if not selected_departments:
+        return redirect(
+            "/seating-arrangement-departments"
+        )
+
+    if not selected_dates:
+        return redirect(
+            "/seating-arrangement-dates"
+        )
+
+    if not selected_shifts:
+        return redirect(
+            "/seating-arrangement-shifts"
+        )
+
+    if exam_type not in [
+        "Class Test",
+        "Major Exam"
+    ]:
+        return redirect(
+            "/seating-arrangement-shifts"
+        )
+
+    # --------------------------------------------------------
+    # LOAD DATA
+    # --------------------------------------------------------
+
+    students = seating_get_students()
+    faculty = seating_get_faculty()
+    subjects = seating_get_subjects()
+
+    selected_department_names = [
+        seating_text(
+            item.get(
+                "name",
+                ""
+            )
+        )
+        for item in selected_departments
+    ]
+
+    # --------------------------------------------------------
+    # VALID ROOMS
+    # --------------------------------------------------------
+
+    valid_rooms = []
+
+    for room in selected_rooms:
+
+        if not isinstance(
+            room,
+            dict
+        ):
+            continue
+
+        room_name = seating_text(
+            room.get(
+                "room_name",
+                ""
+            )
+        )
+
+        try:
+            capacity = int(
+                room.get(
+                    "capacity",
+                    0
+                )
+            )
+        except Exception:
+            capacity = 0
+
+        if not room_name:
+            continue
+
+        if capacity <= 0:
+            continue
+
+        valid_rooms.append({
+            "room_name": room_name,
+            "capacity": capacity
+        })
+
+    if not valid_rooms:
+
+        return """
+        <script>
+            alert(
+                "No valid examination rooms with capacity were selected."
+            );
+            window.location.href =
+                "/university-room-capacity";
+        </script>
+        """
+
+    total_shift_capacity = sum(
+        room["capacity"]
+        for room in valid_rooms
+    )
+
+    # --------------------------------------------------------
+    # VALID DATES
+    # --------------------------------------------------------
+
+    valid_dates = []
+
+    for raw_date in selected_dates:
+
+        raw_date = seating_text(
+            raw_date
+        )
+
+        try:
+            parsed_date = datetime.strptime(
+                raw_date,
+                "%Y-%m-%d"
+            ).date()
+        except Exception:
+            continue
+
+        valid_dates.append({
+            "raw": raw_date,
+            "date": parsed_date
+        })
+
+    unique_dates = {}
+
+    for item in valid_dates:
+        unique_dates[
+            item["date"]
+        ] = item
+
+    valid_dates = list(
+        unique_dates.values()
+    )
+
+    valid_dates.sort(
+        key=lambda item: item["date"]
+    )
+
+    if not valid_dates:
+
+        return """
+        <script>
+            alert(
+                "No valid examination dates were selected."
+            );
+            window.location.href =
+                "/seating-arrangement-dates";
+        </script>
+        """
+
+    # --------------------------------------------------------
+    # VALID SHIFTS
+    # --------------------------------------------------------
+
+    valid_shifts = []
+
+    for shift in selected_shifts:
+
+        if not isinstance(
+            shift,
+            dict
+        ):
+            continue
+
+        shift_name = seating_text(
+            shift.get(
+                "name",
+                ""
+            )
+        )
+
+        start_time = seating_text(
+            shift.get(
+                "start_time",
+                ""
+            )
+        )
+
+        end_time = seating_text(
+            shift.get(
+                "end_time",
+                ""
+            )
+        )
+
+        if not shift_name:
+            continue
+
+        valid_shifts.append({
+            "name": shift_name,
+            "start_time": start_time,
+            "end_time": end_time
+        })
+
+    if not valid_shifts:
+
+        return """
+        <script>
+            alert(
+                "No valid examination shifts were selected."
+            );
+            window.location.href =
+                "/seating-arrangement-shifts";
+        </script>
+        """
+
+    # --------------------------------------------------------
+    # FILTER STUDENTS
+    # --------------------------------------------------------
+
+    filtered_students = []
+
+    for student in students:
+
+        if not isinstance(
+            student,
+            dict
+        ):
+            continue
+
+        student_department = seating_text(
+            student.get(
+                "department",
+                ""
+            )
+        )
+
+        matched = False
+
+        for department in selected_department_names:
+
+            if seating_department_match(
+                student_department,
+                department
+            ):
+                matched = True
+                break
+
+        if not matched:
+            continue
+
+        filtered_students.append(
+            student
+        )
+
+    if not filtered_students:
+
+        return """
+        <script>
+            alert(
+                "No students found for the selected departments."
+            );
+            window.location.href =
+                "/seating-arrangement-departments";
+        </script>
+        """
+
+    # --------------------------------------------------------
+    # BUILD COURSE + SEMESTER COHORTS
+    #
+    # ONE COURSE + SEMESTER = ONE COMPLETE COHORT
+    #
+    # Example:
+    # B.Tech Semester 5 = 120 students
+    #
+    # These 120 students must appear in the same
+    # examination date + shift.
+    # They may be distributed across multiple rooms.
+    # --------------------------------------------------------
+
+    combinations = {}
+
+    for student in filtered_students:
+
+        key = seating_course_key(
+            student
+        )
+
+        if key not in combinations:
+            combinations[key] = []
+
+        combinations[key].append(
+            student
+        )
+
+    # --------------------------------------------------------
+    # BUILD COHORT DATA
+    # --------------------------------------------------------
+
+    combo_data = []
+
+    for key, combo_students in combinations.items():
+
+        course = key[0]
+        semester = key[1]
+
+        department = seating_text(
+            combo_students[0].get(
+                "department",
+                ""
+            )
+        )
+
+        combo_subjects = (
+            seating_find_subjects_for_combo(
+                course,
+                semester,
+                department,
+                subjects
+            )
+        )
+
+        # ----------------------------------------------------
+        # REMOVE LAB / LABORATORY / PRACTICAL
+        # ----------------------------------------------------
+
+        combo_subjects = [
+            subject
+            for subject in combo_subjects
+            if not (
+                "lab"
+                in seating_text(
+                    subject
+                ).strip().lower()
+                or
+                "laboratory"
+                in seating_text(
+                    subject
+                ).strip().lower()
+                or
+                "practical"
+                in seating_text(
+                    subject
+                ).strip().lower()
+            )
+        ]
+
+        # ----------------------------------------------------
+        # FALLBACK SUBJECT SEARCH
+        # ----------------------------------------------------
+
+        if not combo_subjects:
+
+            combo_subjects = []
+
+            for subject in subjects:
+
+                if not isinstance(
+                    subject,
+                    dict
+                ):
+                    continue
+
+                subject_course = seating_text(
+                    subject.get(
+                        "course",
+                        ""
+                    )
+                )
+
+                if (
+                    subject_course.lower()
+                    !=
+                    course.lower()
+                ):
+                    continue
+
+                subject_semester = seating_text(
+                    subject.get(
+                        "semester",
+                        ""
+                    )
+                )
+
+                if subject_semester != semester:
+                    continue
+
+                subject_name = seating_text(
+                    subject.get(
+                        "subject_name",
+                        ""
+                    )
+                )
+
+                if not subject_name:
+                    continue
+
+                subject_lower = (
+                    subject_name
+                    .strip()
+                    .lower()
+                )
+
+                if (
+                    "lab" in subject_lower
+                    or
+                    "laboratory" in subject_lower
+                    or
+                    "practical" in subject_lower
+                ):
+                    continue
+
+                combo_subjects.append(
+                    subject_name
+                )
+
+            combo_subjects = sorted(
+                list(
+                    dict.fromkeys(
+                        combo_subjects
+                    )
+                )
+            )
+
+        if not combo_subjects:
+            continue
+
+        combo_students.sort(
+            key=lambda student:
+                seating_text(
+                    student.get(
+                        "enrollment",
+                        ""
+                    )
+                ).lower()
+        )
+
+        combo_data.append({
+            "key": key,
+            "course": seating_text(
+                combo_students[0].get(
+                    "course",
+                    ""
+                )
+            ),
+            "semester": semester,
+            "department": department,
+            "students": combo_students,
+            "subjects": combo_subjects
+        })
+
+    if not combo_data:
+
+        return """
+        <script>
+            alert(
+                "No subjects were found for the selected Course and Semester."
+            );
+            window.location.href =
+                "/seating-arrangement-departments";
+        </script>
+        """
+
+    # --------------------------------------------------------
+    # CAPACITY CHECK
+    #
+    # Complete Course + Semester cohort must fit in ONE SHIFT.
+    # --------------------------------------------------------
+
+    impossible_cohorts = []
+
+    for combo in combo_data:
+
+        student_count = len(
+            combo["students"]
+        )
+
+        if student_count > total_shift_capacity:
+
+            impossible_cohorts.append(
+                "{} Semester {} has {} students, "
+                "but the total capacity of all selected "
+                "rooms in one shift is only {}.".format(
+                    combo["course"],
+                    combo["semester"],
+                    student_count,
+                    total_shift_capacity
+                )
+            )
+
+    if impossible_cohorts:
+
+        message = (
+            "SEATING ARRANGEMENT CANNOT BE GENERATED.\n\n"
+            + "\n".join(
+                impossible_cohorts
+            )
+            + "\n\n"
+            "The Course + Semester students cannot be split "
+            "between different dates/shifts. Increase the "
+            "room capacity of a single shift."
+        )
+
+        return """
+        <script>
+            alert(%s);
+            window.location.href =
+                "/seating-arrangement";
+        </script>
+        """ % json.dumps(
+            message
+        )
+
+    # --------------------------------------------------------
+    # FACULTY FROM SELECTED DEPARTMENTS
+    # --------------------------------------------------------
+
+    available_faculty = []
+
+    for member in faculty:
+
+        if not isinstance(
+            member,
+            dict
+        ):
+            continue
+
+        member_department = seating_text(
+            member.get(
+                "department",
+                ""
+            )
+        )
+
+        if any(
+            seating_department_match(
+                member_department,
+                department
+            )
+            for department in selected_department_names
+        ):
+            available_faculty.append(
+                member
+            )
+
+    # --------------------------------------------------------
+    # REMOVE DUPLICATE FACULTY
+    # --------------------------------------------------------
+
+    faculty_unique = {}
+
+    for member in available_faculty:
+
+        faculty_id = seating_text(
+            member.get(
+                "faculty_id",
+                ""
+            )
+        )
+
+        faculty_name = seating_text(
+            member.get(
+                "name",
+                ""
+            )
+        )
+
+        unique_key = (
+            faculty_id
+            or
+            faculty_name
+        ).lower()
+
+        if unique_key:
+            faculty_unique[
+                unique_key
+            ] = member
+
+    available_faculty = list(
+        faculty_unique.values()
+    )
+
+    # --------------------------------------------------------
+    # BUILD EXAM EVENTS
+    #
+    # ONE EVENT =
+    # Course + Semester + Subject
+    #
+    # Entire cohort remains in one date + shift.
+    # --------------------------------------------------------
+
+    exam_events = []
+
+    for combo in combo_data:
+
+        for subject_name in combo["subjects"]:
+
+            exam_events.append({
+                "combo": combo,
+                "course": combo["course"],
+                "semester": combo["semester"],
+                "department": combo["department"],
+                "subject": subject_name,
+                "student_count": len(
+                    combo["students"]
+                ),
+                "assigned_slot": None
+            })
+
+    if not exam_events:
+
+        return """
+        <script>
+            alert(
+                "No examination papers could be created."
+            );
+            window.location.href =
+                "/seating-arrangement";
+        </script>
+        """
+
+    # --------------------------------------------------------
+    # EXACT FEASIBILITY CHECK
+    # --------------------------------------------------------
+
+    for combo in combo_data:
+
+        subject_count = len(
+            combo["subjects"]
+        )
+
+        if exam_type == "Class Test":
+
+            maximum_papers = (
+                len(valid_dates)
+                *
+                len(valid_shifts)
+            )
+
+            if subject_count > maximum_papers:
+
+                message = (
+                    "CLASS TEST SCHEDULE CANNOT BE COMPLETED.\n\n"
+                    "{} Semester {} has {} papers.\n"
+                    "Available dates: {}\n"
+                    "Available shifts per date: {}\n"
+                    "Maximum possible papers: {}\n\n"
+                    "Please add more dates or shifts."
+                ).format(
+                    combo["course"],
+                    combo["semester"],
+                    subject_count,
+                    len(valid_dates),
+                    len(valid_shifts),
+                    maximum_papers
+                )
+
+                return """
+                <script>
+                    alert(%s);
+                    window.location.href =
+                        "/seating-arrangement";
+                </script>
+                """ % json.dumps(
+                    message
+                )
+
+        else:
+
+            # Major Exam needs at least one complete
+            # calendar day gap between papers.
+            maximum_spaced_dates = 0
+            last_date = None
+
+            for date_item in valid_dates:
+
+                if (
+                    last_date is None
+                    or
+                    (
+                        date_item["date"]
+                        -
+                        last_date
+                    ).days >= 2
+                ):
+                    maximum_spaced_dates += 1
+                    last_date = date_item["date"]
+
+            if subject_count > maximum_spaced_dates:
+
+                message = (
+                    "MAJOR EXAM SCHEDULE CANNOT BE COMPLETED.\n\n"
+                    "{} Semester {} has {} papers.\n"
+                    "With the selected dates, only {} papers "
+                    "can be placed with at least one full day gap.\n\n"
+                    "Please provide more examination dates."
+                ).format(
+                    combo["course"],
+                    combo["semester"],
+                    subject_count,
+                    maximum_spaced_dates
+                )
+
+                return """
+                <script>
+                    alert(%s);
+                    window.location.href =
+                        "/seating-arrangement";
+                </script>
+                """ % json.dumps(
+                    message
+                )
+
+    # --------------------------------------------------------
+    # BUILD AVAILABLE SLOTS
+    # --------------------------------------------------------
+
+    slots = []
+
+    for date_item in valid_dates:
+
+        for shift_index, shift in enumerate(
+            valid_shifts
+        ):
+
+            slots.append({
+                "slot_id": "{}__{}".format(
+                    date_item["raw"],
+                    shift_index
+                ),
+                "date": date_item["date"],
+                "date_string": date_item["raw"],
+                "shift_index": shift_index,
+                "shift": shift,
+                "capacity": total_shift_capacity,
+                "used_capacity": 0,
+                "events": []
+            })
+
+    # --------------------------------------------------------
+    # SLOT CHECK
+    # --------------------------------------------------------
+
+    def event_can_use_slot(
+        event,
+        slot,
+        strict_date_rule=True
+    ):
+
+        combo = event["combo"]
+        candidate_date = slot["date"]
+
+        # Complete cohort must fit in this shift.
+        if (
+            slot["used_capacity"]
+            +
+            event["student_count"]
+            >
+            slot["capacity"]
+        ):
+            return False
+
+        previous_dates = []
+
+        for other_event in exam_events:
+
+            if other_event is event:
+                continue
+
+            if other_event.get(
+                "assigned_slot"
+            ) is None:
+                continue
+
+            if (
+                other_event["combo"]["key"]
+                !=
+                combo["key"]
+            ):
+                continue
+
+            other_slot = other_event[
+                "assigned_slot"
+            ]
+
+            previous_dates.append(
+                other_slot["date"]
+            )
+
+        # ----------------------------------------------------
+        # MAJOR EXAM
+        # At least one complete day gap.
+        # Difference must be >= 2 days.
+        # ----------------------------------------------------
+
+        if exam_type == "Major Exam":
+
+            for previous_date in previous_dates:
+
+                if abs(
+                    (
+                        candidate_date
+                        -
+                        previous_date
+                    ).days
+                ) < 2:
+                    return False
+
+        # ----------------------------------------------------
+        # CLASS TEST
+        #
+        # First preference:
+        # one paper per date.
+        #
+        # If dates are insufficient:
+        # another shift on same date may be used.
+        # ----------------------------------------------------
+
+        if exam_type == "Class Test":
+
+            same_day_count = 0
+
+            for previous_date in previous_dates:
+
+                if previous_date == candidate_date:
+                    same_day_count += 1
+
+            if strict_date_rule:
+
+                if same_day_count >= 1:
+                    return False
+
+            else:
+
+                if same_day_count >= len(
+                    valid_shifts
+                ):
+                    return False
+
+        return True
+
+    # --------------------------------------------------------
+    # SORT EVENTS
+    # LARGE COHORTS FIRST
+    # --------------------------------------------------------
+
+    exam_events.sort(
+        key=lambda event: (
+            -event["student_count"],
+            event["course"].lower(),
+            event["semester"],
+            event["subject"].lower()
+        )
+    )
+
+    # --------------------------------------------------------
+    # SCHEDULE PAPERS
+    # --------------------------------------------------------
+
+    scheduling_failed = []
+
+    for event in exam_events:
+
+        assigned = False
+
+        # ----------------------------------------------------
+        # FIRST PASS
+        # Prefer separate dates.
+        # ----------------------------------------------------
+
+        candidate_slots = sorted(
+            slots,
+            key=lambda slot: (
+                slot["date"],
+                slot["shift_index"]
+            )
+        )
+
+        for slot in candidate_slots:
+
+            if not event_can_use_slot(
+                event,
+                slot,
+                True
+            ):
+                continue
+
+            event[
+                "assigned_slot"
+            ] = slot
+
+            slot[
+                "events"
+            ].append(
+                event
+            )
+
+            slot[
+                "used_capacity"
+            ] += event[
+                "student_count"
+            ]
+
+            assigned = True
+            break
+
+        # ----------------------------------------------------
+        # SECOND PASS
+        # Class Test can use another shift on same date.
+        # ----------------------------------------------------
+
+        if (
+            not assigned
+            and
+            exam_type == "Class Test"
+        ):
+
+            candidate_slots = sorted(
+                slots,
+                key=lambda slot: (
+                    slot["date"],
+                    slot["used_capacity"],
+                    slot["shift_index"]
+                )
+            )
+
+            for slot in candidate_slots:
+
+                if not event_can_use_slot(
+                    event,
+                    slot,
+                    False
+                ):
+                    continue
+
+                event[
+                    "assigned_slot"
+                ] = slot
+
+                slot[
+                    "events"
+                ].append(
+                    event
+                )
+
+                slot[
+                    "used_capacity"
+                ] += event[
+                    "student_count"
+                ]
+
+                assigned = True
+                break
+
+        if not assigned:
+
+            scheduling_failed.append(
+                "{} Semester {} - {} ({} students)".format(
+                    event["course"],
+                    event["semester"],
+                    event["subject"],
+                    event["student_count"]
+                )
+            )
+
+    # --------------------------------------------------------
+    # SCHEDULING FAILURE
+    # --------------------------------------------------------
+
+    if scheduling_failed:
+
+        total_required_capacity = sum(
+            event["student_count"]
+            for event in exam_events
+        )
+
+        total_available_capacity = (
+            len(slots)
+            *
+            total_shift_capacity
+        )
+
+        message = (
+            "EXAM SCHEDULE CANNOT BE COMPLETED.\n\n"
+            "Unscheduled papers:\n"
+            +
+            "\n".join(
+                scheduling_failed[:30]
+            )
+            +
+            "\n\nTotal required student-slots: {}".format(
+                total_required_capacity
+            )
+            +
+            "\nTotal available student capacity: {}".format(
+                total_available_capacity
+            )
+            +
+            "\n\nPlease provide more examination dates, "
+            "more shifts, or more room capacity."
+        )
+
+        if len(
+            scheduling_failed
+        ) > 30:
+
+            message += (
+                "\n\nAnd {} more papers were not scheduled.".format(
+                    len(
+                        scheduling_failed
+                    ) - 30
+                )
+            )
+
+        return """
+        <script>
+            alert(%s);
+            window.location.href =
+                "/seating-arrangement";
+        </script>
+        """ % json.dumps(
+            message
+        )
+
+    # --------------------------------------------------------
+    # CREATE ARRANGEMENT
+    # --------------------------------------------------------
+
+    arrangement = []
+
+    total_scheduled_slots = 0
+
+    # Faculty is tracked separately for each date + shift.
+    faculty_used_by_slot = {}
+
+    # --------------------------------------------------------
+    # PROCESS EVERY SLOT
+    # --------------------------------------------------------
+
+    for slot in slots:
+
+        if not slot["events"]:
+            continue
+
+        # ----------------------------------------------------
+        # BUILD STUDENT QUEUES
+        # ----------------------------------------------------
+
+        queues = []
+
+        for event in slot["events"]:
+
+            student_queue = []
+
+            for student in event["combo"]["students"]:
+
+                student_queue.append({
+                    "student": student,
+                    "course": event["course"],
+                    "semester": event["semester"],
+                    "department": event["department"],
+                    "subject": event["subject"],
+                    "combo_key": event["combo"]["key"]
+                })
+
+            if student_queue:
+                queues.append(
+                    student_queue
+                )
+
+        # ----------------------------------------------------
+        # ROUND ROBIN MIXING
+        # ----------------------------------------------------
+
+        mixed_students = []
+
+        while any(queues):
+
+            for queue in queues:
+
+                if queue:
+                    mixed_students.append(
+                        queue.pop(0)
+                    )
+
+        # ----------------------------------------------------
+        # ROOMS
+        # ----------------------------------------------------
+
+        rooms_output = []
+
+        student_pointer = 0
+
+        for room in valid_rooms:
+
+            capacity = room["capacity"]
+
+            room_students = []
+
+            for seat_number in range(
+                1,
+                capacity + 1
+            ):
+
+                if (
+                    student_pointer
+                    >=
+                    len(mixed_students)
+                ):
+                    break
+
+                item = mixed_students[
+                    student_pointer
+                ]
+
+                student_pointer += 1
+
+                student = item[
+                    "student"
+                ]
+
+                room_students.append({
+                    "seat_no": seat_number,
+                    "student_name": seating_text(
+                        student.get(
+                            "name",
+                            ""
+                        )
+                    ),
+                    "enrollment": seating_text(
+                        student.get(
+                            "enrollment",
+                            ""
+                        )
+                    ),
+                    "course": item["course"],
+                    "semester": item["semester"],
+                    "department": item["department"],
+                    "subject": item["subject"]
+                })
+
+            if not room_students:
+                continue
+
+            # ------------------------------------------------
+            # FACULTY REQUIREMENT
+            # ------------------------------------------------
+
+            if len(room_students) > 20:
+                required_faculty = 2
+            else:
+                required_faculty = 1
+
+            slot_key = slot["slot_id"]
+
+            if slot_key not in faculty_used_by_slot:
+                faculty_used_by_slot[
+                    slot_key
+                ] = set()
+
+            used_faculty_ids = (
+                faculty_used_by_slot[
+                    slot_key
+                ]
+            )
+
+            assigned_faculty = []
+
+            # ------------------------------------------------
+            # FIND UNUSED FACULTY FOR THIS SHIFT
+            # ------------------------------------------------
+
+            for member in available_faculty:
+
+                if len(
+                    assigned_faculty
+                ) >= required_faculty:
+                    break
+
+                faculty_id = seating_text(
+                    member.get(
+                        "faculty_id",
+                        ""
+                    )
+                )
+
+                faculty_name = seating_text(
+                    member.get(
+                        "name",
+                        ""
+                    )
+                )
+
+                unique_faculty_key = (
+                    faculty_id
+                    or
+                    faculty_name
+                ).lower()
+
+                if not unique_faculty_key:
+                    continue
+
+                if (
+                    unique_faculty_key
+                    in
+                    used_faculty_ids
+                ):
+                    continue
+
+                assigned_faculty.append({
+                    "faculty_id": faculty_id,
+                    "name": faculty_name
+                })
+
+                used_faculty_ids.add(
+                    unique_faculty_key
+                )
+
+            # ------------------------------------------------
+            # FACULTY SHORTAGE
+            # ------------------------------------------------
+
+            if len(
+                assigned_faculty
+            ) < required_faculty:
+
+                shortage_message = (
+                    "EXAM ARRANGEMENT CANNOT BE COMPLETED.\n\n"
+                    "Faculty shortage on {} during {}.\n\n"
+                    "Room: {}\n"
+                    "Students: {}\n"
+                    "Faculty required: {}\n"
+                    "Faculty available for this shift: {}\n\n"
+                    "Please select more faculty from the "
+                    "selected departments."
+                ).format(
+                    slot["date"].strftime(
+                        "%d %B %Y"
+                    ),
+                    slot["shift"]["name"],
+                    room["room_name"],
+                    len(room_students),
+                    required_faculty,
+                    len(available_faculty)
+                )
+
+                return """
+                <script>
+                    alert(%s);
+                    window.location.href =
+                        "/seating-arrangement";
+                </script>
+                """ % json.dumps(
+                    shortage_message
+                )
+
+            rooms_output.append({
+                "room_name": room["room_name"],
+                "capacity": capacity,
+                "students": room_students,
+                "student_count": len(
+                    room_students
+                ),
+                "faculty": assigned_faculty
+            })
+
+        # ----------------------------------------------------
+        # FINAL SLOT STUDENT CHECK
+        # ----------------------------------------------------
+
+        room_student_count = sum(
+            len(
+                room["students"]
+            )
+            for room in rooms_output
+        )
+
+        expected_slot_students = sum(
+            event["student_count"]
+            for event in slot["events"]
+        )
+
+        if (
+            room_student_count
+            !=
+            expected_slot_students
+        ):
+
+            message = (
+                "SEATING ARRANGEMENT VALIDATION FAILED.\n\n"
+                "Date: {}\n"
+                "Shift: {}\n"
+                "Expected students: {}\n"
+                "Actually seated: {}\n\n"
+                "No incomplete arrangement was saved."
+            ).format(
+                slot["date"].strftime(
+                    "%d %B %Y"
+                ),
+                slot["shift"]["name"],
+                expected_slot_students,
+                room_student_count
+            )
+
+            return """
+            <script>
+                alert(%s);
+                window.location.href =
+                    "/seating-arrangement";
+            </script>
+            """ % json.dumps(
+                message
+            )
+
+        # ----------------------------------------------------
+        # CREATE DAY DATA
+        # ----------------------------------------------------
+
+        date_string = slot[
+            "date_string"
+        ]
+
+        existing_day = None
+
+        for day in arrangement:
+
+            if (
+                day["date"]
+                ==
+                date_string
+            ):
+                existing_day = day
+                break
+
+        if existing_day is None:
+
+            existing_day = {
+                "date": date_string,
+                "display_date": slot[
+                    "date"
+                ].strftime(
+                    "%d %B %Y"
+                ),
+                "shifts": []
+            }
+
+            arrangement.append(
+                existing_day
+            )
+
+        # ----------------------------------------------------
+        # SHIFT OUTPUT
+        # ----------------------------------------------------
+
+        existing_day[
+            "shifts"
+        ].append({
+
+            "name": slot[
+                "shift"
+            ][
+                "name"
+            ],
+
+            "start_time": slot[
+                "shift"
+            ][
+                "start_time"
+            ],
+
+            "end_time": slot[
+                "shift"
+            ][
+                "end_time"
+            ],
+
+            "rooms": rooms_output
+
+        })
+
+        total_scheduled_slots += (
+            room_student_count
+        )
+
+    # --------------------------------------------------------
+    # FINAL GLOBAL VALIDATION
+    # --------------------------------------------------------
+
+    total_expected_student_papers = sum(
+
+        len(
+            combo["students"]
+        )
+        *
+        len(
+            combo["subjects"]
+        )
+
+        for combo in combo_data
+    )
+
+    if (
+        total_scheduled_slots
+        !=
+        total_expected_student_papers
+    ):
+
+        message = (
+            "FINAL VALIDATION FAILED.\n\n"
+            "Expected student-paper assignments: {}\n"
+            "Generated student-paper assignments: {}\n\n"
+            "No arrangement has been saved."
+        ).format(
+            total_expected_student_papers,
+            total_scheduled_slots
+        )
+
+        return """
+        <script>
+            alert(%s);
+            window.location.href =
+                "/seating-arrangement";
+        </script>
+        """ % json.dumps(
+            message
+        )
+
+    # --------------------------------------------------------
+    # VERIFY EVERY EXAM EVENT
+    # --------------------------------------------------------
+
+    unscheduled_events = [
+        event
+        for event in exam_events
+        if event.get(
+            "assigned_slot"
+        ) is None
+    ]
+
+    if unscheduled_events:
+
+        message = (
+            "FINAL VALIDATION FAILED.\n\n"
+            "{} examination papers are still unscheduled.\n\n"
+            "No arrangement has been saved."
+        ).format(
+            len(
+                unscheduled_events
+            )
+        )
+
+        return """
+        <script>
+            alert(%s);
+            window.location.href =
+                "/seating-arrangement";
+        </script>
+        """ % json.dumps(
+            message
+        )
+
+    # --------------------------------------------------------
+    # VERIFY ROOM CAPACITY
+    # --------------------------------------------------------
+
+    for day in arrangement:
+
+        for shift in day["shifts"]:
+
+            for room in shift["rooms"]:
+
+                if (
+                    len(
+                        room["students"]
+                    )
+                    >
+                    int(
+                        room["capacity"]
+                    )
+                ):
+
+                    message = (
+                        "ROOM CAPACITY VALIDATION FAILED.\n\n"
+                        "Room: {}\n"
+                        "Capacity: {}\n"
+                        "Students: {}\n\n"
+                        "No arrangement has been saved."
+                    ).format(
+                        room["room_name"],
+                        room["capacity"],
+                        len(
+                            room["students"]
+                        )
+                    )
+
+                    return """
+                    <script>
+                        alert(%s);
+                        window.location.href =
+                            "/seating-arrangement";
+                    </script>
+                    """ % json.dumps(
+                        message
+                    )
+
+    # --------------------------------------------------------
+    # SORT ARRANGEMENT BY DATE
+    # --------------------------------------------------------
+
+    arrangement.sort(
+        key=lambda day:
+            datetime.strptime(
+                day["date"],
+                "%Y-%m-%d"
+            ).date()
+    )
+
+    # --------------------------------------------------------
+    # SAVE GENERATED ARRANGEMENT
+    # --------------------------------------------------------
+
+    session[
+        "seating_generated"
+    ] = arrangement
+
+    session.modified = True
+
+    exam_schedule_save_list(
+        EXAM_CURRENT_SEATING_FILE,
+        arrangement
+    )
+
+    # --------------------------------------------------------
+    # FINAL RESULT
+    # --------------------------------------------------------
+
+    total_students = len(
+        filtered_students
+    )
+
+    return render_template(
+
+        "seating_arrangement_result.html",
+
+        arrangement=arrangement,
+
+        exam_type=exam_type,
+
+        total_students=total_students,
+
+        total_scheduled_slots=
+            total_scheduled_slots,
+
+        total_rooms=
+            len(valid_rooms),
+
+        total_capacity=
+            seating_total_capacity(),
+
+        selected_departments=
+            selected_departments,
+
+        selected_dates=
+            selected_dates,
+
+        selected_shifts=
+            selected_shifts
+
+    )
+
+
+# ============================================================
+# CLEAR / START NEW SEATING ARRANGEMENT
+# ============================================================
+
+@app.route(
+    "/clear-seating-arrangement"
+)
+def clear_seating_arrangement():
+
+    session.pop(
+        "seating_rooms",
+        None
+    )
+
+    session.pop(
+        "seating_departments",
+        None
+    )
+
+    session.pop(
+        "seating_dates",
+        None
+    )
+
+    session.pop(
+        "seating_shifts",
+        None
+    )
+
+    session.pop(
+        "seating_exam_type",
+        None
+    )
+
+    session.pop(
+        "seating_generated",
+        None
+    )
+
+    exam_schedule_save_list(
+    EXAM_CURRENT_SEATING_FILE,
+    []
+    )
+
+    return redirect(
+        "/seating-arrangement"
+    )
+
+
+
+# ============================================================
+# EXAM SCHEDULE / DUTY / HISTORY - NEW SYSTEM
+# ============================================================
+#
+# IMPORTANT:
+# Ye pura block existing functions ko replace nahi karta.
+# Ye sirf naye routes aur naye data files add karta hai.
+#
+# New files:
+# exam_schedule_students.json
+# exam_schedule_faculty.json
+# exam_schedule_history.json
+#
+# ============================================================
+
+
+EXAM_STUDENT_SCHEDULE_FILE = "exam_schedule_students.json"
+EXAM_FACULTY_DUTY_FILE = "exam_schedule_faculty.json"
+EXAM_SCHEDULE_HISTORY_FILE = "exam_schedule_history.json"
+EXAM_CURRENT_SEATING_FILE = "exam_current_seating_arrangement.json"
+
+
+# ============================================================
+# GENERIC JSON LIST LOADER
+# ============================================================
+
+def exam_schedule_load_list(filename):
+
+    if not os.path.exists(filename):
+        return []
+
+    try:
+
+        with open(
+            filename,
+            "r"
+        ) as file:
+
+            data = json.load(file)
+
+        if isinstance(data, list):
+            return data
+
+    except Exception:
+        pass
+
+    return []
+
+
+# ============================================================
+# GENERIC JSON LIST SAVER
+# ============================================================
+
+def exam_schedule_save_list(
+    filename,
+    data
+):
+
+    with open(
+        filename,
+        "w"
+    ) as file:
+
+        json.dump(
+            data,
+            file,
+            indent=4,
+            default=str
+        )
+
+
+# ============================================================
+# CREATE UNIQUE SCHEDULE ID
+# ============================================================
+
+def create_exam_schedule_id():
+
+    current_time = datetime.now().strftime(
+        "%Y%m%d%H%M%S%f"
+    )
+
+    return "EXAM-" + current_time
+
+
+# ============================================================
+# GET GENERATED SEATING ARRANGEMENT
+# ============================================================
+#
+# Current seating result should be stored in:
+# session["seating_generated"]
+#
+# Agar existing generation function abhi kisi aur naam se
+# arrangement store kar raha hai, us bridge ko baad me
+# exact existing function ke according connect karenge.
+#
+# ============================================================
+
+# ============================================================
+# GET CURRENT GENERATED EXAM ARRANGEMENT
+# ============================================================
+
+def get_current_exam_arrangement():
+
+    # --------------------------------------------------------
+    # FIRST: TRY SESSION
+    # --------------------------------------------------------
+
+    arrangement = session.get(
+        "seating_generated"
+    )
+
+    if (
+        isinstance(arrangement, list)
+        and arrangement
+    ):
+        return arrangement
+
+    # --------------------------------------------------------
+    # SECOND: LOAD SAVED ARRANGEMENT
+    # FROM DATABASE / JSON COMPATIBILITY STORAGE
+    # --------------------------------------------------------
+
+    arrangement = exam_schedule_load_list(
+        EXAM_CURRENT_SEATING_FILE
+    )
+
+    if (
+        isinstance(arrangement, list)
+        and arrangement
+    ):
+        return arrangement
+
+    # --------------------------------------------------------
+    # NOTHING AVAILABLE
+    # --------------------------------------------------------
+
+    return []
+
+
+# ============================================================
+# BUILD COURSE / SEMESTER TIMETABLE
+# ============================================================
+
+def build_exam_timetable(
+    arrangement
+):
+
+    timetable = []
+
+    if not isinstance(
+        arrangement,
+        list
+    ):
+
+        return timetable
+
+
+    for day in arrangement:
+
+        if not isinstance(
+            day,
+            dict
+        ):
+
+            continue
+
+
+        display_date = str(
+            day.get(
+                "display_date",
+                ""
+            )
+        ).strip()
+
+
+        raw_date = str(
+            day.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+
+        if not raw_date:
+
+            raw_date = display_date
+
+
+        shifts = day.get(
+            "shifts",
+            []
+        )
+
+
+        if not isinstance(
+            shifts,
+            list
+        ):
+
+            continue
+
+
+        for shift in shifts:
+
+            if not isinstance(
+                shift,
+                dict
+            ):
+
+                continue
+
+
+            shift_name = str(
+                shift.get(
+                    "name",
+                    ""
+                )
+            ).strip()
+
+
+            start_time = str(
+                shift.get(
+                    "start_time",
+                    ""
+                )
+            ).strip()
+
+
+            end_time = str(
+                shift.get(
+                    "end_time",
+                    ""
+                )
+            ).strip()
+
+
+            course_data = {}
+
+
+            rooms = shift.get(
+                "rooms",
+                []
+            )
+
+
+            if not isinstance(
+                rooms,
+                list
+            ):
+
+                continue
+
+
+            for room in rooms:
+
+                if not isinstance(
+                    room,
+                    dict
+                ):
+
+                    continue
+
+
+                students = room.get(
+                    "students",
+                    []
+                )
+
+
+                if not isinstance(
+                    students,
+                    list
+                ):
+
+                    continue
+
+
+                for student in students:
+
+                    if not isinstance(
+                        student,
+                        dict
+                    ):
+
+                        continue
+
+
+                    course = str(
+                        student.get(
+                            "course",
+                            ""
+                        )
+                    ).strip()
+
+
+                    semester = str(
+                        student.get(
+                            "semester",
+                            ""
+                        )
+                    ).strip()
+
+
+                    subject = str(
+                        student.get(
+                            "subject",
+                            ""
+                        )
+                    ).strip()
+
+
+                    if not course:
+                        continue
+
+                    if not semester:
+                        continue
+
+                    if not subject:
+                        continue
+
+
+                    combo_key = (
+                        course.lower()
+                        + "|||"
+                        + semester.lower()
+                    )
+
+
+                    if combo_key not in course_data:
+
+                        course_data[
+                            combo_key
+                        ] = {
+
+                            "course": course,
+
+                            "semester": semester,
+
+                            "subjects": []
+
+                        }
+
+
+                    if subject not in course_data[
+                        combo_key
+                    ][
+                        "subjects"
+                    ]:
+
+                        course_data[
+                            combo_key
+                        ][
+                            "subjects"
+                        ].append(
+                            subject
+                        )
+
+
+            for item in course_data.values():
+
+                timetable.append({
+
+                    "date": raw_date,
+
+                    "display_date":
+                        display_date,
+
+                    "shift":
+                        shift_name,
+
+                    "start_time":
+                        start_time,
+
+                    "end_time":
+                        end_time,
+
+                    "course":
+                        item["course"],
+
+                    "semester":
+                        item["semester"],
+
+                    "subjects":
+                        item["subjects"]
+
+                })
+
+
+    return timetable
+
+
+# ============================================================
+# EXAM SCHEDULE REVIEW PAGE
+# ============================================================
+
+@app.route(
+    "/confirm-seating-arrangement",
+    methods=["GET"]
+)
+def confirm_seating_arrangement():
+
+    arrangement = get_current_exam_arrangement()
+
+
+    if not arrangement:
+
+        return """
+        <script>
+            alert(
+                "No seating arrangement is available. Please generate the seating arrangement first."
+            );
+            window.location.href="/seating-arrangement";
+        </script>
+        """
+
+
+    timetable = build_exam_timetable(
+        arrangement
+    )
+
+
+    exam_type = str(
+        session.get(
+            "seating_exam_type",
+            ""
+        )
+    ).strip()
+
+
+    return render_template(
+        "exam_timetable.html",
+
+        timetable=timetable,
+
+        exam_type=exam_type
+
+    )
+
+
+# ============================================================
+# DOWNLOAD EXAM TIMETABLE
+# ============================================================
+
+@app.route(
+    "/download-exam-timetable"
+)
+def download_exam_timetable():
+
+    arrangement = get_current_exam_arrangement()
+
+
+    if not arrangement:
+
+        return (
+            "No seating arrangement available.",
+            404
+        )
+
+
+    timetable = build_exam_timetable(
+        arrangement
+    )
+
+
+    output = io.StringIO()
+
+    writer = csv.writer(
+        output
+    )
+
+
+    writer.writerow([
+
+        "Date",
+
+        "Shift",
+
+        "Start Time",
+
+        "End Time",
+
+        "Course",
+
+        "Semester",
+
+        "Subject"
+
+    ])
+
+
+    for item in timetable:
+
+        subjects = item.get(
+            "subjects",
+            []
+        )
+
+
+        if not subjects:
+
+            writer.writerow([
+
+                item.get(
+                    "display_date",
+                    item.get(
+                        "date",
+                        ""
+                    )
+                ),
+
+                item.get(
+                    "shift",
+                    ""
+                ),
+
+                item.get(
+                    "start_time",
+                    ""
+                ),
+
+                item.get(
+                    "end_time",
+                    ""
+                ),
+
+                item.get(
+                    "course",
+                    ""
+                ),
+
+                item.get(
+                    "semester",
+                    ""
+                ),
+
+                ""
+
+            ])
+
+            continue
+
+
+        for subject in subjects:
+
+            writer.writerow([
+
+                item.get(
+                    "display_date",
+                    item.get(
+                        "date",
+                        ""
+                    )
+                ),
+
+                item.get(
+                    "shift",
+                    ""
+                ),
+
+                item.get(
+                    "start_time",
+                    ""
+                ),
+
+                item.get(
+                    "end_time",
+                    ""
+                ),
+
+                item.get(
+                    "course",
+                    ""
+                ),
+
+                item.get(
+                    "semester",
+                    ""
+                ),
+
+                subject
+
+            ])
+
+
+    output.seek(0)
+
+
+    return send_file(
+
+        io.BytesIO(
+            output.getvalue().encode(
+                "utf-8-sig"
+            )
+        ),
+
+        as_attachment=True,
+
+        download_name=(
+            "Exam_Timetable.csv"
+        ),
+
+        mimetype=(
+            "text/csv"
+        )
+
+    )
+
+
+# ============================================================
+# GIVE DATA
+# ============================================================
+
+@app.route(
+    "/give-exam-data",
+    methods=["POST"]
+)
+def give_exam_data():
+
+    # ========================================================
+    # IMPORTANT
+    #
+    # Schedule History ke liye SESSION ka arrangement use
+    # nahi karna hai.
+    #
+    # Seating Arrangement generate hone ke baad jo COMPLETE
+    # arrangement EXAM_CURRENT_SEATING_FILE me save hua hai,
+    # wahi Schedule History ka source hoga.
+    #
+    # Isse:
+    # Shift 1
+    # Shift 2
+    # Shift 3
+    # Rooms
+    # Students
+    # Seats
+    # Subjects
+    # Faculty
+    #
+    # sab exact generated arrangement ke according rahenge.
+    # ========================================================
+
+    arrangement = exam_schedule_load_list(
+        EXAM_CURRENT_SEATING_FILE
+    )
+
+    # ========================================================
+    # NO GENERATED ARRANGEMENT
+    #
+    # Agar current generated seating arrangement available
+    # nahi hai to Schedule History me kuch bhi save nahi hoga.
+    # ========================================================
+
+    if not isinstance(
+        arrangement,
+        list
+    ) or not arrangement:
+
+        return """
+        <script>
+            alert(
+                "No generated seating arrangement is available. Please generate the Seating Arrangement first."
+            );
+            window.location.href="/seating-arrangement";
+        </script>
+        """
+
+    # ========================================================
+    # VERIFY THAT THE GENERATED ARRANGEMENT ACTUALLY
+    # CONTAINS STUDENT DATA
+    # ========================================================
+
+    generated_student_count = 0
+    generated_shift_count = 0
+    generated_room_count = 0
+
+    for day in arrangement:
+
+        if not isinstance(
+            day,
+            dict
+        ):
+            continue
+
+        shifts = day.get(
+            "shifts",
+            []
+        )
+
+        if not isinstance(
+            shifts,
+            list
+        ):
+            continue
+
+        for shift in shifts:
+
+            if not isinstance(
+                shift,
+                dict
+            ):
+                continue
+
+            generated_shift_count += 1
+
+            rooms = shift.get(
+                "rooms",
+                []
+            )
+
+            if not isinstance(
+                rooms,
+                list
+            ):
+                continue
+
+            for room in rooms:
+
+                if not isinstance(
+                    room,
+                    dict
+                ):
+                    continue
+
+                generated_room_count += 1
+
+                students = room.get(
+                    "students",
+                    []
+                )
+
+                if not isinstance(
+                    students,
+                    list
+                ):
+                    continue
+
+                for student in students:
+
+                    if not isinstance(
+                        student,
+                        dict
+                    ):
+                        continue
+
+                    enrollment = str(
+                        student.get(
+                            "enrollment",
+                            ""
+                        )
+                    ).strip()
+
+                    seat_no = str(
+                        student.get(
+                            "seat_no",
+                            ""
+                        )
+                    ).strip()
+
+                    if enrollment and seat_no:
+                        generated_student_count += 1
+
+    # ========================================================
+    # GENERATED ARRANGEMENT MUST BE COMPLETE
+    # ========================================================
+
+    if (
+        generated_shift_count <= 0
+        or
+        generated_room_count <= 0
+        or
+        generated_student_count <= 0
+    ):
+
+        return """
+        <script>
+            alert(
+                "The generated Seating Arrangement is incomplete. Schedule History has not been created."
+            );
+            window.location.href="/seating-arrangement";
+        </script>
+        """
+
+    # ========================================================
+    # EXAM TYPE
+    # ========================================================
+
+    exam_type = str(
+        session.get(
+            "seating_exam_type",
+            ""
+        )
+    ).strip()
+
+    if not exam_type:
+
+        exam_type = "Examination"
+
+    # ========================================================
+    # CREATE NEW SCHEDULE ID
+    # ========================================================
+
+    schedule_id = create_exam_schedule_id()
+
+    # ========================================================
+    # LOAD OLD DATA
+    # ========================================================
+
+    student_schedule = exam_schedule_load_list(
+        EXAM_STUDENT_SCHEDULE_FILE
+    )
+
+    faculty_duties = exam_schedule_load_list(
+        EXAM_FACULTY_DUTY_FILE
+    )
+
+    history = exam_schedule_load_list(
+        EXAM_SCHEDULE_HISTORY_FILE
+    )
+
+    # ========================================================
+    # STUDENT DATA
+    #
+    # DATA IS CREATED DIRECTLY FROM THE GENERATED ARRANGEMENT.
+    # ========================================================
+
+    new_student_records = []
+
+    for day in arrangement:
+
+        if not isinstance(
+            day,
+            dict
+        ):
+            continue
+
+        display_date = str(
+            day.get(
+                "display_date",
+                ""
+            )
+        ).strip()
+
+        shifts = day.get(
+            "shifts",
+            []
+        )
+
+        if not isinstance(
+            shifts,
+            list
+        ):
+            continue
+
+        for shift in shifts:
+
+            if not isinstance(
+                shift,
+                dict
+            ):
+                continue
+
+            shift_name = str(
+                shift.get(
+                    "name",
+                    ""
+                )
+            ).strip()
+
+            start_time = str(
+                shift.get(
+                    "start_time",
+                    ""
+                )
+            ).strip()
+
+            end_time = str(
+                shift.get(
+                    "end_time",
+                    ""
+                )
+            ).strip()
+
+            rooms = shift.get(
+                "rooms",
+                []
+            )
+
+            if not isinstance(
+                rooms,
+                list
+            ):
+                continue
+
+            for room in rooms:
+
+                if not isinstance(
+                    room,
+                    dict
+                ):
+                    continue
+
+                room_name = str(
+                    room.get(
+                        "room_name",
+                        ""
+                    )
+                ).strip()
+
+                room_students = room.get(
+                    "students",
+                    []
+                )
+
+                if not isinstance(
+                    room_students,
+                    list
+                ):
+                    continue
+
+                for student in room_students:
+
+                    if not isinstance(
+                        student,
+                        dict
+                    ):
+                        continue
+
+                    enrollment = str(
+                        student.get(
+                            "enrollment",
+                            ""
+                        )
+                    ).strip()
+
+                    seat_no = str(
+                        student.get(
+                            "seat_no",
+                            ""
+                        )
+                    ).strip()
+
+                    # ------------------------------------------------
+                    # ONLY VALID GENERATED STUDENT RECORD
+                    # ------------------------------------------------
+
+                    if not enrollment:
+                        continue
+
+                    if not seat_no:
+                        continue
+
+                    new_student_records.append({
+
+                        "schedule_id":
+                            schedule_id,
+
+                        "exam_type":
+                            exam_type,
+
+                        "date":
+                            display_date,
+
+                        "shift":
+                            shift_name,
+
+                        "start_time":
+                            start_time,
+
+                        "end_time":
+                            end_time,
+
+                        "subject":
+                            str(
+                                student.get(
+                                    "subject",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "course":
+                            str(
+                                student.get(
+                                    "course",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "semester":
+                            str(
+                                student.get(
+                                    "semester",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "room":
+                            room_name,
+
+                        "seat_no":
+                            seat_no,
+
+                        "student_name":
+                            str(
+                                student.get(
+                                    "student_name",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "enrollment":
+                            enrollment
+
+                    })
+
+    # ========================================================
+    # VERIFY STUDENT RECORD COUNT
+    #
+    # History should contain exactly the generated student
+    # records. No partial data.
+    # ========================================================
+
+    if (
+        len(new_student_records)
+        !=
+        generated_student_count
+    ):
+
+        return """
+        <script>
+            alert(
+                "Generated seating data could not be copied completely. Schedule History has not been created."
+            );
+            window.location.href="/seating-arrangement";
+        </script>
+        """
+
+    # ========================================================
+    # FACULTY DUTY DATA
+    #
+    # DIRECTLY FROM GENERATED ARRANGEMENT
+    # ========================================================
+
+    new_faculty_records = []
+
+    for day in arrangement:
+
+        if not isinstance(
+            day,
+            dict
+        ):
+            continue
+
+        display_date = str(
+            day.get(
+                "display_date",
+                ""
+            )
+        ).strip()
+
+        shifts = day.get(
+            "shifts",
+            []
+        )
+
+        if not isinstance(
+            shifts,
+            list
+        ):
+            continue
+
+        for shift in shifts:
+
+            if not isinstance(
+                shift,
+                dict
+            ):
+                continue
+
+            shift_name = str(
+                shift.get(
+                    "name",
+                    ""
+                )
+            ).strip()
+
+            start_time = str(
+                shift.get(
+                    "start_time",
+                    ""
+                )
+            ).strip()
+
+            end_time = str(
+                shift.get(
+                    "end_time",
+                    ""
+                )
+            ).strip()
+
+            rooms = shift.get(
+                "rooms",
+                []
+            )
+
+            if not isinstance(
+                rooms,
+                list
+            ):
+                continue
+
+            for room in rooms:
+
+                if not isinstance(
+                    room,
+                    dict
+                ):
+                    continue
+
+                room_name = str(
+                    room.get(
+                        "room_name",
+                        ""
+                    )
+                ).strip()
+
+                faculty_list = room.get(
+                    "faculty",
+                    []
+                )
+
+                if not isinstance(
+                    faculty_list,
+                    list
+                ):
+                    continue
+
+                for faculty in faculty_list:
+
+                    if not isinstance(
+                        faculty,
+                        dict
+                    ):
+                        continue
+
+                    faculty_id = str(
+                        faculty.get(
+                            "faculty_id",
+                            ""
+                        )
+                    ).strip()
+
+                    faculty_name = str(
+                        faculty.get(
+                            "name",
+                            ""
+                        )
+                    ).strip()
+
+                    if not faculty_id:
+                        continue
+
+                    new_faculty_records.append({
+
+                        "schedule_id":
+                            schedule_id,
+
+                        "exam_type":
+                            exam_type,
+
+                        "date":
+                            display_date,
+
+                        "shift":
+                            shift_name,
+
+                        "start_time":
+                            start_time,
+
+                        "end_time":
+                            end_time,
+
+                        "room":
+                            room_name,
+
+                        "faculty_id":
+                            faculty_id,
+
+                        "faculty_name":
+                            faculty_name
+
+                    })
+
+    # ========================================================
+    # ADD NEW DATA
+    # ========================================================
+
+    student_schedule.extend(
+        new_student_records
+    )
+
+    faculty_duties.extend(
+        new_faculty_records
+    )
+
+    # ========================================================
+    # BUILD TIMETABLE
+    #
+    # ALSO DIRECTLY FROM SAME GENERATED ARRANGEMENT
+    # ========================================================
+
+    timetable = build_exam_timetable(
+        arrangement
+    )
+
+    # ========================================================
+    # FINAL HISTORY RECORD
+    #
+    # IMPORTANT:
+    # "arrangement" IS THE EXACT GENERATED ARRANGEMENT.
+    #
+    # No session arrangement.
+    # No newly generated arrangement.
+    # No modified arrangement.
+    # No partial arrangement.
+    # ========================================================
+
+    history_record = {
+
+        "schedule_id":
+            schedule_id,
+
+        "created_at":
+            datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+
+        "exam_type":
+            exam_type,
+
+        "timetable":
+            timetable,
+
+        "arrangement":
+            arrangement
+
+    }
+
+    # ========================================================
+    # ADD HISTORY
+    # ========================================================
+
+    history.append(
+        history_record
+    )
+
+    # ========================================================
+    # SAVE EVERYTHING
+    # ========================================================
+
+    exam_schedule_save_list(
+        EXAM_STUDENT_SCHEDULE_FILE,
+        student_schedule
+    )
+
+    exam_schedule_save_list(
+        EXAM_FACULTY_DUTY_FILE,
+        faculty_duties
+    )
+
+    exam_schedule_save_list(
+        EXAM_SCHEDULE_HISTORY_FILE,
+        history
+    )
+
+    # ========================================================
+    # GO TO HISTORY
+    # ========================================================
+
+    return redirect(
+        url_for(
+            "exam_schedule_history"
+        )
+    )
+
+
+# ============================================================
+# STUDENT EXAM SCHEDULE
+# ============================================================
+
+@app.route(
+    "/student-exam-schedule"
+)
+def student_exam_schedule():
+
+    if "student_enrollment" not in session:
+
+        return redirect(
+            url_for(
+                "student_login"
+            )
+        )
+
+    enrollment = str(
+        session.get(
+            "student_enrollment",
+            ""
+        )
+    ).strip()
+
+    records = exam_schedule_load_list(
+        EXAM_STUDENT_SCHEDULE_FILE
+    )
+
+    student_records = []
+
+    for record in records:
+
+        if not isinstance(
+            record,
+            dict
+        ):
+            continue
+
+        record_enrollment = str(
+            record.get(
+                "enrollment",
+                ""
+            )
+        ).strip()
+
+        if record_enrollment == enrollment:
+
+            student_records.append(
+                record
+            )
+
+    # ========================================================
+    # DATE-WISE + SHIFT-WISE SORTING
+    # ========================================================
+
+    def student_schedule_sort_key(record):
+
+        # ----------------------------------------------------
+        # DATE
+        # ----------------------------------------------------
+
+        date_text = str(
+            record.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+        try:
+
+            exam_date = datetime.strptime(
+                date_text,
+                "%d %B %Y"
+            ).date()
+
+        except Exception:
+
+            exam_date = datetime.max.date()
+
+        # ----------------------------------------------------
+        # SHIFT
+        # ----------------------------------------------------
+
+        shift_text = str(
+            record.get(
+                "shift",
+                ""
+            )
+        ).strip().lower()
+
+        if (
+            shift_text.startswith("1")
+            or "1st" in shift_text
+        ):
+
+            shift_order = 1
+
+        elif (
+            shift_text.startswith("2")
+            or "2nd" in shift_text
+        ):
+
+            shift_order = 2
+
+        else:
+
+            shift_order = 99
+
+        return (
+            exam_date,
+            shift_order
+        )
+
+    student_records.sort(
+        key=student_schedule_sort_key
+    )
+
+    return render_template(
+        "student_exam_schedule.html",
+        exam_records=student_records
+    )
+
+
+# ============================================================
+# FACULTY EXAM DUTY
+# ============================================================
+
+@app.route(
+    "/faculty-exam-duty"
+)
+def faculty_exam_duty():
+
+    if "faculty_id" not in session:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+    records = exam_schedule_load_list(
+        EXAM_FACULTY_DUTY_FILE
+    )
+
+    faculty_records = []
+
+    for record in records:
+
+        if not isinstance(
+            record,
+            dict
+        ):
+            continue
+
+        record_faculty_id = str(
+            record.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+        if record_faculty_id == faculty_id:
+
+            faculty_records.append(
+                record
+            )
+
+    # ========================================================
+    # DATE-WISE + SHIFT-WISE SORTING
+    # ========================================================
+
+    def faculty_schedule_sort_key(record):
+
+        # ----------------------------------------------------
+        # DATE
+        # ----------------------------------------------------
+
+        date_text = str(
+            record.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+        try:
+
+            exam_date = datetime.strptime(
+                date_text,
+                "%d %B %Y"
+            ).date()
+
+        except Exception:
+
+            exam_date = datetime.max.date()
+
+        # ----------------------------------------------------
+        # SHIFT
+        # ----------------------------------------------------
+
+        shift_text = str(
+            record.get(
+                "shift",
+                ""
+            )
+        ).strip().lower()
+
+        if (
+            shift_text.startswith("1")
+            or "1st" in shift_text
+        ):
+
+            shift_order = 1
+
+        elif (
+            shift_text.startswith("2")
+            or "2nd" in shift_text
+        ):
+
+            shift_order = 2
+
+        else:
+
+            shift_order = 99
+
+        return (
+            exam_date,
+            shift_order
+        )
+
+    faculty_records.sort(
+        key=faculty_schedule_sort_key
+    )
+
+    return render_template(
+        "faculty_exam_duty.html",
+        duty_records=faculty_records
+    )
+
+
+# ============================================================
+# SCHEDULE HISTORY
+# ============================================================
+
+@app.route(
+    "/exam-schedule-history"
+)
+@exam_arrangement_required
+def exam_schedule_history():
+
+    history = exam_schedule_load_list(
+        EXAM_SCHEDULE_HISTORY_FILE
+    )
+
+
+    history.reverse()
+
+
+    return render_template(
+        "exam_schedule_history.html",
+        history=history
+    )
+
+
+# ============================================================
+# DELETE SCHEDULE HISTORY
+# ============================================================
+
+@app.route(
+    "/delete-exam-schedule/<schedule_id>",
+    methods=["GET", "POST"]
+)
+def delete_exam_schedule(
+    schedule_id
+):
+
+    schedule_id = str(
+        schedule_id
+    ).strip()
+
+
+    if not schedule_id:
+
+        return redirect(
+            url_for(
+                "exam_schedule_history"
+            )
+        )
+
+
+    # ========================================================
+    # STUDENT DATA DELETE
+    # ========================================================
+
+    student_schedule = exam_schedule_load_list(
+        EXAM_STUDENT_SCHEDULE_FILE
+    )
+
+
+    student_schedule = [
+
+        record
+
+        for record in student_schedule
+
+        if str(
+            record.get(
+                "schedule_id",
+                ""
+            )
+        ).strip()
+        !=
+        schedule_id
+
+    ]
+
+
+    # ========================================================
+    # FACULTY DATA DELETE
+    # ========================================================
+
+    faculty_duties = exam_schedule_load_list(
+        EXAM_FACULTY_DUTY_FILE
+    )
+
+
+    faculty_duties = [
+
+        record
+
+        for record in faculty_duties
+
+        if str(
+            record.get(
+                "schedule_id",
+                ""
+            )
+        ).strip()
+        !=
+        schedule_id
+
+    ]
+
+
+    # ========================================================
+    # HISTORY DELETE
+    # ========================================================
+
+    history = exam_schedule_load_list(
+        EXAM_SCHEDULE_HISTORY_FILE
+    )
+
+
+    history = [
+
+        record
+
+        for record in history
+
+        if str(
+            record.get(
+                "schedule_id",
+                ""
+            )
+        ).strip()
+        !=
+        schedule_id
+
+    ]
+
+
+    # ========================================================
+    # SAVE UPDATED DATA
+    # ========================================================
+
+    exam_schedule_save_list(
+        EXAM_STUDENT_SCHEDULE_FILE,
+        student_schedule
+    )
+
+
+    exam_schedule_save_list(
+        EXAM_FACULTY_DUTY_FILE,
+        faculty_duties
+    )
+
+
+    exam_schedule_save_list(
+        EXAM_SCHEDULE_HISTORY_FILE,
+        history
+    )
+
+
+    # ========================================================
+    # BACK TO HISTORY
+    # ========================================================
+
+    return redirect(
+        url_for(
+            "exam_schedule_history"
+        )
+    )
+
+
+# ============================================================
+# EXAM PAPER DISTRIBUTION & ATTENDANCE
+# ============================================================
+
+EXAM_PAPER_DISTRIBUTION_FILE = "exam_paper_distribution.json"
+
+
+# ============================================================
+# SCHEDULE PAPER DISTRIBUTION & ATTENDANCE
+# ============================================================
+#
+# IMPORTANT:
+# Ye NEW system hai.
+# Existing Seating Arrangement,
+# University Room Capacity,
+# Student Schedule,
+# Faculty Duty
+# aur Exam History ko replace/change nahi karta.
+#
+# PAPER DISTRIBUTION KA DATA SIRF
+# SCHEDULE HISTORY SE AAYEGA.
+#
+# ============================================================
+
+
+def build_paper_distribution_data(arrangement):
+
+    distribution = []
+
+    if not isinstance(
+        arrangement,
+        list
+    ):
+        return distribution
+
+    for day in arrangement:
+
+        if not isinstance(
+            day,
+            dict
+        ):
+            continue
+
+        raw_date = str(
+            day.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+        display_date = str(
+            day.get(
+                "display_date",
+                ""
+            )
+        ).strip()
+
+        if not display_date:
+
+            display_date = raw_date
+
+        shifts = day.get(
+            "shifts",
+            []
+        )
+
+        if not isinstance(
+            shifts,
+            list
+        ):
+            continue
+
+        for shift in shifts:
+
+            if not isinstance(
+                shift,
+                dict
+            ):
+                continue
+
+            shift_name = str(
+                shift.get(
+                    "name",
+                    ""
+                )
+            ).strip()
+
+            start_time = str(
+                shift.get(
+                    "start_time",
+                    ""
+                )
+            ).strip()
+
+            end_time = str(
+                shift.get(
+                    "end_time",
+                    ""
+                )
+            ).strip()
+
+            rooms = shift.get(
+                "rooms",
+                []
+            )
+
+            if not isinstance(
+                rooms,
+                list
+            ):
+                continue
+
+            for room in rooms:
+
+                if not isinstance(
+                    room,
+                    dict
+                ):
+                    continue
+
+                room_name = str(
+                    room.get(
+                        "room_name",
+                        ""
+                    )
+                ).strip()
+
+                students = room.get(
+                    "students",
+                    []
+                )
+
+                if not isinstance(
+                    students,
+                    list
+                ):
+                    continue
+
+                room_records = []
+
+                for student in students:
+
+                    if not isinstance(
+                        student,
+                        dict
+                    ):
+                        continue
+
+                    seat_no = str(
+                        student.get(
+                            "seat_no",
+                            ""
+                        )
+                    ).strip()
+
+                    student_name = str(
+                        student.get(
+                            "student_name",
+                            ""
+                        )
+                    ).strip()
+
+                    enrollment = str(
+                        student.get(
+                            "enrollment",
+                            ""
+                        )
+                    ).strip()
+
+                    subject = str(
+                        student.get(
+                            "subject",
+                            ""
+                        )
+                    ).strip()
+
+                    if not seat_no:
+                        continue
+
+                    if not enrollment:
+                        continue
+
+                    room_records.append({
+
+                        "date": display_date,
+
+                        "raw_date": raw_date,
+
+                        "shift": shift_name,
+
+                        "start_time": start_time,
+
+                        "end_time": end_time,
+
+                        "room": room_name,
+
+                        "seat_no": seat_no,
+
+                        "student_name": student_name,
+
+                        "enrollment": enrollment,
+
+                        "subject": subject,
+
+                        "answer_sheet_1": "",
+
+                        "answer_sheet_2": ""
+
+                    })
+
+                distribution.extend(
+                    room_records
+                )
+
+    return distribution
+
+
+# ============================================================
+# PAPER DISTRIBUTION PAGE
+# ============================================================
+
+@app.route(
+    "/schedule-paper-distribution"
+)
+@exam_arrangement_required
+def schedule_paper_distribution():
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # DATA SIRF SCHEDULE HISTORY SE LIYA JAYEGA.
+    #
+    # get_current_exam_arrangement()
+    # YAHAN USE NAHI HOGA.
+    # --------------------------------------------------------
+
+    history = exam_schedule_load_list(
+        EXAM_SCHEDULE_HISTORY_FILE
+    )
+
+    # --------------------------------------------------------
+    # NO SCHEDULE HISTORY
+    # --------------------------------------------------------
+
+    if not isinstance(
+        history,
+        list
+    ) or not history:
+
+        return render_template(
+
+            "schedule_paper_distribution.html",
+
+            grouped_data={},
+
+            subject_totals={},
+
+            total_students=0,
+
+            total_rooms=0,
+
+            schedule_id="",
+
+            no_history=True
+
+        )
+
+    # --------------------------------------------------------
+    # GET SCHEDULE ID
+    # --------------------------------------------------------
+
+    schedule_id = str(
+        request.args.get(
+            "schedule_id",
+            ""
+        )
+    ).strip()
+
+    history_item = None
+
+    # --------------------------------------------------------
+    # IF SCHEDULE ID IS PROVIDED
+    # FIND EXACT SCHEDULE FROM HISTORY
+    # --------------------------------------------------------
+
+    if schedule_id:
+
+        for item in history:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+            stored_schedule_id = str(
+                item.get(
+                    "schedule_id",
+                    ""
+                )
+            ).strip()
+
+            if (
+                stored_schedule_id
+                == schedule_id
+            ):
+
+                history_item = item
+
+                break
+
+    # --------------------------------------------------------
+    # IF NO SCHEDULE ID IS PROVIDED
+    # USE LATEST SAVED HISTORY
+    # --------------------------------------------------------
+
+    else:
+
+        for item in reversed(history):
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+            stored_schedule_id = str(
+                item.get(
+                    "schedule_id",
+                    ""
+                )
+            ).strip()
+
+            historical_arrangement = (
+                item.get(
+                    "arrangement",
+                    []
+                )
+            )
+
+            if (
+                stored_schedule_id
+                and
+                isinstance(
+                    historical_arrangement,
+                    list
+                )
+                and
+                historical_arrangement
+            ):
+
+                history_item = item
+
+                schedule_id = (
+                    stored_schedule_id
+                )
+
+                break
+
+    # --------------------------------------------------------
+    # SCHEDULE NOT FOUND
+    # --------------------------------------------------------
+
+    if not isinstance(
+        history_item,
+        dict
+    ):
+
+        return render_template(
+
+            "schedule_paper_distribution.html",
+
+            grouped_data={},
+
+            subject_totals={},
+
+            total_students=0,
+
+            total_rooms=0,
+
+            schedule_id=schedule_id,
+
+            no_history=True
+
+        )
+
+    # --------------------------------------------------------
+    # GET ARRANGEMENT ONLY FROM HISTORY
+    # --------------------------------------------------------
+
+    arrangement = (
+        history_item.get(
+            "arrangement",
+            []
+        )
+    )
+
+    if not isinstance(
+        arrangement,
+        list
+    ):
+
+        arrangement = []
+
+    # --------------------------------------------------------
+    # HISTORY EXISTS BUT ARRANGEMENT IS EMPTY
+    # --------------------------------------------------------
+
+    if not arrangement:
+
+        return render_template(
+
+            "schedule_paper_distribution.html",
+
+            grouped_data={},
+
+            subject_totals={},
+
+            total_students=0,
+
+            total_rooms=0,
+
+            schedule_id=schedule_id,
+
+            no_history=True
+
+        )
+
+    # --------------------------------------------------------
+    # BUILD DISTRIBUTION DATA
+    # --------------------------------------------------------
+
+    distribution = (
+        build_paper_distribution_data(
+            arrangement
+        )
+    )
+
+    # --------------------------------------------------------
+    # NO PAPER DATA
+    # --------------------------------------------------------
+
+    if not distribution:
+
+        return render_template(
+
+            "schedule_paper_distribution.html",
+
+            grouped_data={},
+
+            subject_totals={},
+
+            total_students=0,
+
+            total_rooms=0,
+
+            schedule_id=schedule_id,
+
+            no_history=True
+
+        )
+
+    # --------------------------------------------------------
+    # GROUP DATA
+    #
+    # DATE -> SHIFT -> ROOM
+    # --------------------------------------------------------
+
+    grouped_data = {}
+
+    for record in distribution:
+
+        date_key = str(
+            record.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+        shift_key = str(
+            record.get(
+                "shift",
+                ""
+            )
+        ).strip()
+
+        room_key = str(
+            record.get(
+                "room",
+                ""
+            )
+        ).strip()
+
+        if date_key not in grouped_data:
+
+            grouped_data[
+                date_key
+            ] = {}
+
+        if shift_key not in grouped_data[
+            date_key
+        ]:
+
+            grouped_data[
+                date_key
+            ][
+                shift_key
+            ] = {}
+
+        if room_key not in grouped_data[
+            date_key
+        ][
+            shift_key
+        ]:
+
+            grouped_data[
+                date_key
+            ][
+                shift_key
+            ][
+                room_key
+            ] = []
+
+        grouped_data[
+            date_key
+        ][
+            shift_key
+        ][
+            room_key
+        ].append(
+            record
+        )
+
+    # --------------------------------------------------------
+    # SUBJECT-WISE PAPER TOTALS
+    #
+    # DATE -> SHIFT -> ROOM -> SUBJECT
+    # --------------------------------------------------------
+
+    subject_totals = {}
+
+    for record in distribution:
+
+        date_key = str(
+            record.get(
+                "date",
+                ""
+            )
+        ).strip()
+
+        shift_key = str(
+            record.get(
+                "shift",
+                ""
+            )
+        ).strip()
+
+        room_key = str(
+            record.get(
+                "room",
+                ""
+            )
+        ).strip()
+
+        subject_key = str(
+            record.get(
+                "subject",
+                ""
+            )
+        ).strip()
+
+        if not subject_key:
+
+            subject_key = (
+                "Subject Not Available"
+            )
+
+        if date_key not in subject_totals:
+
+            subject_totals[
+                date_key
+            ] = {}
+
+        if shift_key not in subject_totals[
+            date_key
+        ]:
+
+            subject_totals[
+                date_key
+            ][
+                shift_key
+            ] = {}
+
+        if room_key not in subject_totals[
+            date_key
+        ][
+            shift_key
+        ]:
+
+            subject_totals[
+                date_key
+            ][
+                shift_key
+            ][
+                room_key
+            ] = {}
+
+        if subject_key not in subject_totals[
+            date_key
+        ][
+            shift_key
+        ][
+            room_key
+        ]:
+
+            subject_totals[
+                date_key
+            ][
+                shift_key
+            ][
+                room_key
+            ][
+                subject_key
+            ] = 0
+
+        subject_totals[
+            date_key
+        ][
+            shift_key
+        ][
+            room_key
+        ][
+            subject_key
+        ] += 1
+
+    # --------------------------------------------------------
+    # TOTAL STUDENTS
+    # --------------------------------------------------------
+
+    total_students = len(
+        distribution
+    )
+
+    # --------------------------------------------------------
+    # TOTAL ROOMS
+    # --------------------------------------------------------
+
+    total_rooms = 0
+
+    for date_data in grouped_data.values():
+
+        for shift_data in date_data.values():
+
+            total_rooms += len(
+                shift_data
+            )
+
+    # --------------------------------------------------------
+    # RENDER PAGE
+    # --------------------------------------------------------
+
+    return render_template(
+
+        "schedule_paper_distribution.html",
+
+        grouped_data=grouped_data,
+
+        subject_totals=subject_totals,
+
+        total_students=total_students,
+
+        total_rooms=total_rooms,
+
+        schedule_id=schedule_id,
+
+        no_history=False
+
+    )
+
+
+# ============================================================
+# DOWNLOAD ROOM-WISE PAPER DISTRIBUTION EXCEL
+# ============================================================
+
+@app.route(
+    "/download-paper-distribution-excel"
+)
+def download_paper_distribution_excel():
+
+    date_value = str(
+        request.args.get(
+            "date",
+            ""
+        )
+    ).strip()
+
+    shift_value = str(
+        request.args.get(
+            "shift",
+            ""
+        )
+    ).strip()
+
+    room_value = str(
+        request.args.get(
+            "room",
+            ""
+        )
+    ).strip()
+
+    schedule_id = str(
+        request.args.get(
+            "schedule_id",
+            ""
+        )
+    ).strip()
+
+    # ========================================================
+    # GET ARRANGEMENT
+    # ========================================================
+
+    arrangement = get_current_exam_arrangement()
+
+    # ========================================================
+    # LOAD EXACT HISTORY SCHEDULE
+    # ========================================================
+
+    if schedule_id:
+
+        history = exam_schedule_load_list(
+            EXAM_SCHEDULE_HISTORY_FILE
+        )
+
+        for history_item in history:
+
+            if not isinstance(
+                history_item,
+                dict
+            ):
+                continue
+
+            if str(
+                history_item.get(
+                    "schedule_id",
+                    ""
+                )
+            ).strip() != schedule_id:
+                continue
+
+            historical_arrangement = (
+                history_item.get(
+                    "arrangement",
+                    []
+                )
+            )
+
+            if (
+                isinstance(
+                    historical_arrangement,
+                    list
+                )
+                and historical_arrangement
+            ):
+                arrangement = (
+                    historical_arrangement
+                )
+
+            break
+
+    # ========================================================
+    # CHECK ARRANGEMENT
+    # ========================================================
+
+    if not arrangement:
+
+        return (
+            "No examination arrangement available.",
+            404
+        )
+
+    # ========================================================
+    # BUILD DISTRIBUTION
+    # ========================================================
+
+    distribution = (
+        build_paper_distribution_data(
+            arrangement
+        )
+    )
+
+    selected_records = []
+
+    for record in distribution:
+
+        if str(
+            record.get(
+                "date",
+                ""
+            )
+        ).strip() != date_value:
+            continue
+
+        if str(
+            record.get(
+                "shift",
+                ""
+            )
+        ).strip() != shift_value:
+            continue
+
+        if str(
+            record.get(
+                "room",
+                ""
+            )
+        ).strip() != room_value:
+            continue
+
+        selected_records.append(
+            record
+        )
+
+    # ========================================================
+    # CHECK DATA
+    # ========================================================
+
+    if not selected_records:
+
+        return (
+            "No paper distribution data found for the selected room, date and shift.",
+            404
+        )
+
+    # ========================================================
+    # CREATE WORKBOOK
+    # ========================================================
+
+    workbook = Workbook()
+
+    worksheet = workbook.active
+
+    worksheet.title = (
+        "Paper Distribution"
+    )
+
+    # ========================================================
+    # PAGE SETTINGS
+    # ========================================================
+
+    worksheet.page_setup.orientation = (
+        "portrait"
+    )
+
+    worksheet.page_setup.paperSize = (
+        worksheet.PAPERSIZE_A4
+    )
+
+    worksheet.page_setup.fitToWidth = 1
+
+    worksheet.page_setup.fitToHeight = 0
+
+    worksheet.sheet_properties.pageSetUpPr.fitToPage = True
+
+    worksheet.print_options.horizontalCentered = True
+
+    worksheet.page_margins.left = 0.25
+    worksheet.page_margins.right = 0.25
+    worksheet.page_margins.top = 0.35
+    worksheet.page_margins.bottom = 0.35
+
+    worksheet.page_margins.header = 0.10
+    worksheet.page_margins.footer = 0.10
+
+    # ========================================================
+    # BORDER
+    # ========================================================
+
+    thin_side = Side(
+        style="thin"
+    )
+
+    thin_border = Border(
+        left=thin_side,
+        right=thin_side,
+        top=thin_side,
+        bottom=thin_side
+    )
+
+    # ========================================================
+    # TOP INFORMATION
+    # ========================================================
+
+    # --------------------------------------------------------
+    # ROOM
+    # --------------------------------------------------------
+
+    worksheet.merge_cells(
+        "A1:F1"
+    )
+
+    worksheet["A1"] = (
+        "ROOM: "
+        + room_value
+    )
+
+    worksheet["A1"].font = Font(
+        bold=True,
+        size=16
+    )
+
+    worksheet["A1"].alignment = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=False
+    )
+
+    worksheet.row_dimensions[
+        1
+    ].height = 28
+
+    # --------------------------------------------------------
+    # SHIFT
+    # --------------------------------------------------------
+
+    worksheet.merge_cells(
+        "A2:F2"
+    )
+
+    worksheet["A2"] = (
+        "SHIFT: "
+        + shift_value
+    )
+
+    worksheet["A2"].font = Font(
+        bold=True,
+        size=13
+    )
+
+    worksheet["A2"].alignment = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=False
+    )
+
+    worksheet.row_dimensions[
+        2
+    ].height = 23
+
+    # --------------------------------------------------------
+    # TIME
+    # --------------------------------------------------------
+
+    start_time = str(
+        selected_records[0].get(
+            "start_time",
+            ""
+        )
+    ).strip()
+
+    end_time = str(
+        selected_records[0].get(
+            "end_time",
+            ""
+        )
+    ).strip()
+
+    worksheet.merge_cells(
+        "A3:F3"
+    )
+
+    worksheet["A3"] = (
+        "TIME: "
+        + start_time
+        + " - "
+        + end_time
+    )
+
+    worksheet["A3"].font = Font(
+        bold=True,
+        size=12
+    )
+
+    worksheet["A3"].alignment = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=False
+    )
+
+    worksheet.row_dimensions[
+        3
+    ].height = 22
+
+    # --------------------------------------------------------
+    # DATE
+    # --------------------------------------------------------
+
+    worksheet.merge_cells(
+        "A4:F4"
+    )
+
+    worksheet["A4"] = (
+        "DATE: "
+        + date_value
+    )
+
+    worksheet["A4"].font = Font(
+        bold=True,
+        size=11
+    )
+
+    worksheet["A4"].alignment = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=False
+    )
+
+    worksheet.row_dimensions[
+        4
+    ].height = 21
+
+    # ========================================================
+    # TOP INFORMATION BORDER
+    # ========================================================
+
+    for row_number in range(
+        1,
+        5
+    ):
+
+        for column_number in range(
+            1,
+            7
+        ):
+
+            worksheet.cell(
+                row=row_number,
+                column=column_number
+            ).border = thin_border
+
+    # ========================================================
+    # NO EXTRA ROW
+    # ========================================================
+
+    worksheet.row_dimensions[
+        5
+    ].height = 8
+
+    # ========================================================
+    # TABLE HEADER
+    # ========================================================
+
+    header_row = 6
+
+    headers = [
+        "Seat No.",
+        "Student Name",
+        "Enrollment",
+        "Sheet 1",
+        "Sheet 2",
+        "Sign."
+    ]
+
+    worksheet.row_dimensions[
+        header_row
+    ].height = 25
+
+    # WRITE HEADER DIRECTLY
+    for column_number, header_text in enumerate(
+        headers,
+        start=1
+    ):
+
+        cell = worksheet.cell(
+            row=header_row,
+            column=column_number
+        )
+
+        cell.value = header_text
+
+        cell.font = Font(
+            bold=True,
+            size=10
+        )
+
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center",
+            wrap_text=False,
+            shrink_to_fit=True
+        )
+
+        cell.border = thin_border
+
+    # ========================================================
+    # STUDENT DATA
+    # ========================================================
+
+    first_student_row = 7
+
+    for index, record in enumerate(
+        selected_records
+    ):
+
+        row_number = (
+            first_student_row
+            + index
+        )
+
+        # ----------------------------------------------------
+        # SEAT NO.
+        # ----------------------------------------------------
+
+        seat_cell = worksheet.cell(
+            row=row_number,
+            column=1
+        )
+
+        seat_cell.value = record.get(
+            "seat_no",
+            ""
+        )
+
+        # ----------------------------------------------------
+        # STUDENT NAME
+        # ----------------------------------------------------
+
+        name_cell = worksheet.cell(
+            row=row_number,
+            column=2
+        )
+
+        name_cell.value = record.get(
+            "student_name",
+            ""
+        )
+
+        # ----------------------------------------------------
+        # ENROLLMENT
+        # ----------------------------------------------------
+
+        enrollment_cell = worksheet.cell(
+            row=row_number,
+            column=3
+        )
+
+        enrollment_cell.value = record.get(
+            "enrollment",
+            ""
+        )
+
+        # ----------------------------------------------------
+        # SHEET 1
+        # ----------------------------------------------------
+
+        sheet1_cell = worksheet.cell(
+            row=row_number,
+            column=4
+        )
+
+        sheet1_cell.value = ""
+
+        # ----------------------------------------------------
+        # SHEET 2
+        # ----------------------------------------------------
+
+        sheet2_cell = worksheet.cell(
+            row=row_number,
+            column=5
+        )
+
+        sheet2_cell.value = ""
+
+        # ----------------------------------------------------
+        # SIGN
+        # ----------------------------------------------------
+
+        sign_cell = worksheet.cell(
+            row=row_number,
+            column=6
+        )
+
+        sign_cell.value = ""
+
+        # ----------------------------------------------------
+        # BORDER + ALIGNMENT
+        # ----------------------------------------------------
+
+        for column_number in range(
+            1,
+            7
+        ):
+
+            cell = worksheet.cell(
+                row=row_number,
+                column=column_number
+            )
+
+            cell.border = thin_border
+
+            cell.alignment = Alignment(
+                horizontal="center",
+                vertical="center",
+                wrap_text=False
+            )
+
+        # Student name left aligned
+        name_cell.alignment = Alignment(
+            horizontal="left",
+            vertical="center",
+            wrap_text=False,
+            shrink_to_fit=True
+        )
+
+        worksheet.row_dimensions[
+            row_number
+        ].height = 20
+
+    # ========================================================
+    # COLUMN WIDTH
+    # ========================================================
+
+    worksheet.column_dimensions[
+        "A"
+    ].width = 11
+
+    worksheet.column_dimensions[
+        "B"
+    ].width = 23
+
+    worksheet.column_dimensions[
+        "C"
+    ].width = 18
+
+    worksheet.column_dimensions[
+        "D"
+    ].width = 13
+
+    worksheet.column_dimensions[
+        "E"
+    ].width = 13
+
+    worksheet.column_dimensions[
+        "F"
+    ].width = 14
+
+    # ========================================================
+    # LAST ROW
+    # ========================================================
+
+    last_row = (
+        first_student_row
+        + len(selected_records)
+        - 1
+    )
+
+    # ========================================================
+    # FREEZE HEADER
+    # ========================================================
+
+    worksheet.freeze_panes = "A7"
+
+    # ========================================================
+    # PRINT AREA
+    # ========================================================
+
+    worksheet.print_area = (
+        "A1:F"
+        + str(last_row)
+    )
+
+    # ========================================================
+    # REPEAT HEADER
+    # ========================================================
+
+    worksheet.print_title_rows = "1:6"
+
+    # ========================================================
+    # FILE NAME
+    # ========================================================
+
+    safe_date = "".join(
+        character
+        if (
+            character.isalnum()
+            or character in "-_"
+        )
+        else "_"
+        for character in date_value
+    )
+
+    safe_shift = "".join(
+        character
+        if (
+            character.isalnum()
+            or character in "-_"
+        )
+        else "_"
+        for character in shift_value
+    )
+
+    safe_room = "".join(
+        character
+        if (
+            character.isalnum()
+            or character in "-_"
+        )
+        else "_"
+        for character in room_value
+    )
+
+    filename = (
+        "Paper_Distribution_"
+        + safe_date
+        + "_"
+        + safe_shift
+        + "_"
+        + safe_room
+        + ".xlsx"
+    )
+
+    # ========================================================
+    # SAVE
+    # ========================================================
+
+    output = io.BytesIO()
+
+    workbook.save(
+        output
+    )
+
+    output.seek(0)
+
+    # ========================================================
+    # DOWNLOAD
+    # ========================================================
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype=(
+            "application/vnd.openxmlformats-"
+            "officedocument.spreadsheetml.sheet"
+        )
+    )
+
 
 
 # =========================

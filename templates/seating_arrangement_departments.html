@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Seating Arrangement - Departments
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(270px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .department {
+            border: 1px solid #ddd;
+            padding: 18px;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .count {
+            margin-top: 10px;
+            color: #555;
+        }
+
+        .faculty {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .summary {
+            padding: 15px;
+            background: #eef6ff;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        button,
+        .button {
+            border: none;
+            background: #1769aa;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .secondary {
+            background: #666;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>
+            Seating Arrangement
+        </h1>
+
+        <p>
+            Step 2: Select Departments
+        </p>
+
+        <p>
+            Select one or more departments.
+            Students and faculty of the selected
+            departments will be used automatically.
+        </p>
+
+        <form
+            method="POST"
+            action="/seating-arrangement-departments"
+        >
+
+            <div class="grid">
+
+                {% for department in departments %}
+
+                <div class="department">
+
+                    <label>
+
+                        <input
+                            type="checkbox"
+                            name="selected_departments"
+                            value="{{ department.department_id }}"
+                        >
+
+                        <strong>
+                            {{ department.name }}
+                        </strong>
+
+                    </label>
+
+                    <div class="count">
+
+                        Students:
+                        <strong>
+                            {{ department.student_count }}
+                        </strong>
+
+                    </div>
+
+                    <div class="count">
+
+                        Faculty:
+                        <strong>
+                            {{ department.faculty_count }}
+                        </strong>
+
+                    </div>
+
+                    {% if department.faculty %}
+
+                    <div class="faculty">
+
+                        <strong>
+                            Faculty available:
+                        </strong>
+
+                        <br>
+
+                        {% for member in department.faculty %}
+
+                            {{ member.name }}
+
+                            {% if not loop.last %}
+                                ,
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+                {% else %}
+
+                <p>
+                    No departments found.
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+            <div class="summary">
+
+                Selected Room Capacity:
+                <strong>
+                    {{ total_capacity }}
+                </strong>
+
+            </div>
+
+            <div class="actions">
+
+                <a
+                    href="/seating-arrangement"
+                    class="button secondary"
+                >
+                    Back
+                </a>
+
+                <button
+                    type="submit"
+                >
+                    Continue
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

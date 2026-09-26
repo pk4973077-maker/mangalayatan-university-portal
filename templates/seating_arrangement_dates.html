@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Seating Arrangement - Dates
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 900px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+        }
+
+        input {
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+        }
+
+        button,
+        .button {
+            border: none;
+            background: #1769aa;
+            color: white;
+            padding: 11px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .secondary {
+            background: #666;
+        }
+
+        .date-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .dates {
+            margin-top: 25px;
+        }
+
+        .date-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .delete {
+            background: #b3261e;
+        }
+
+        .summary {
+            background: #eef6ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>
+            Seating Arrangement
+        </h1>
+
+        <p>
+            Step 3: Select Examination Dates
+        </p>
+
+        <form
+            method="POST"
+            action="/seating-arrangement-dates"
+            id="dateForm"
+        >
+
+            <input
+                type="hidden"
+                name="selected_dates_json"
+                id="selectedDatesJson"
+            >
+
+            <div class="date-row">
+
+                <input
+                    type="date"
+                    id="dateInput"
+                >
+
+                <button
+                    type="button"
+                    onclick="addDate();"
+                >
+                    Add Date
+                </button>
+
+            </div>
+
+            <div
+                class="dates"
+                id="dateList"
+            ></div>
+
+            <div class="summary">
+
+                Total Students:
+                <strong>
+                    {{ total_students }}
+                </strong>
+
+                &nbsp;&nbsp; | &nbsp;&nbsp;
+
+                Room Capacity:
+                <strong>
+                    {{ total_capacity }}
+                </strong>
+
+            </div>
+
+            <div class="actions">
+
+                <a
+                    href="/seating-arrangement-departments"
+                    class="button secondary"
+                >
+                    Back
+                </a>
+
+                <button
+                    type="submit"
+                >
+                    Continue
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+    let dates = [
+
+        {% for item in selected_dates %}
+
+            "{{ item }}"
+
+            {% if not loop.last %},{% endif %}
+
+        {% endfor %}
+
+    ];
+
+
+    function formatDate(value) {
+
+        const parts =
+            value.split("-");
+
+        if (parts.length !== 3) {
+            return value;
+        }
+
+        return (
+            parts[2]
+            + "-"
+            + parts[1]
+            + "-"
+            + parts[0]
+        );
+    }
+
+
+    function renderDates() {
+
+        const list =
+            document.getElementById(
+                "dateList"
+            );
+
+        list.innerHTML = "";
+
+        dates.forEach(
+            function(item, index) {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+                row.className =
+                    "date-item";
+
+                row.innerHTML =
+                    "<strong>"
+                    + formatDate(item)
+                    + "</strong>"
+                    +
+                    "<button type='button' "
+                    +
+                    "class='button delete' "
+                    +
+                    "onclick='deleteDate("
+                    + index
+                    + ")'>"
+                    +
+                    "Delete"
+                    +
+                    "</button>";
+
+                list.appendChild(row);
+
+            }
+        );
+
+        document.getElementById(
+            "selectedDatesJson"
+        ).value =
+            JSON.stringify(dates);
+    }
+
+
+    function addDate() {
+
+        const input =
+            document.getElementById(
+                "dateInput"
+            );
+
+        const value =
+            input.value;
+
+        if (!value) {
+
+            alert(
+                "Please select a date."
+            );
+
+            return;
+        }
+
+        if (
+            dates.indexOf(value)
+            !==
+            -1
+        ) {
+
+            alert(
+                "This date is already selected."
+            );
+
+            return;
+        }
+
+        dates.push(value);
+
+        dates.sort();
+
+        input.value = "";
+
+        renderDates();
+    }
+
+
+    function deleteDate(index) {
+
+        dates.splice(
+            index,
+            1
+        );
+
+        renderDates();
+    }
+
+
+    document.getElementById(
+        "dateForm"
+    ).addEventListener(
+        "submit",
+        function(event) {
+
+            if (dates.length === 0) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please select at least one examination date."
+                );
+
+            }
+
+        }
+    );
+
+
+    renderDates();
+
+</script>
+
+</body>
+</html>

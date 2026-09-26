@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>University Room & Capacity</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        .header {
+            background: #173b7a;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 35px auto;
+        }
+
+        .form-box,
+        .list-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .form-box h2,
+        .list-box h2 {
+            color: #173b7a;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 16px;
+        }
+
+        .add-btn {
+            padding: 13px 25px;
+            background: #173b7a;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .add-btn:hover {
+            background: #0f2b5c;
+        }
+
+        .room-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .room-table th,
+        .room-table td {
+            padding: 14px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .room-table th {
+            background: #173b7a;
+            color: white;
+        }
+
+        .room-table tr:hover {
+            background: #f5f8ff;
+        }
+
+        .edit-btn,
+        .delete-btn {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: white;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        .edit-btn {
+            background: #2878c8;
+        }
+
+        .delete-btn {
+            background: #d33b3b;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 25px;
+            color: #777;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 12px 22px;
+            background: #173b7a;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        @media (max-width: 700px) {
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .room-table {
+                font-size: 14px;
+            }
+
+            .room-table th,
+            .room-table td {
+                padding: 10px 7px;
+            }
+
+            .edit-btn,
+            .delete-btn {
+                display: block;
+                margin-bottom: 5px;
+                text-align: center;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+
+    <div class="header">
+
+        <h1>
+            University Room & Capacity
+        </h1>
+
+        <p>
+            Manage Examination Rooms
+        </p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- ==============================
+             ADD ROOM
+        =============================== -->
+
+        <div class="form-box">
+
+            <h2>
+                Add Examination Room
+            </h2>
+
+
+            <form method="POST"
+                  action="/university-room-capacity">
+
+                <div class="form-row">
+
+
+                    <div class="field">
+
+                        <label>
+                            Room Name
+                        </label>
+
+                        <input
+                            type="text"
+                            name="room_name"
+                            placeholder="Enter room name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label>
+                            Capacity
+                        </label>
+
+                        <input
+                            type="number"
+                            name="capacity"
+                            placeholder="Enter capacity"
+                            min="1"
+                            required
+                        >
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="add-btn">
+
+                        + Add Room
+
+                    </button>
+
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+
+        <!-- ==============================
+             ROOM LIST
+        =============================== -->
+
+        <div class="list-box">
+
+            <h2>
+                University Rooms
+            </h2>
+
+
+            {% if rooms %}
+
+            <table class="room-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            S.No.
+                        </th>
+
+                        <th>
+                            Room Name
+                        </th>
+
+                        <th>
+                            Capacity
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for room in rooms %}
+
+                    <tr>
+
+                        <td>
+                            {{ loop.index }}
+                        </td>
+
+                        <td>
+                            <strong>
+                                {{ room.room_name }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ room.capacity }}
+                        </td>
+
+                        <td>
+
+                            <a
+                                href="/edit-university-room/{{ loop.index0 }}"
+                                class="edit-btn">
+
+                                Edit
+
+                            </a>
+
+
+                            <a
+                                href="/delete-university-room/{{ loop.index0 }}"
+                                class="delete-btn"
+                                onclick="return confirm('Are you sure you want to delete this room?');">
+
+                                Delete
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            {% else %}
+
+            <div class="empty">
+
+                No examination rooms added yet.
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <a
+            href="/exam-arrangement"
+            class="back-btn">
+
+            ← Back to Exam Arrangement
+
+        </a>
+
+
+    </div>
+
+
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Exam Duty</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(
+                135deg,
+                #eef4ff,
+                #ffffff
+            );
+            color: #222;
+        }
+
+        .header {
+            background: #173b7a;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1200px;
+            margin: 35px auto;
+        }
+
+        .title-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+        }
+
+        .title-box h2 {
+            color: #173b7a;
+            margin: 0 0 8px;
+        }
+
+        .table-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #173b7a;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f7f9fc;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .back {
+            display: block;
+            width: fit-content;
+            margin: 25px auto 0;
+            padding: 12px 25px;
+            background: #173b7a;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .back:hover {
+            background: #0f2b5c;
+        }
+
+        @media (max-width: 700px) {
+
+            .header h1 {
+                font-size: 25px;
+            }
+
+            .container {
+                width: 97%;
+            }
+
+        }
+
+        @media print {
+
+            .back {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .table-box,
+            .title-box {
+                box-shadow: none;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="header">
+
+        <h1>
+            Exam Duty
+        </h1>
+
+        <p>
+            Faculty Examination Duty
+        </p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <div class="title-box">
+
+            <h2>
+                My Examination Duty
+            </h2>
+
+            <p>
+                View your assigned examination dates,
+                shifts, rooms and timings.
+            </p>
+
+        </div>
+
+
+        {% if duty_records %}
+
+
+        <div class="table-box">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <th>
+                            Shift
+                        </th>
+
+                        <th>
+                            Time
+                        </th>
+
+                        <th>
+                            Room
+                        </th>
+
+                        <th>
+                            Exam Type
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for duty in duty_records %}
+
+                    <tr>
+
+                        <td>
+                            {{ duty.get("date", "") }}
+                        </td>
+
+                        <td>
+                            {{ duty.get("shift", "") }}
+                        </td>
+
+                        <td>
+                            {{ duty.get("start_time", "") }}
+                            -
+                            {{ duty.get("end_time", "") }}
+                        </td>
+
+                        <td>
+                            {{ duty.get("room", "") }}
+                        </td>
+
+                        <td>
+                            {{ duty.get("exam_type", "") }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        {% else %}
+
+
+        <div class="no-data">
+
+            <h2>
+                No Exam Duty Available
+            </h2>
+
+            <p>
+                Your examination duty has not been distributed yet.
+            </p>
+
+        </div>
+
+
+        {% endif %}
+
+
+        <a
+            href="/faculty-dashboard"
+            class="back"
+        >
+            ← Back to Faculty Portal
+        </a>
+
+
+    </div>
+
+
+</body>
+
+</html>

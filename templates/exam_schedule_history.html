@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Schedule History</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            margin-top: 0;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 11px 18px;
+            background: #555;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .history-card {
+            background: white;
+            padding: 22px;
+            margin-bottom: 20px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.07);
+        }
+
+        .history-card h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(180px, 1fr)
+            );
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .detail-box {
+            background: #f1f6fc;
+            padding: 13px;
+            border-radius: 8px;
+        }
+
+        .detail-box strong {
+            display: block;
+            margin-top: 5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 7px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .view {
+            background: #1769aa;
+            color: white;
+        }
+
+        .delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .empty {
+            background: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.07);
+        }
+
+        .warning {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff4f4;
+            border: 1px solid #f0caca;
+            border-radius: 8px;
+            color: #8a1f1f;
+        }
+
+        @media screen and (max-width: 600px) {
+
+            .container {
+                width: 97%;
+                margin: 15px auto;
+            }
+
+            .header,
+            .history-card {
+                padding: 16px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+
+    <!-- PAGE HEADER -->
+
+    <div class="header">
+
+        <h1>
+            Schedule History
+        </h1>
+
+        <p>
+            Here you can view the examination schedules that have been
+            distributed to students and faculty.
+        </p>
+
+        <a
+            href="/exam-arrangement"
+            class="back-button"
+        >
+            Back to Exam Arrangement
+        </a>
+
+    </div>
+
+
+    {% if history %}
+
+
+        {% for item in history %}
+
+        <div class="history-card">
+
+            <h2>
+                {{ item.get("exam_type", "Examination") }}
+            </h2>
+
+
+            <div class="details">
+
+
+                <div class="detail-box">
+
+                    Schedule ID
+
+                    <strong>
+                        {{ item.get("schedule_id", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-box">
+
+                    Created On
+
+                    <strong>
+                        {{ item.get("created_at", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-box">
+
+                    Exam Type
+
+                    <strong>
+                        {{ item.get("exam_type", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-box">
+
+                    Timetable Entries
+
+                    <strong>
+                        {{ item.get("timetable", [])|length }}
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="warning">
+
+                Deleting this schedule will also remove the corresponding
+                examination schedule data from students and examination
+                duty data from faculty.
+
+            </div>
+
+
+            <div class="actions">
+
+
+                <a
+                    href="/confirm-seating-arrangement"
+                    class="button view"
+                >
+                    View Current Timetable
+                </a>
+
+
+                <a
+                    href="/delete-exam-schedule/{{ item.get('schedule_id', '') }}"
+                    class="button delete"
+                    onclick="return confirm('Are you sure you want to delete this examination schedule? Student exam data and faculty duty data for this schedule will also be removed.');"
+                >
+                    Delete
+                </a>
+
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+
+    {% else %}
+
+
+        <div class="empty">
+
+            <h2>
+                No Schedule History
+            </h2>
+
+            <p>
+                No examination schedule has been distributed yet.
+            </p>
+
+            <a
+                href="/seating-arrangement"
+                class="back-button"
+            >
+                Create Seating Arrangement
+            </a>
+
+        </div>
+
+
+    {% endif %}
+
+
+</div>
+
+</body>
+
+</html>

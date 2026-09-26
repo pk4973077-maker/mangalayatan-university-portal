@@ -1,0 +1,612 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+ 
+<meta charset="UTF-8"> 
+ 
+<title>Seating Arrangement Result</title> 
+ 
+<style> 
+ 
+* { 
+    box-sizing: border-box; 
+} 
+ 
+body { 
+    margin: 0; 
+    font-family: Arial, sans-serif; 
+    background: #f4f7fb; 
+    color: #222; 
+} 
+ 
+.container { 
+    width: 96%; 
+    max-width: 1400px; 
+    margin: 30px auto; 
+} 
+ 
+.header { 
+    background: white; 
+    padding: 25px; 
+    border-radius: 14px; 
+    box-shadow: 0 5px 20px rgba(0,0,0,.08); 
+    margin-bottom: 20px; 
+} 
+ 
+.summary { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); 
+    gap: 12px; 
+    margin-top: 20px; 
+} 
+ 
+.summary-box { 
+    padding: 16px; 
+    background: #eef6ff; 
+    border-radius: 10px; 
+} 
+ 
+.summary-box strong { 
+    display: inline-block; 
+    margin-top: 5px; 
+    font-size: 20px; 
+} 
+ 
+.day { 
+    background: white; 
+    padding: 20px; 
+    border-radius: 14px; 
+    box-shadow: 0 5px 20px rgba(0,0,0,.07); 
+    margin-bottom: 25px; 
+} 
+ 
+.shift { 
+    margin-top: 20px; 
+} 
+ 
+.shift-title { 
+    padding: 14px 16px; 
+    background: #eef6ff; 
+    border-radius: 10px; 
+    border-left: 5px solid #1769aa; 
+} 
+ 
+.room { 
+    margin-top: 15px; 
+    border: 1px solid #ddd; 
+    border-radius: 10px; 
+    overflow: hidden; 
+    background: white; 
+} 
+ 
+.room-header { 
+    background: #f0f0f0; 
+    padding: 15px; 
+    font-weight: bold; 
+} 
+ 
+.faculty { 
+    padding: 12px; 
+    background: #fff8e8; 
+    border-bottom: 1px solid #eee; 
+} 
+ 
+/* -------------------------------------------------- 
+   SUBJECT TOTAL 
+-------------------------------------------------- */ 
+ 
+.subject-summary { 
+    padding: 14px; 
+    background: #f3f9ff; 
+    border-bottom: 1px solid #ddd; 
+} 
+ 
+.subject-summary-title { 
+    font-weight: bold; 
+    margin-bottom: 10px; 
+} 
+ 
+.subject-list { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+} 
+ 
+.subject-item { 
+    display: inline-block; 
+    padding: 8px 12px; 
+    background: white; 
+    border: 1px solid #cfd8e3; 
+    border-radius: 7px; 
+    font-size: 14px; 
+    font-weight: bold; 
+} 
+ 
+.table-wrapper { 
+    width: 100%; 
+    overflow-x: auto; 
+} 
+ 
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+} 
+ 
+th, 
+td { 
+    border: 1px solid #ddd; 
+    padding: 9px; 
+    text-align: left; 
+    font-size: 14px; 
+} 
+ 
+th { 
+    background: #f5f5f5; 
+} 
+ 
+.actions { 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; 
+    margin-top: 20px; 
+} 
+ 
+.button { 
+    display: inline-block; 
+    padding: 11px 18px; 
+    border-radius: 7px; 
+    text-decoration: none; 
+    border: none; 
+    cursor: pointer; 
+    background: #1769aa; 
+    color: white; 
+    font-size: 14px; 
+} 
+ 
+.new { 
+    background: #666; 
+} 
+ 
+.error-box { 
+    margin-top: 20px; 
+    padding: 16px; 
+    background: #ffe8e8; 
+    border: 1px solid #f0aaaa; 
+    border-radius: 10px; 
+    color: #8b0000; 
+} 
+ 
+.no-data { 
+    background: white; 
+    padding: 25px; 
+    border-radius: 14px; 
+    box-shadow: 0 5px 20px rgba(0,0,0,.07); 
+    text-align: center; 
+} 
+ 
+@media screen and (max-width:700px) { 
+ 
+    .container { 
+        width: 98%; 
+        margin: 15px auto; 
+    } 
+ 
+    .header, 
+    .day { 
+        padding: 15px; 
+    } 
+ 
+    th, 
+    td { 
+        font-size: 12px; 
+        padding: 7px; 
+    } 
+ 
+    .room-header { 
+        line-height: 1.8; 
+    } 
+} 
+ 
+@media print { 
+ 
+    @page { 
+        size: A4 landscape; 
+        margin: 10mm; 
+    } 
+ 
+    .actions { 
+        display: none; 
+    } 
+ 
+    body { 
+        background: white; 
+    } 
+ 
+    .header, 
+    .day { 
+        box-shadow: none; 
+    } 
+ 
+    .header { 
+        border: 1px solid #ddd; 
+    } 
+ 
+    .day { 
+        page-break-before: auto; 
+        break-inside: avoid; 
+    } 
+ 
+    .room, 
+    .shift { 
+        break-inside: avoid; 
+    } 
+ 
+    table { 
+        page-break-inside: auto; 
+    } 
+ 
+    tr { 
+        page-break-inside: avoid; 
+    } 
+ 
+    .button { 
+        display: none; 
+    } 
+ 
+} 
+ 
+</style> 
+ 
+</head> 
+ 
+<body> 
+ 
+<div class="container"> 
+ 
+<div class="header"> 
+ 
+<h1>Seating Arrangement</h1> 
+ 
+<h3>{{ exam_type }}</h3> 
+ 
+<div class="summary"> 
+ 
+<div class="summary-box"> 
+Total Students 
+<br> 
+<strong>{{ total_students }}</strong> 
+</div> 
+ 
+<div class="summary-box"> 
+Scheduled Student Seats 
+<br> 
+<strong>{{ total_scheduled_slots }}</strong> 
+</div> 
+ 
+<div class="summary-box"> 
+Selected Rooms 
+<br> 
+<strong>{{ total_rooms }}</strong> 
+</div> 
+ 
+<div class="summary-box"> 
+Total Capacity 
+<br> 
+<strong>{{ total_capacity }}</strong> 
+</div> 
+ 
+</div> 
+ 
+{% if generation_error %} 
+ 
+<div class="error-box"> 
+ 
+<strong> 
+Arrangement could not be generated completely. 
+</strong> 
+ 
+<br><br> 
+ 
+{{ generation_error }} 
+ 
+</div> 
+ 
+{% endif %} 
+ 
+<div class="actions"> 
+ 
+<button 
+    onclick="window.print();" 
+    class="button" 
+> 
+Print 
+</button> 
+ 
+<a 
+    href="/clear-seating-arrangement" 
+    class="button new" 
+> 
+Create New Arrangement 
+</a> 
+ 
+<a 
+    href="/confirm-seating-arrangement" 
+    class="button"
+> 
+Confirm & Give Data 
+</a> 
+ 
+</div> 
+ 
+</div> 
+ 
+ 
+{% if arrangement %} 
+ 
+{% for day in arrangement %} 
+ 
+<div class="day"> 
+ 
+<h2> 
+Date: {{ day.display_date }} 
+</h2> 
+ 
+ 
+{% for shift in day.shifts %} 
+ 
+<div class="shift"> 
+ 
+<div class="shift-title"> 
+ 
+<h3> 
+{{ shift.name }} 
+ 
+&nbsp; 
+ 
+({{ shift.start_time }} - {{ shift.end_time }}) 
+ 
+</h3> 
+ 
+</div> 
+ 
+ 
+{% for room in shift.rooms %} 
+ 
+<div class="room"> 
+ 
+<div class="room-header"> 
+ 
+Room: 
+{{ room.room_name }} 
+ 
+&nbsp;&nbsp; 
+ 
+Capacity: 
+{{ room.capacity }} 
+ 
+&nbsp;&nbsp; 
+ 
+Students: 
+{{ room.student_count }} 
+ 
+</div> 
+ 
+ 
+{% if room.faculty %} 
+ 
+<div class="faculty"> 
+ 
+<strong> 
+Faculty Duty: 
+</strong> 
+ 
+{% for member in room.faculty %} 
+ 
+{{ member.name }} 
+ 
+{% if not loop.last %} 
+, 
+{% endif %} 
+ 
+{% endfor %} 
+ 
+</div> 
+ 
+{% endif %} 
+ 
+ 
+<!-- ================================================== 
+     SUBJECT TOTAL FOR THIS ROOM 
+     ================================================== --> 
+ 
+{% if room.students %} 
+ 
+<div class="subject-summary"> 
+ 
+<div class="subject-summary-title"> 
+ 
+Subjects in this Room: 
+ 
+</div> 
+ 
+ 
+<div class="subject-list"> 
+ 
+{% set subject_counts = {} %} 
+ 
+{% for student in room.students %} 
+ 
+{% set subject_name = student.subject %} 
+ 
+{% if subject_name %} 
+ 
+{% if subject_name in subject_counts %} 
+ 
+{% set _ = subject_counts.update({ 
+    subject_name: subject_counts[subject_name] + 1 
+}) %} 
+ 
+{% else %} 
+ 
+{% set _ = subject_counts.update({ 
+    subject_name: 1 
+}) %} 
+ 
+{% endif %} 
+ 
+{% endif %} 
+ 
+{% endfor %} 
+ 
+ 
+{% for subject, count in subject_counts.items() %} 
+ 
+<span class="subject-item"> 
+ 
+{{ subject }} = {{ count }} 
+ 
+</span> 
+ 
+{% endfor %} 
+ 
+</div> 
+ 
+</div> 
+ 
+{% endif %} 
+ 
+ 
+<!-- ================================================== 
+     STUDENT TABLE 
+     ================================================== --> 
+ 
+<div class="table-wrapper"> 
+ 
+<table> 
+ 
+<thead> 
+ 
+<tr> 
+ 
+<th> 
+Seat 
+</th> 
+ 
+<th> 
+Student Name 
+</th> 
+ 
+<th> 
+Enrollment 
+</th> 
+ 
+<th> 
+Department 
+</th> 
+ 
+<th> 
+Course 
+</th> 
+ 
+<th> 
+Semester 
+</th> 
+ 
+<th> 
+Subject 
+</th> 
+ 
+</tr> 
+ 
+</thead> 
+ 
+ 
+<tbody> 
+ 
+{% for student in room.students %} 
+ 
+<tr> 
+ 
+<td> 
+{{ student.seat_no }} 
+</td> 
+ 
+<td> 
+{{ student.student_name }} 
+</td> 
+ 
+<td> 
+{{ student.enrollment }} 
+</td> 
+ 
+<td> 
+{{ student.department }} 
+</td> 
+ 
+<td> 
+{{ student.course }} 
+</td> 
+ 
+<td> 
+{{ student.semester }} 
+</td> 
+ 
+<td> 
+{{ student.subject }} 
+</td> 
+ 
+</tr> 
+ 
+{% endfor %} 
+ 
+</tbody> 
+ 
+</table> 
+ 
+</div> 
+ 
+</div> 
+ 
+{% endfor %} 
+ 
+</div> 
+ 
+{% endfor %} 
+ 
+</div> 
+ 
+{% endfor %} 
+ 
+ 
+{% else %} 
+ 
+<div class="no-data"> 
+ 
+<h3> 
+No seating arrangement was generated. 
+</h3> 
+ 
+{% if generation_error %} 
+ 
+<p> 
+{{ generation_error }} 
+</p> 
+ 
+{% else %} 
+ 
+<p> 
+Please select rooms, departments, examination dates and shifts, 
+then generate the arrangement again. 
+</p> 
+ 
+{% endif %} 
+ 
+</div> 
+ 
+{% endif %} 
+ 
+</div> 
+ 
+</body> 
+ 
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Seating Arrangement - Rooms</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(230px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .room {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 16px;
+            background: #fafafa;
+        }
+
+        .room input {
+            margin-right: 8px;
+        }
+
+        .capacity {
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .button {
+            border: none;
+            padding: 12px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            background: #1769aa;
+            color: white;
+        }
+
+        .button.secondary {
+            background: #666;
+        }
+
+        .total {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eef6ff;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .actions {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+    </style>
+
+    <script>
+
+        function toggleRoomMode() {
+
+            const mode =
+                document.querySelector(
+                    'input[name="room_mode"]:checked'
+                );
+
+            const roomArea =
+                document.getElementById(
+                    "roomArea"
+                );
+
+            const allRooms =
+                document.getElementById(
+                    "all_rooms"
+                );
+
+            if (!mode) {
+                return;
+            }
+
+            if (mode.value === "all") {
+
+                roomArea.classList.add(
+                    "hidden"
+                );
+
+                allRooms.value = "1";
+
+            } else {
+
+                roomArea.classList.remove(
+                    "hidden"
+                );
+
+                allRooms.value = "0";
+            }
+
+            updateCapacity();
+        }
+
+
+        function updateCapacity() {
+
+            const checkboxes =
+                document.querySelectorAll(
+                    '.room-checkbox:checked'
+                );
+
+            let total = 0;
+
+            checkboxes.forEach(
+                function(box) {
+
+                    total += parseInt(
+                        box.dataset.capacity || 0
+                    );
+
+                }
+            );
+
+            const allRooms =
+                document.getElementById(
+                    "all_rooms"
+                );
+
+            if (
+                allRooms &&
+                allRooms.value === "1"
+            ) {
+
+                document.querySelectorAll(
+                    '.room-checkbox'
+                ).forEach(
+                    function(box) {
+
+                        total += 0;
+
+                    }
+                );
+
+                total = 0;
+
+                document.querySelectorAll(
+                    '.room-checkbox'
+                ).forEach(
+                    function(box) {
+
+                        total += parseInt(
+                            box.dataset.capacity || 0
+                        );
+
+                    }
+                );
+            }
+
+            document.getElementById(
+                "totalCapacity"
+            ).innerText =
+                total;
+        }
+
+
+        function selectAllRooms() {
+
+            document.querySelectorAll(
+                ".room-checkbox"
+            ).forEach(
+                function(box) {
+
+                    box.checked = true;
+
+                }
+            );
+
+            updateCapacity();
+        }
+
+
+        function clearRooms() {
+
+            document.querySelectorAll(
+                ".room-checkbox"
+            ).forEach(
+                function(box) {
+
+                    box.checked = false;
+
+                }
+            );
+
+            updateCapacity();
+        }
+
+    </script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>
+            Seating Arrangement
+        </h1>
+
+        <p>
+            Step 1: Select Examination Rooms
+        </p>
+
+        <form
+            method="POST"
+            action="/seating-arrangement"
+            onsubmit="return validateRooms();"
+        >
+
+            <input
+                type="hidden"
+                id="all_rooms"
+                name="all_rooms"
+                value="1"
+            >
+
+            <label>
+                <input
+                    type="radio"
+                    name="room_mode"
+                    value="all"
+                    checked
+                    onclick="toggleRoomMode();"
+                >
+                All Rooms
+            </label>
+
+            &nbsp;&nbsp;
+
+            <label>
+                <input
+                    type="radio"
+                    name="room_mode"
+                    value="select"
+                    onclick="toggleRoomMode();"
+                >
+                Select Rooms
+            </label>
+
+            <div
+                id="roomArea"
+                class="room-grid hidden"
+            >
+
+                {% for room in rooms %}
+
+                <div class="room">
+
+                    <label>
+
+                        <input
+                            type="checkbox"
+                            class="room-checkbox"
+                            name="selected_rooms"
+                            value="{{ loop.index0 }}"
+                            data-capacity="{{ room.capacity }}"
+                            onchange="updateCapacity();"
+                        >
+
+                        <strong>
+                            {{ room.room_name }}
+                        </strong>
+
+                    </label>
+
+                    <div class="capacity">
+
+                        Capacity:
+                        {{ room.capacity }}
+
+                    </div>
+
+                </div>
+
+                {% else %}
+
+                <p>
+                    No university rooms found.
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+            <div class="actions">
+
+                <button
+                    type="button"
+                    class="button secondary"
+                    onclick="selectAllRooms();"
+                >
+                    Select All
+                </button>
+
+                <button
+                    type="button"
+                    class="button secondary"
+                    onclick="clearRooms();"
+                >
+                    Clear
+                </button>
+
+            </div>
+
+            <div class="total">
+
+                Total Selected Capacity:
+                <span id="totalCapacity">
+                    0
+                </span>
+
+            </div>
+
+            <div class="actions">
+
+                <a
+                    href="/exam-arrangement"
+                    class="button secondary"
+                    style="text-decoration:none;"
+                >
+                    Back
+                </a>
+
+                <button
+                    type="submit"
+                    class="button"
+                >
+                    Continue
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+    function validateRooms() {
+
+        const mode =
+            document.querySelector(
+                'input[name="room_mode"]:checked'
+            );
+
+        if (!mode) {
+            alert(
+                "Please select room option."
+            );
+            return false;
+        }
+
+        if (mode.value === "select") {
+
+            const selected =
+                document.querySelectorAll(
+                    ".room-checkbox:checked"
+                );
+
+            if (selected.length === 0) {
+
+                alert(
+                    "Please select at least one room."
+                );
+
+                return false;
+            }
+
+        }
+
+        return true;
+    }
+
+
+    toggleRoomMode();
+
+</script>
+
+</body>
+</html>

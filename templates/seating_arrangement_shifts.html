@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Seating Arrangement - Shifts
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1000px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+        }
+
+        .shift {
+            border: 1px solid #ddd;
+            padding: 18px;
+            border-radius: 10px;
+            margin-top: 15px;
+            background: #fafafa;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns:
+                1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+        }
+
+        button,
+        .button {
+            border: none;
+            background: #1769aa;
+            color: white;
+            padding: 11px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .delete {
+            background: #b3261e;
+            margin-top: 12px;
+        }
+
+        .secondary {
+            background: #666;
+        }
+
+        .exam-type {
+            margin-top: 25px;
+            padding: 18px;
+            background: #eef6ff;
+            border-radius: 10px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        @media(max-width:700px) {
+
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>
+            Seating Arrangement
+        </h1>
+
+        <p>
+            Step 4: Examination Shifts
+        </p>
+
+        <form
+            method="POST"
+            action="/seating-arrangement-shifts"
+            id="shiftForm"
+        >
+
+            <div id="shiftContainer"></div>
+
+            <button
+                type="button"
+                onclick="addShift();"
+            >
+                + Add Shift
+            </button>
+
+            <div class="exam-type">
+
+                <h3>
+                    Examination Type
+                </h3>
+
+                <label>
+
+                    <input
+                        type="radio"
+                        name="exam_type"
+                        value="Class Test"
+                        style="width:auto;"
+                        {% if exam_type == "Class Test" %}
+                            checked
+                        {% endif %}
+                    >
+
+                    Class Test
+
+                </label>
+
+                <br><br>
+
+                <label>
+
+                    <input
+                        type="radio"
+                        name="exam_type"
+                        value="Major Exam"
+                        style="width:auto;"
+                        {% if exam_type == "Major Exam" %}
+                            checked
+                        {% endif %}
+                    >
+
+                    Major Exam
+
+                </label>
+
+            </div>
+
+            <div class="actions">
+
+                <a
+                    href="/seating-arrangement-dates"
+                    class="button secondary"
+                >
+                    Back
+                </a>
+
+                <button
+                    type="submit"
+                >
+                    Generate Seating Arrangement
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+
+    let shiftCount = 0;
+
+
+    function addShift(
+        name = "",
+        start = "",
+        end = ""
+    ) {
+
+        const container =
+            document.getElementById(
+                "shiftContainer"
+            );
+
+        const box =
+            document.createElement(
+                "div"
+            );
+
+        box.className =
+            "shift";
+
+        box.innerHTML = `
+
+            <div class="row">
+
+                <div>
+
+                    <label>
+                        Shift Name
+                    </label>
+
+                    <input
+                        type="text"
+                        name="shift_name"
+                        value="${name}"
+                        placeholder="Morning Shift"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>
+                        Start Time
+                    </label>
+
+                    <input
+                        type="time"
+                        name="start_time"
+                        value="${start}"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>
+                        End Time
+                    </label>
+
+                    <input
+                        type="time"
+                        name="end_time"
+                        value="${end}"
+                    >
+
+                </div>
+
+            </div>
+
+            <button
+                type="button"
+                class="delete"
+                onclick="this.parentElement.remove();"
+            >
+                Delete Shift
+            </button>
+
+        `;
+
+        container.appendChild(box);
+
+        shiftCount++;
+
+    }
+
+
+    {% if selected_shifts %}
+
+        {% for shift in selected_shifts %}
+
+            addShift(
+                "{{ shift.name|e }}",
+                "{{ shift.start_time|e }}",
+                "{{ shift.end_time|e }}"
+            );
+
+        {% endfor %}
+
+    {% else %}
+
+        addShift();
+
+    {% endif %}
+
+
+    document.getElementById(
+        "shiftForm"
+    ).addEventListener(
+        "submit",
+        function(event) {
+
+            const shifts =
+                document.querySelectorAll(
+                    ".shift"
+                );
+
+            if (
+                shifts.length === 0
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please add at least one shift."
+                );
+
+                return;
+            }
+
+            const examType =
+                document.querySelector(
+                    'input[name="exam_type"]:checked'
+                );
+
+            if (!examType) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please select examination type."
+                );
+
+            }
+
+        }
+    );
+
+</script>
+
+</body>
+</html>

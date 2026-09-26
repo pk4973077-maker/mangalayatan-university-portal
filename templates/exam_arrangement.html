@@ -1,0 +1,352 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+ 
+<head> 
+ 
+    <meta charset="UTF-8"> 
+ 
+    <meta name="viewport" 
+          content="width=device-width, initial-scale=1.0"> 
+ 
+    <title>Exam Arrangement</title> 
+ 
+    <style> 
+ 
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        } 
+ 
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #eef4ff, #ffffff); 
+            min-height: 100vh; 
+        } 
+ 
+        .header { 
+            background: #173b7a; 
+            color: white; 
+            padding: 25px; 
+            text-align: center; 
+        } 
+ 
+        .header h1 { 
+            font-size: 30px; 
+            margin-bottom: 8px; 
+        } 
+ 
+        .header p { 
+            font-size: 16px; 
+        } 
+ 
+        .container { 
+            width: 90%; 
+            max-width: 1200px; 
+            margin: 50px auto; 
+        } 
+ 
+        .title { 
+            text-align: center; 
+            margin-bottom: 35px; 
+        } 
+ 
+        .title h2 { 
+            color: #173b7a; 
+            font-size: 28px; 
+        } 
+ 
+        .title p { 
+            color: #666; 
+            margin-top: 8px; 
+        } 
+ 
+        .cards { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 30px; 
+        } 
+ 
+        .card { 
+            background: white; 
+            border-radius: 18px; 
+            padding: 40px 25px; 
+            text-align: center; 
+            text-decoration: none; 
+            color: #222; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.10); 
+            transition: 0.3s; 
+            border: 1px solid #e5e5e5; 
+        } 
+ 
+        .card:hover { 
+            transform: translateY(-7px); 
+            box-shadow: 0 12px 30px rgba(0,0,0,0.16); 
+        } 
+ 
+        .icon { 
+            font-size: 55px; 
+            margin-bottom: 20px; 
+        } 
+ 
+        .card h3 { 
+            color: #173b7a; 
+            font-size: 23px; 
+            margin-bottom: 12px; 
+        } 
+ 
+        .card p { 
+            color: #666; 
+            font-size: 15px; 
+        } 
+ 
+        .card-button { 
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 12px 22px; 
+            background: #173b7a; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-size: 15px; 
+        } 
+ 
+        .card-button:hover { 
+            background: #0f2b5c; 
+        } 
+ 
+        .back { 
+            display: block; 
+            width: fit-content; 
+            margin: 40px auto 0; 
+            padding: 12px 25px; 
+            background: #173b7a; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px; 
+        } 
+ 
+        .back:hover { 
+            background: #0f2b5c; 
+        } 
+ 
+        @media (max-width: 1100px) { 
+ 
+            .cards { 
+                grid-template-columns: repeat(2, 1fr); 
+            } 
+ 
+        } 
+ 
+        @media (max-width: 700px) { 
+ 
+            .cards { 
+                grid-template-columns: 1fr; 
+            } 
+ 
+            .header h1 { 
+                font-size: 25px; 
+            } 
+ 
+            .title h2 { 
+                font-size: 24px; 
+            } 
+ 
+        } 
+ 
+    </style> 
+ 
+</head> 
+ 
+ 
+<body> 
+ 
+ 
+    <div class="header"> 
+ 
+        <h1> 
+            Exam Arrangement 
+        </h1> 
+ 
+        <p> 
+            University Examination Management 
+        </p> 
+ 
+    </div> 
+ 
+ 
+    <div class="container"> 
+ 
+ 
+        <div class="title"> 
+ 
+            <h2> 
+                Exam Arrangement Management 
+            </h2> 
+ 
+            <p> 
+                Manage university rooms, capacities and examination seating. 
+            </p> 
+ 
+        </div> 
+ 
+ 
+        <div class="cards"> 
+ 
+ 
+            <!-- UNIVERSITY ROOM & CAPACITY --> 
+ 
+            <a href="/university-room-capacity" 
+               class="card"> 
+ 
+                <div class="icon"> 
+                    🏫 
+                </div> 
+ 
+                <h3> 
+                    University Room & Capacity 
+                </h3> 
+ 
+                <p> 
+                    Add and manage examination rooms 
+                    and their seating capacity. 
+                </p> 
+ 
+            </a> 
+ 
+ 
+            <!-- SEATING ARRANGEMENT --> 
+ 
+            <a href="/seating-arrangement" 
+               class="card"> 
+ 
+                <div class="icon"> 
+                    🪑 
+                </div> 
+ 
+                <h3> 
+                    Seating Arrangement 
+                </h3> 
+ 
+                <p> 
+                    Manage student seating 
+                    arrangements for examinations. 
+                </p> 
+ 
+            </a> 
+ 
+ 
+            <!-- SCHEDULE HISTORY --> 
+ 
+            <div class="card"> 
+ 
+                <div class="icon"> 
+                    📋 
+                </div> 
+ 
+                <h3> 
+                    Schedule History 
+                </h3> 
+ 
+                <p> 
+                    View and manage previously distributed 
+                    examination schedules and exam data. 
+                </p> 
+ 
+                <a 
+                    href="/exam-schedule-history" 
+                    class="card-button" 
+                > 
+                    Open Schedule History 
+                </a> 
+ 
+            </div> 
+
+
+            <!-- SCHEDULE PAPER DISTRIBUTION & ATTENDANCE --> 
+ 
+            <div class="card"> 
+ 
+                <div class="icon"> 
+                    📝 
+                </div> 
+ 
+                <h3> 
+                    Schedule Paper Distribution & Attendance 
+                </h3> 
+ 
+                <p> 
+                    Manage room-wise paper distribution, 
+                    answer sheets and examination attendance. 
+                </p> 
+ 
+                <a 
+                    href="/schedule-paper-distribution" 
+                    class="card-button" 
+                > 
+                    Open Paper Distribution 
+                </a> 
+ 
+            </div> 
+
+
+            <div
+    style="
+        display:flex;
+        gap:12px;
+        justify-content:center;
+        margin:20px 0;
+        flex-wrap:wrap;
+    "
+>
+
+    <a
+        href="/exam-arrangement-change-credentials"
+        style="
+            display:inline-block;
+            padding:12px 20px;
+            background:#1d4685;
+            color:white;
+            text-decoration:none;
+            border-radius:8px;
+            font-weight:bold;
+        "
+    >
+        Change ID & Password
+    </a>
+
+    <a
+        href="/exam-arrangement-logout"
+        style="
+            display:inline-block;
+            padding:12px 20px;
+            background:#b00020;
+            color:white;
+            text-decoration:none;
+            border-radius:8px;
+            font-weight:bold;
+        "
+    >
+        Logout
+    </a>
+
+</div>
+ 
+ 
+        </div> 
+ 
+ 
+        <a href="/" 
+           class="back"> 
+ 
+            ← Back to Portal 
+ 
+        </a> 
+ 
+ 
+    </div> 
+ 
+ 
+</body> 
+ 
+</html>
