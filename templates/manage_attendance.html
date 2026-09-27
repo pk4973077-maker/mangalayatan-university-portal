@@ -646,27 +646,53 @@ const courseOptions =
 
 
 /* =========================
-   ADMIN SUBJECT DATA
+   FACULTY ASSIGNED SUBJECT DATA
+   Course + Semester + Section + Subject
    ========================= */
 
-const subjects = [
+let facultyAssignments = [];
 
-    {% for subject in subjects %}
+async function loadFacultyAssignments() {
 
-    {
-        name:
-            {{ subject.get("subject_name", "") | tojson }},
+    try {
 
-        course:
-            {{ subject.get("course", "") | tojson }},
+        const response = await fetch(
+            "/faculty-assigned-options",
+            {
+                method: "GET",
+                credentials: "same-origin"
+            }
+        );
 
-        semester:
-            {{ subject.get("semester", "") | tojson }}
-    },
+        if (!response.ok) {
+            facultyAssignments = [];
+            filterSubjects();
+            return;
+        }
 
-    {% endfor %}
+        const data = await response.json();
 
-];
+        facultyAssignments =
+            Array.isArray(data.assignments)
+                ? data.assignments
+                : [];
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unable to load faculty assignments:",
+            error
+        );
+
+        facultyAssignments = [];
+
+    }
+
+    filterSubjects();
+}
+
 
 /* =========================
    FILTER STUDENTS
@@ -799,153 +825,124 @@ function filterStudents() {
 
 /* =========================
    FILTER SUBJECTS
-   COURSE + SEMESTER
+   FACULTY ASSIGNED
+   COURSE + SEMESTER + SECTION
    ========================= */
 
 function filterSubjects() {
 
-
     const semester =
-        semesterSelect.value;
-
+        String(semesterSelect.value || "").trim();
 
     const course =
-        courseValue.value;
+        String(courseValue.value || "").trim();
 
+    const section =
+        String(sectionSelect.value || "").trim().toUpperCase();
 
     subjectSelect.innerHTML = "";
 
+    if (!course || !semester || !section) {
 
-    if (!semester || !course) {
-
-
-        const option =
-            document.createElement("option");
-
+        const option = document.createElement("option");
 
         option.value = "";
 
-
         option.textContent =
-            "Select Course and Semester first";
-
+            "Select Course, Semester and Section first";
 
         subjectSelect.appendChild(option);
 
-
         return;
-
     }
 
-
-    const defaultOption =
-        document.createElement("option");
-
+    const defaultOption = document.createElement("option");
 
     defaultOption.value = "";
 
+    defaultOption.textContent = "Select Subject";
 
-    defaultOption.textContent =
-        "Select Subject";
-
-
-    subjectSelect.appendChild(
-        defaultOption
-    );
-
+    subjectSelect.appendChild(defaultOption);
 
     let found = false;
 
+    const addedSubjects = new Set();
 
-    subjects.forEach(function(subject) {
+    facultyAssignments.forEach(function(assignment) {
 
+        const assignmentCourse =
+            String(
+                assignment.course ||
+                assignment.course_name ||
+                ""
+            ).trim().toLowerCase();
 
-        const subjectCourse =
-            String(subject.course || "")
-                .trim()
-                .toLowerCase();
+        const assignmentSemester =
+            String(
+                assignment.semester ||
+                assignment.sem ||
+                ""
+            ).trim();
 
+        const assignmentSection =
+            String(
+                assignment.section || ""
+            ).trim().toUpperCase();
 
-        const selectedCourseName =
-            String(course || "")
-                .trim()
-                .toLowerCase();
-
-
-        const subjectSemester =
-            String(subject.semester || "")
-                .trim();
-
-
-        const selectedSemester =
-            String(semester || "")
-                .trim();
-
+        const assignmentSubject =
+            String(
+                assignment.subject ||
+                assignment.subject_name ||
+                assignment.name ||
+                ""
+            ).trim();
 
         if (
-
-            subjectCourse ===
-                selectedCourseName
-
+            assignmentCourse === course.toLowerCase()
             &&
-
-            subjectSemester ===
-                selectedSemester
-
+            assignmentSemester === semester
+            &&
+            assignmentSection === section
+            &&
+            assignmentSubject
+            &&
+            !addedSubjects.has(
+                assignmentSubject.toLowerCase()
+            )
         ) {
-
 
             const option =
                 document.createElement("option");
 
+            option.value = assignmentSubject;
 
-            option.value =
-                subject.name;
+            option.textContent = assignmentSubject;
 
+            subjectSelect.appendChild(option);
 
-            option.textContent =
-                subject.name;
-
-
-            subjectSelect.appendChild(
-                option
+            addedSubjects.add(
+                assignmentSubject.toLowerCase()
             );
 
-
             found = true;
-
         }
-
 
     });
 
-
     if (!found) {
-
 
         subjectSelect.innerHTML = "";
 
-
-        const option =
-            document.createElement("option");
-
+        const option = document.createElement("option");
 
         option.value = "";
 
-
         option.textContent =
-            "No Subject Found";
+            "No Assigned Subject Found";
 
-
-        subjectSelect.appendChild(
-            option
-        );
-
+        subjectSelect.appendChild(option);
     }
-
-
 }
-
 
 
 /* =========================
@@ -1122,6 +1119,8 @@ sectionSelect.addEventListener(
     "change",
     function() {
 
+        filterSubjects();
+
         filterStudents();
 
     }
@@ -1292,7 +1291,7 @@ document.addEventListener(
 
 filterStudents();
 
-filterSubjects();
+loadFacultyAssignments();
 
 
 </script>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response
+from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response, flash
 from flask import make_response
 import base64
 import qrcode
@@ -2466,7 +2466,9 @@ def manage_attendance():
         for item in courses:
 
             if (
-                str(item.get("name", "")).strip().lower()
+                str(
+                    item.get("name", "")
+                ).strip().lower()
                 == course.lower()
             ):
                 valid_course = True
@@ -2509,7 +2511,32 @@ def manage_attendance():
 
 
         if not valid_subject:
-            return "Invalid Subject for selected Course and Semester."
+            return (
+                "Invalid Subject for selected "
+                "Course and Semester."
+            )
+
+
+        # =========================
+        # FACULTY ASSIGNMENT CHECK
+        # COURSE + SEMESTER + SECTION + SUBJECT
+        # =========================
+        assignment_allowed = (
+            faculty_subject_assignment_allowed(
+                faculty_id,
+                course,
+                semester,
+                section,
+                subject
+            )
+        )
+
+        if not assignment_allowed:
+            return (
+                "This subject is not assigned to you "
+                "for the selected Course, Semester "
+                "and Section."
+            )
 
 
         # =========================
@@ -2579,45 +2606,72 @@ def manage_attendance():
             except:
                 attendance_data = []
 
+
         # =========================
         # DUPLICATE ATTENDANCE CHECK
         # =========================
         for old_record in attendance_data:
 
             if (
-                str(old_record.get("date", "")).strip()
+                str(
+                    old_record.get(
+                        "date", ""
+                    )
+                ).strip()
                 == date
 
                 and
 
-                str(old_record.get("course", "")).strip().lower()
+                str(
+                    old_record.get(
+                        "course", ""
+                    )
+                ).strip().lower()
                 == course.lower()
 
                 and
 
-                str(old_record.get("subject", "")).strip().lower()
+                str(
+                    old_record.get(
+                        "subject", ""
+                    )
+                ).strip().lower()
                 == subject.lower()
 
                 and
 
-                str(old_record.get("semester", "")).strip()
+                str(
+                    old_record.get(
+                        "semester", ""
+                    )
+                ).strip()
                 == semester
 
                 and
 
-                str(old_record.get("section", "")).strip().upper()
+                str(
+                    old_record.get(
+                        "section", ""
+                    )
+                ).strip().upper()
                 == section.upper()
 
                 and
 
-                str(old_record.get("group", "")).strip().upper()
+                str(
+                    old_record.get(
+                        "group", ""
+                    )
+                ).strip().upper()
                 == group
             ):
 
                 return (
                     "You have done present on this day "
-                    "for this course, semester, section and subject."
+                    "for this course, semester, section "
+                    "and subject."
                 )
+
 
         # =========================
         # SAVE EACH STUDENT
@@ -2640,22 +2694,39 @@ def manage_attendance():
 
 
             record = {
-                "faculty_id": faculty_id,
-                "faculty_name": faculty_name,
 
-                "date": date,
+                "faculty_id":
+                    faculty_id,
 
-                "course": course,
-                "subject": subject,
+                "faculty_name":
+                    faculty_name,
 
-                "semester": semester,
-                "section": section,
-                "group": group,
+                "date":
+                    date,
 
-                "student_id": enrollment,
-                "student_name": student_name,
+                "course":
+                    course,
 
-                "status": status
+                "subject":
+                    subject,
+
+                "semester":
+                    semester,
+
+                "section":
+                    section,
+
+                "group":
+                    group,
+
+                "student_id":
+                    enrollment,
+
+                "student_name":
+                    student_name,
+
+                "status":
+                    status
             }
 
 
@@ -21209,6 +21280,2540 @@ def download_paper_distribution_excel():
             "officedocument.spreadsheetml.sheet"
         )
     )
+
+
+
+# ============================================================
+# FACULTY SUBJECT ASSIGNMENTS
+# ============================================================
+
+FACULTY_SUBJECT_ASSIGNMENTS_FILE = "faculty_subject_assignments.json"
+
+
+# ============================================================
+# LOAD FACULTY SUBJECT ASSIGNMENTS
+# ============================================================
+
+def load_faculty_subject_assignments():
+
+    try:
+
+        if not os.path.exists(
+            FACULTY_SUBJECT_ASSIGNMENTS_FILE
+        ):
+            return []
+
+        with open(
+            FACULTY_SUBJECT_ASSIGNMENTS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            data = json.load(f)
+
+        # CURRENT FORMAT = LIST
+        if isinstance(data, list):
+            return data
+
+        # OLD FORMAT = DICTIONARY
+        if isinstance(data, dict):
+
+            converted = []
+
+            for faculty_id, faculty_assignments in data.items():
+
+                if not isinstance(
+                    faculty_assignments,
+                    list
+                ):
+                    continue
+
+                for item in faculty_assignments:
+
+                    if not isinstance(
+                        item,
+                        dict
+                    ):
+                        continue
+
+                    converted.append({
+
+                        "faculty_id":
+                            str(
+                                item.get(
+                                    "faculty_id",
+                                    faculty_id
+                                )
+                            ).strip(),
+
+                        "faculty_name":
+                            str(
+                                item.get(
+                                    "faculty_name",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "department":
+                            str(
+                                item.get(
+                                    "department",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "course":
+                            str(
+                                item.get(
+                                    "course",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "semester":
+                            str(
+                                item.get(
+                                    "semester",
+                                    ""
+                                )
+                            ).strip(),
+
+                        "section":
+                            str(
+                                item.get(
+                                    "section",
+                                    ""
+                                )
+                            ).strip().upper(),
+
+                        "subject":
+                            str(
+                                item.get(
+                                    "subject",
+                                    ""
+                                )
+                            ).strip()
+
+                    })
+
+            return converted
+
+        return []
+
+    except Exception as e:
+
+        print(
+            "LOAD FACULTY SUBJECT ASSIGNMENTS ERROR:",
+            e
+        )
+
+        return []
+
+
+# ============================================================
+# SAVE FACULTY SUBJECT ASSIGNMENTS
+# ============================================================
+
+def save_faculty_subject_assignments(data):
+
+    if not isinstance(
+        data,
+        list
+    ):
+        data = []
+
+    with open(
+        FACULTY_SUBJECT_ASSIGNMENTS_FILE,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        json.dump(
+            data,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
+
+
+# ============================================================
+# GET FACULTY ASSIGNMENTS
+# ============================================================
+
+def get_faculty_assignments(faculty_id):
+
+    faculty_id = str(
+        faculty_id
+    ).strip()
+
+    all_assignments = (
+        load_faculty_subject_assignments()
+    )
+
+    result = []
+
+    for item in all_assignments:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        item_faculty_id = str(
+            item.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+        if item_faculty_id == faculty_id:
+
+            result.append(
+                item
+            )
+
+    return result
+
+
+# ============================================================
+# FACULTY COURSE + SEMESTER + SECTION ALLOWED
+# ============================================================
+
+def faculty_assignment_allowed(
+    faculty_id,
+    course,
+    semester,
+    section
+):
+
+    faculty_id = str(
+        faculty_id
+    ).strip()
+
+    course = str(
+        course
+    ).strip().lower()
+
+    semester = str(
+        semester
+    ).strip()
+
+    section = str(
+        section
+    ).strip().upper()
+
+    assignments = get_faculty_assignments(
+        faculty_id
+    )
+
+    for item in assignments:
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        item_section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        if (
+            item_course == course
+            and
+            item_semester == semester
+            and
+            item_section == section
+        ):
+
+            return True
+
+    return False
+
+
+# ============================================================
+# FACULTY COURSE + SEMESTER + SECTION + SUBJECT ALLOWED
+# ============================================================
+
+def faculty_subject_assignment_allowed(
+    faculty_id,
+    course,
+    semester,
+    section,
+    subject
+):
+
+    faculty_id = str(
+        faculty_id
+    ).strip()
+
+    course = str(
+        course
+    ).strip().lower()
+
+    semester = str(
+        semester
+    ).strip()
+
+    section = str(
+        section
+    ).strip().upper()
+
+    subject = str(
+        subject
+    ).strip().lower()
+
+    assignments = get_faculty_assignments(
+        faculty_id
+    )
+
+    for item in assignments:
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        item_section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        item_subject = str(
+            item.get(
+                "subject",
+                ""
+            )
+        ).strip().lower()
+
+        if (
+            item_course == course
+            and
+            item_semester == semester
+            and
+            item_section == section
+            and
+            item_subject == subject
+        ):
+
+            return True
+
+    return False
+
+
+# ============================================================
+# FACULTY ASSIGNED COMBINATIONS
+# COURSE + SEMESTER + SECTION + SUBJECT
+# ============================================================
+
+def get_faculty_allowed_combinations(faculty_id):
+
+    faculty_id = str(
+        faculty_id
+    ).strip()
+
+    assignments = get_faculty_assignments(
+        faculty_id
+    )
+
+    result = []
+
+    seen = set()
+
+    for item in assignments:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip()
+
+        semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        subject = str(
+            item.get(
+                "subject",
+                ""
+            )
+        ).strip()
+
+        if (
+            not course
+            or not semester
+            or not section
+            or not subject
+        ):
+            continue
+
+        key = (
+            course.lower(),
+            semester,
+            section,
+            subject.lower()
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        result.append({
+
+            "course": course,
+
+            "semester": semester,
+
+            "section": section,
+
+            "subject": subject
+
+        })
+
+    return result
+
+
+# ============================================================
+# FACULTY ALLOWED COURSES
+# ============================================================
+
+def get_faculty_allowed_courses(faculty_id):
+
+    combinations = (
+        get_faculty_allowed_combinations(
+            faculty_id
+        )
+    )
+
+    courses = []
+
+    seen = set()
+
+    for item in combinations:
+
+        course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip()
+
+        if not course:
+            continue
+
+        key = course.lower()
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        courses.append(
+            course
+        )
+
+    return courses
+
+
+# ============================================================
+# FACULTY ALLOWED SEMESTERS
+# ============================================================
+
+def get_faculty_allowed_semesters(
+    faculty_id,
+    course
+):
+
+    course = str(
+        course
+    ).strip().lower()
+
+    combinations = (
+        get_faculty_allowed_combinations(
+            faculty_id
+        )
+    )
+
+    semesters = []
+
+    seen = set()
+
+    for item in combinations:
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+        semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        if (
+            item_course == course
+            and
+            semester
+        ):
+
+            if semester not in seen:
+
+                seen.add(
+                    semester
+                )
+
+                semesters.append(
+                    semester
+                )
+
+    semesters.sort(
+        key=lambda x:
+        int(x)
+        if x.isdigit()
+        else 999
+    )
+
+    return semesters
+
+
+# ============================================================
+# FACULTY ALLOWED SECTIONS
+# ============================================================
+
+def get_faculty_allowed_sections(
+    faculty_id,
+    course,
+    semester
+):
+
+    course = str(
+        course
+    ).strip().lower()
+
+    semester = str(
+        semester
+    ).strip()
+
+    combinations = (
+        get_faculty_allowed_combinations(
+            faculty_id
+        )
+    )
+
+    sections = []
+
+    seen = set()
+
+    for item in combinations:
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        if (
+            item_course == course
+            and
+            item_semester == semester
+            and
+            section
+        ):
+
+            if section not in seen:
+
+                seen.add(
+                    section
+                )
+
+                sections.append(
+                    section
+                )
+
+    sections.sort()
+
+    return sections
+
+
+# ============================================================
+# FACULTY ALLOWED SUBJECTS
+# ============================================================
+
+def get_faculty_allowed_subjects(
+    faculty_id,
+    course,
+    semester,
+    section
+):
+
+    faculty_id = str(
+        faculty_id
+    ).strip()
+
+    course = str(
+        course
+    ).strip().lower()
+
+    semester = str(
+        semester
+    ).strip()
+
+    section = str(
+        section
+    ).strip().upper()
+
+    assignments = get_faculty_assignments(
+        faculty_id
+    )
+
+    subjects = []
+
+    seen = set()
+
+    for item in assignments:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        item_section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        subject = str(
+            item.get(
+                "subject",
+                ""
+            )
+        ).strip()
+
+        if (
+            item_course == course
+            and
+            item_semester == semester
+            and
+            item_section == section
+            and
+            subject
+        ):
+
+            key = subject.lower()
+
+            if key not in seen:
+
+                seen.add(
+                    key
+                )
+
+                subjects.append(
+                    subject
+                )
+
+    subjects.sort(
+        key=lambda x: x.lower()
+    )
+
+    return subjects
+
+
+# ============================================================
+# FACULTY ASSIGNED OPTIONS API
+# ============================================================
+
+@app.route(
+    "/faculty-assigned-options"
+)
+def faculty_assigned_options():
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+    if not faculty_id:
+
+        return {
+            "assignments": []
+        }, 401
+
+    assignments = (
+        get_faculty_allowed_combinations(
+            faculty_id
+        )
+    )
+
+    return {
+        "assignments": assignments
+    }
+
+
+# ============================================================
+# GIVE SUBJECT FOR FACULTY
+# COURSE + SEMESTER + SECTION + SUBJECT
+# ============================================================
+
+@app.route(
+    "/admin-give-subject-for-faculty",
+    methods=["GET", "POST"]
+)
+def admin_give_subject_for_faculty():
+
+    # ========================================================
+    # ADMIN LOGIN CHECK
+    # ========================================================
+
+    check = admin_required()
+
+    if check:
+        return check
+
+
+    # ========================================================
+    # CURRENT ADMIN DEPARTMENT
+    # ========================================================
+
+    admin_department = str(
+        session.get(
+            "admin_department",
+            session.get(
+                "admin_department_id",
+                ""
+            )
+        )
+    ).strip()
+
+
+    # ========================================================
+    # LOAD FACULTY
+    # ========================================================
+
+    faculty_data = []
+
+    try:
+
+        with open(
+            FACULTY_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            faculty_data = json.load(f)
+
+    except Exception:
+
+        faculty_data = []
+
+
+    if not isinstance(
+        faculty_data,
+        list
+    ):
+
+        faculty_data = []
+
+
+    # ========================================================
+    # CURRENT DEPARTMENT FACULTY ONLY
+    # ========================================================
+
+    department_faculty = []
+
+    for faculty in faculty_data:
+
+        if not isinstance(
+            faculty,
+            dict
+        ):
+            continue
+
+        faculty_department = str(
+            faculty.get(
+                "department",
+                ""
+            )
+        ).strip()
+
+        if (
+            faculty_department.lower()
+            ==
+            admin_department.lower()
+        ):
+
+            department_faculty.append(
+                faculty
+            )
+
+
+    # ========================================================
+    # LOAD COURSES
+    # ========================================================
+
+    all_courses = get_admin_courses()
+
+    if not isinstance(
+        all_courses,
+        list
+    ):
+
+        all_courses = []
+
+
+    # ========================================================
+    # CURRENT DEPARTMENT COURSES ONLY
+    # ========================================================
+
+    department_courses = []
+
+    for course in all_courses:
+
+        if not isinstance(
+            course,
+            dict
+        ):
+            continue
+
+        course_department = str(
+            course.get(
+                "department",
+                ""
+            )
+        ).strip()
+
+        if (
+            course_department.lower()
+            ==
+            admin_department.lower()
+        ):
+
+            department_courses.append(
+                course
+            )
+
+
+    # ========================================================
+    # LOAD SUBJECTS
+    # ========================================================
+
+    subjects = []
+
+    try:
+
+        with open(
+            SUBJECTS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            subjects = json.load(f)
+
+    except Exception:
+
+        subjects = []
+
+
+    if not isinstance(
+        subjects,
+        list
+    ):
+
+        subjects = []
+
+
+    # ========================================================
+    # CURRENT DEPARTMENT SUBJECTS ONLY
+    # ========================================================
+
+    department_subjects = []
+
+    for subject in subjects:
+
+        if not isinstance(
+            subject,
+            dict
+        ):
+            continue
+
+        subject_department = str(
+            subject.get(
+                "department",
+                ""
+            )
+        ).strip()
+
+        if (
+            subject_department.lower()
+            ==
+            admin_department.lower()
+        ):
+
+            department_subjects.append(
+                subject
+            )
+
+
+    # ========================================================
+    # LOAD EXISTING ASSIGNMENTS
+    # ========================================================
+
+    assignments_data = (
+        load_faculty_subject_assignments()
+    )
+
+    if not isinstance(
+        assignments_data,
+        list
+    ):
+
+        assignments_data = []
+
+
+    # ========================================================
+    # POST
+    # ========================================================
+
+    if request.method == "POST":
+
+        selected_faculty_id = str(
+            request.form.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+
+        assignments_json = request.form.get(
+            "assignments_json",
+            "[]"
+        )
+
+
+        # ====================================================
+        # LOAD SUBMITTED JSON
+        # ====================================================
+
+        try:
+
+            submitted_assignments = json.loads(
+                assignments_json
+            )
+
+        except Exception:
+
+            submitted_assignments = []
+
+
+        if not isinstance(
+            submitted_assignments,
+            list
+        ):
+
+            submitted_assignments = []
+
+
+        # ====================================================
+        # VERIFY FACULTY
+        # Supports id + faculty_id
+        # ====================================================
+
+        selected_faculty = None
+
+        for faculty in department_faculty:
+
+            faculty_id_value = str(
+                faculty.get(
+                    "id",
+                    faculty.get(
+                        "faculty_id",
+                        ""
+                    )
+                )
+            ).strip()
+
+            if (
+                faculty_id_value
+                ==
+                selected_faculty_id
+            ):
+
+                selected_faculty = faculty
+
+                break
+
+
+        if not selected_faculty:
+
+            flash(
+                "Invalid faculty selected.",
+                "error"
+            )
+
+            return redirect(
+                url_for(
+                    "admin_give_subject_for_faculty"
+                )
+            )
+
+
+        # ====================================================
+        # FACULTY NAME
+        # ====================================================
+
+        selected_faculty_name = str(
+            selected_faculty.get(
+                "name",
+                ""
+            )
+        ).strip()
+
+
+        # ====================================================
+        # CLEAN NEW ASSIGNMENTS
+        # ====================================================
+
+        cleaned = []
+
+        seen = set()
+
+
+        for item in submitted_assignments:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+
+            # =================================================
+            # VALUES
+            # =================================================
+
+            course = str(
+                item.get(
+                    "course",
+                    ""
+                )
+            ).strip()
+
+            semester = str(
+                item.get(
+                    "semester",
+                    ""
+                )
+            ).strip()
+
+            section = str(
+                item.get(
+                    "section",
+                    ""
+                )
+            ).strip().upper()
+
+            subject = str(
+                item.get(
+                    "subject",
+                    ""
+                )
+            ).strip()
+
+
+            # =================================================
+            # REQUIRED
+            # =================================================
+
+            if (
+                not course
+                or not semester
+                or not section
+                or not subject
+            ):
+                continue
+
+
+            # =================================================
+            # VALID COURSE
+            # =================================================
+
+            valid_course = False
+
+            official_course_name = ""
+
+
+            for course_item in department_courses:
+
+                course_name = str(
+                    course_item.get(
+                        "name",
+                        ""
+                    )
+                    or course_item.get(
+                        "course_name",
+                        ""
+                    )
+                    or course_item.get(
+                        "course",
+                        ""
+                    )
+                ).strip()
+
+
+                if (
+                    course_name.lower()
+                    ==
+                    course.lower()
+                ):
+
+                    valid_course = True
+
+                    official_course_name = (
+                        course_name
+                    )
+
+                    break
+
+
+            if not valid_course:
+                continue
+
+
+            course = official_course_name
+
+
+            # =================================================
+            # VALID SEMESTER
+            # =================================================
+
+            if semester not in {
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10"
+            }:
+
+                continue
+
+
+            # =================================================
+            # VALID SECTION
+            # =================================================
+
+            if section not in {
+                "A",
+                "B",
+                "C",
+                "D"
+            }:
+
+                continue
+
+
+            # =================================================
+            # VALID SUBJECT
+            # =================================================
+
+            valid_subject = False
+
+            official_subject_name = ""
+
+
+            for subject_item in department_subjects:
+
+                subject_name = str(
+                    subject_item.get(
+                        "subject_name",
+                        subject_item.get(
+                            "name",
+                            subject_item.get(
+                                "subject",
+                                ""
+                            )
+                        )
+                    )
+                ).strip()
+
+
+                subject_course = str(
+                    subject_item.get(
+                        "course",
+                        subject_item.get(
+                            "course_name",
+                            ""
+                        )
+                    )
+                ).strip()
+
+
+                subject_semester = str(
+                    subject_item.get(
+                        "semester",
+                        subject_item.get(
+                            "sem",
+                            ""
+                        )
+                    )
+                ).strip()
+
+
+                if (
+                    subject_name.lower()
+                    ==
+                    subject.lower()
+
+                    and
+
+                    subject_course.lower()
+                    ==
+                    course.lower()
+
+                    and
+
+                    subject_semester
+                    ==
+                    semester
+                ):
+
+                    valid_subject = True
+
+                    official_subject_name = (
+                        subject_name
+                    )
+
+                    break
+
+
+            if not valid_subject:
+                continue
+
+
+            # =================================================
+            # DUPLICATE
+            # =================================================
+
+            key = (
+                course.lower(),
+                semester,
+                section,
+                official_subject_name.lower()
+            )
+
+
+            if key in seen:
+                continue
+
+
+            seen.add(key)
+
+
+            # =================================================
+            # FINAL ASSIGNMENT
+            # =================================================
+
+            cleaned.append({
+
+                "faculty_id":
+                    selected_faculty_id,
+
+                "faculty_name":
+                    selected_faculty_name,
+
+                "department":
+                    admin_department,
+
+                "course":
+                    course,
+
+                "semester":
+                    semester,
+
+                "section":
+                    section,
+
+                "subject":
+                    official_subject_name
+
+            })
+
+
+        # ====================================================
+        # REMOVE OLD ASSIGNMENTS FOR THIS FACULTY ONLY
+        # ====================================================
+
+        remaining_assignments = []
+
+        for item in assignments_data:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+
+            item_faculty_id = str(
+                item.get(
+                    "faculty_id",
+                    ""
+                )
+            ).strip()
+
+
+            if (
+                item_faculty_id
+                ==
+                selected_faculty_id
+            ):
+
+                continue
+
+
+            remaining_assignments.append(
+                item
+            )
+
+
+        # ====================================================
+        # ADD NEW ASSIGNMENTS
+        # ====================================================
+
+        remaining_assignments.extend(
+            cleaned
+        )
+
+
+        # ====================================================
+        # SAVE
+        # ====================================================
+
+        save_faculty_subject_assignments(
+            remaining_assignments
+        )
+
+
+        # ====================================================
+        # SUCCESS
+        # ====================================================
+
+        flash(
+            "Faculty Course + Semester + Section + Subject assignments saved successfully.",
+            "success"
+        )
+
+
+        # ====================================================
+        # REDIRECT
+        # ====================================================
+
+        return redirect(
+            url_for(
+                "admin_give_subject_for_faculty",
+                faculty_id=selected_faculty_id
+            )
+        )
+
+
+    # ========================================================
+    # GET SELECTED FACULTY
+    # ========================================================
+
+    selected_faculty_id = request.args.get(
+        "faculty_id",
+        ""
+    ).strip()
+
+
+    # ========================================================
+    # FIND SELECTED FACULTY
+    # ========================================================
+
+    selected_faculty = None
+
+    for faculty in department_faculty:
+
+        faculty_id_value = str(
+            faculty.get(
+                "id",
+                faculty.get(
+                    "faculty_id",
+                    ""
+                )
+            )
+        ).strip()
+
+
+        if (
+            faculty_id_value
+            ==
+            selected_faculty_id
+        ):
+
+            selected_faculty = faculty
+
+            break
+
+
+    # ========================================================
+    # CURRENT ASSIGNMENTS
+    # ========================================================
+
+    current_assignments = []
+
+    if selected_faculty_id:
+
+        for item in assignments_data:
+
+            if not isinstance(
+                item,
+                dict
+            ):
+                continue
+
+
+            item_faculty_id = str(
+                item.get(
+                    "faculty_id",
+                    ""
+                )
+            ).strip()
+
+
+            if (
+                item_faculty_id
+                ==
+                selected_faculty_id
+            ):
+
+                current_assignments.append(
+                    item
+                )
+
+
+    # ========================================================
+    # SEMESTERS
+    # ========================================================
+
+    semesters = []
+
+    for course in department_courses:
+
+        total_semesters = course.get(
+            "total_semesters",
+            0
+        )
+
+
+        try:
+
+            total_semesters = int(
+                total_semesters
+            )
+
+        except Exception:
+
+            total_semesters = 0
+
+
+        for number in range(
+            1,
+            total_semesters + 1
+        ):
+
+            value = str(
+                number
+            )
+
+            if value not in semesters:
+
+                semesters.append(
+                    value
+                )
+
+
+    if not semesters:
+
+        semesters = [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"
+        ]
+
+
+    semesters.sort(
+        key=lambda x:
+        int(x)
+        if x.isdigit()
+        else 999
+    )
+
+
+    # ========================================================
+    # SECTIONS
+    # ========================================================
+
+    sections = [
+        "A",
+        "B",
+        "C",
+        "D"
+    ]
+
+
+    # ========================================================
+    # RENDER PAGE
+    # ========================================================
+
+    return render_template(
+
+        "admin_give_subject_for_faculty.html",
+
+        admin_department=admin_department,
+
+        faculty_list=department_faculty,
+
+        courses=department_courses,
+
+        subjects=department_subjects,
+
+        selected_faculty=selected_faculty,
+
+        selected_faculty_id=selected_faculty_id,
+
+        current_assignments=current_assignments,
+
+        semesters=semesters,
+
+        sections=sections
+
+    )
+
+
+# ============================================================
+# DELETE ONE FACULTY SUBJECT ASSIGNMENT
+# ============================================================
+
+@app.route(
+    "/admin-delete-faculty-assignment",
+    methods=["POST"]
+)
+def admin_delete_faculty_assignment():
+
+    check = admin_required()
+
+    if check:
+        return check
+
+
+    admin_department = str(
+        session.get(
+            "admin_department",
+            session.get(
+                "admin_department_id",
+                ""
+            )
+        )
+    ).strip().lower()
+
+
+    faculty_id = str(
+        request.form.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    course = str(
+        request.form.get(
+            "course",
+            ""
+        )
+    ).strip().lower()
+
+
+    semester = str(
+        request.form.get(
+            "semester",
+            ""
+        )
+    ).strip()
+
+
+    section = str(
+        request.form.get(
+            "section",
+            ""
+        )
+    ).strip().upper()
+
+
+    subject = str(
+        request.form.get(
+            "subject",
+            ""
+        )
+    ).strip().lower()
+
+
+    data = load_faculty_subject_assignments()
+
+
+    if not isinstance(
+        data,
+        list
+    ):
+
+        data = []
+
+
+    filtered = []
+
+
+    for item in data:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+
+        item_faculty_id = str(
+            item.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+
+        item_department = str(
+            item.get(
+                "department",
+                ""
+            )
+        ).strip().lower()
+
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+
+        item_section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+
+        item_subject = str(
+            item.get(
+                "subject",
+                ""
+            )
+        ).strip().lower()
+
+
+        same_assignment = (
+
+            item_faculty_id
+            ==
+            faculty_id
+
+            and
+
+            item_department
+            ==
+            admin_department
+
+            and
+
+            item_course
+            ==
+            course
+
+            and
+
+            item_semester
+            ==
+            semester
+
+            and
+
+            item_section
+            ==
+            section
+
+            and
+
+            item_subject
+            ==
+            subject
+
+        )
+
+
+        if not same_assignment:
+
+            filtered.append(
+                item
+            )
+
+
+    save_faculty_subject_assignments(
+        filtered
+    )
+
+
+    return redirect(
+        url_for(
+            "admin_give_subject_for_faculty",
+            faculty_id=faculty_id
+        )
+    )
+
+
+# ============================================================
+# FACULTY PORTAL
+# ASSIGNED COURSE + SEMESTER + SECTION + SUBJECT FILTER
+# ============================================================
+
+@app.after_request
+def faculty_assignment_filter(response):
+
+    try:
+
+        faculty_id = str(
+            session.get(
+                "faculty_id",
+                ""
+            )
+        ).strip()
+
+
+        if not faculty_id:
+
+            return response
+
+
+        path = request.path
+
+
+        allowed_pages = [
+
+            "/manage-attendance",
+
+            "/upload-notes",
+
+            "/faculty-syllabus",
+
+            "/holiday-information",
+
+            "/send-notice"
+
+        ]
+
+
+        if path not in allowed_pages:
+
+            return response
+
+
+        if not response.content_type:
+
+            return response
+
+
+        if "text/html" not in response.content_type:
+
+            return response
+
+
+        assignments = (
+            get_faculty_allowed_combinations(
+                faculty_id
+            )
+        )
+
+
+        assignments_json = json.dumps(
+            assignments,
+            ensure_ascii=False
+        )
+
+
+        html = response.get_data(
+            as_text=True
+        )
+
+
+        script = """
+<script>
+
+(function() {
+
+    const facultyAssignments = %s;
+
+
+    if (!Array.isArray(facultyAssignments)) {
+
+        return;
+
+    }
+
+
+    function filterFacultyDropdowns() {
+
+
+        const courseSelect =
+            document.querySelector(
+                "select[name='course']"
+            );
+
+
+        const semesterSelect =
+            document.querySelector(
+                "select[name='semester']"
+            );
+
+
+        const sectionSelect =
+            document.querySelector(
+                "select[name='section']"
+            );
+
+
+        const subjectSelect =
+            document.querySelector(
+                "select[name='subject']"
+            );
+
+
+        if (!courseSelect) {
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // COURSE
+        // ==================================================
+
+        const allowedCourses = [];
+
+
+        facultyAssignments.forEach(
+            function(item) {
+
+                const course =
+                    String(
+                        item.course || ""
+                    ).trim();
+
+
+                if (
+                    course
+                    &&
+                    !allowedCourses.some(
+                        function(existing) {
+
+                            return (
+                                existing.toLowerCase()
+                                ===
+                                course.toLowerCase()
+                            );
+
+                        }
+                    )
+                ) {
+
+                    allowedCourses.push(
+                        course
+                    );
+
+                }
+
+            }
+        );
+
+
+        Array.from(
+            courseSelect.options
+        ).forEach(
+            function(option, index) {
+
+                if (index === 0) {
+
+                    return;
+
+                }
+
+
+                const optionValue =
+                    String(
+                        option.value
+                        ||
+                        option.textContent
+                        ||
+                        ""
+                    ).trim();
+
+
+                const allowed =
+                    allowedCourses.some(
+                        function(course) {
+
+                            return (
+                                course.toLowerCase()
+                                ===
+                                optionValue.toLowerCase()
+                            );
+
+                        }
+                    );
+
+
+                option.hidden = !allowed;
+
+            }
+        );
+
+
+        // ==================================================
+        // SEMESTER
+        // ==================================================
+
+        function filterSemesters() {
+
+
+            if (!semesterSelect) {
+
+                filterSections();
+
+                return;
+
+            }
+
+
+            const selectedCourse =
+                String(
+                    courseSelect.value || ""
+                ).trim().toLowerCase();
+
+
+            const allowedSemesters = [];
+
+
+            facultyAssignments.forEach(
+                function(item) {
+
+                    const itemCourse =
+                        String(
+                            item.course || ""
+                        ).trim().toLowerCase();
+
+
+                    const semester =
+                        String(
+                            item.semester || ""
+                        ).trim();
+
+
+                    if (
+                        itemCourse
+                        ===
+                        selectedCourse
+
+                        &&
+
+                        semester
+                    ) {
+
+                        if (
+                            !allowedSemesters.includes(
+                                semester
+                            )
+                        ) {
+
+                            allowedSemesters.push(
+                                semester
+                            );
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            Array.from(
+                semesterSelect.options
+            ).forEach(
+                function(option, index) {
+
+                    if (index === 0) {
+
+                        return;
+
+                    }
+
+
+                    const value =
+                        String(
+                            option.value || ""
+                        ).trim();
+
+
+                    option.hidden =
+                        !allowedSemesters.includes(
+                            value
+                        );
+
+                }
+            );
+
+
+            filterSections();
+
+        }
+
+
+        // ==================================================
+        // SECTION
+        // ==================================================
+
+        function filterSections() {
+
+
+            if (!sectionSelect) {
+
+                filterSubjects();
+
+                return;
+
+            }
+
+
+            const selectedCourse =
+                String(
+                    courseSelect.value || ""
+                ).trim().toLowerCase();
+
+
+            const selectedSemester =
+                String(
+                    semesterSelect
+                    ?
+                    semesterSelect.value
+                    :
+                    ""
+                ).trim();
+
+
+            const allowedSections = [];
+
+
+            facultyAssignments.forEach(
+                function(item) {
+
+                    const itemCourse =
+                        String(
+                            item.course || ""
+                        ).trim().toLowerCase();
+
+
+                    const itemSemester =
+                        String(
+                            item.semester || ""
+                        ).trim();
+
+
+                    const section =
+                        String(
+                            item.section || ""
+                        ).trim().toUpperCase();
+
+
+                    if (
+                        itemCourse
+                        ===
+                        selectedCourse
+
+                        &&
+
+                        itemSemester
+                        ===
+                        selectedSemester
+
+                        &&
+
+                        section
+                    ) {
+
+                        if (
+                            !allowedSections.includes(
+                                section
+                            )
+                        ) {
+
+                            allowedSections.push(
+                                section
+                            );
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            Array.from(
+                sectionSelect.options
+            ).forEach(
+                function(option, index) {
+
+                    if (index === 0) {
+
+                        return;
+
+                    }
+
+
+                    const value =
+                        String(
+                            option.value || ""
+                        ).trim().toUpperCase();
+
+
+                    option.hidden =
+                        !allowedSections.includes(
+                            value
+                        );
+
+                }
+            );
+
+
+            filterSubjects();
+
+        }
+
+
+        // ==================================================
+        // SUBJECT
+        // ==================================================
+
+        function filterSubjects() {
+
+
+            if (!subjectSelect) {
+
+                return;
+
+            }
+
+
+            const selectedCourse =
+                String(
+                    courseSelect.value || ""
+                ).trim().toLowerCase();
+
+
+            const selectedSemester =
+                String(
+                    semesterSelect
+                    ?
+                    semesterSelect.value
+                    :
+                    ""
+                ).trim();
+
+
+            const selectedSection =
+                String(
+                    sectionSelect
+                    ?
+                    sectionSelect.value
+                    :
+                    ""
+                ).trim().toUpperCase();
+
+
+            const allowedSubjects = [];
+
+
+            facultyAssignments.forEach(
+                function(item) {
+
+                    const itemCourse =
+                        String(
+                            item.course || ""
+                        ).trim().toLowerCase();
+
+
+                    const itemSemester =
+                        String(
+                            item.semester || ""
+                        ).trim();
+
+
+                    const itemSection =
+                        String(
+                            item.section || ""
+                        ).trim().toUpperCase();
+
+
+                    const subject =
+                        String(
+                            item.subject || ""
+                        ).trim();
+
+
+                    if (
+                        itemCourse
+                        ===
+                        selectedCourse
+
+                        &&
+
+                        itemSemester
+                        ===
+                        selectedSemester
+
+                        &&
+
+                        itemSection
+                        ===
+                        selectedSection
+
+                        &&
+
+                        subject
+                    ) {
+
+                        if (
+                            !allowedSubjects.some(
+                                function(existing) {
+
+                                    return (
+                                        existing.toLowerCase()
+                                        ===
+                                        subject.toLowerCase()
+                                    );
+
+                                }
+                            )
+                        ) {
+
+                            allowedSubjects.push(
+                                subject
+                            );
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            Array.from(
+                subjectSelect.options
+            ).forEach(
+                function(option, index) {
+
+                    if (index === 0) {
+
+                        return;
+
+                    }
+
+
+                    const value =
+                        String(
+                            option.value
+                            ||
+                            option.textContent
+                            ||
+                            ""
+                        ).trim();
+
+
+                    const allowed =
+                        allowedSubjects.some(
+                            function(subject) {
+
+                                return (
+                                    subject.toLowerCase()
+                                    ===
+                                    value.toLowerCase()
+                                );
+
+                            }
+                        );
+
+
+                    option.hidden = !allowed;
+
+                }
+            );
+
+        }
+
+
+        // ==================================================
+        // COURSE CHANGE
+        // ==================================================
+
+        courseSelect.addEventListener(
+            "change",
+            function() {
+
+                if (semesterSelect) {
+
+                    semesterSelect.value = "";
+
+                }
+
+
+                if (sectionSelect) {
+
+                    sectionSelect.value = "";
+
+                }
+
+
+                if (subjectSelect) {
+
+                    subjectSelect.value = "";
+
+                }
+
+
+                filterSemesters();
+
+            }
+        );
+
+
+        // ==================================================
+        // SEMESTER CHANGE
+        // ==================================================
+
+        if (semesterSelect) {
+
+            semesterSelect.addEventListener(
+                "change",
+                function() {
+
+                    if (sectionSelect) {
+
+                        sectionSelect.value = "";
+
+                    }
+
+
+                    if (subjectSelect) {
+
+                        subjectSelect.value = "";
+
+                    }
+
+
+                    filterSections();
+
+                }
+            );
+
+        }
+
+
+        // ==================================================
+        // SECTION CHANGE
+        // ==================================================
+
+        if (sectionSelect) {
+
+            sectionSelect.addEventListener(
+                "change",
+                function() {
+
+                    if (subjectSelect) {
+
+                        subjectSelect.value = "";
+
+                    }
+
+
+                    filterSubjects();
+
+                }
+            );
+
+        }
+
+
+        // ==================================================
+        // INITIAL FILTER
+        // ==================================================
+
+        filterSemesters();
+
+        filterSubjects();
+
+    }
+
+
+    if (
+        document.readyState
+        ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            filterFacultyDropdowns
+        );
+
+    }
+    else {
+
+        filterFacultyDropdowns();
+
+    }
+
+})();
+
+</script>
+""" % assignments_json
+
+
+        html = html.replace(
+            "</body>",
+            script + "\n</body>"
+        )
+
+
+        response.set_data(
+            html
+        )
+
+
+    except Exception as e:
+
+        print(
+            "FACULTY ASSIGNMENT FILTER ERROR:",
+            e
+        )
+
+
+    return response
+
 
 
 

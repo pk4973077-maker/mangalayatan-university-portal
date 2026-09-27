@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Give Subject for Faculty</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #222;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.10);
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            color: #1f3c88;
+        }
+
+        h2 {
+            color: #1f3c88;
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            background: white;
+            font-size: 15px;
+        }
+
+        select:disabled {
+            background: #eeeeee;
+            cursor: not-allowed;
+        }
+
+        .faculty-box {
+            margin-bottom: 25px;
+        }
+
+        .assignment-grid {
+            display: grid;
+            grid-template-columns:
+                1.4fr
+                1fr
+                1fr
+                1.7fr
+                auto;
+
+            gap: 12px;
+            align-items: end;
+        }
+
+        .field {
+            width: 100%;
+        }
+
+        .add-btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 7px;
+            background: #198754;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .add-btn:hover {
+            background: #146c43;
+        }
+
+        .save-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #1f3c88;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background: #162d68;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #1f3c88;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .remove-btn {
+            padding: 7px 13px;
+            border: none;
+            border-radius: 6px;
+            background: #dc3545;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .remove-btn:hover {
+            background: #b02a37;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 25px;
+            color: #777;
+            font-size: 15px;
+        }
+
+        .info {
+            background: #eef5ff;
+            border-left: 4px solid #1f3c88;
+            padding: 12px 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 7px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .faculty-info {
+            background: #f0f3ff;
+            padding: 12px;
+            border-radius: 7px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+
+            .assignment-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .add-btn {
+                width: 100%;
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                width: 96%;
+                margin: 15px auto;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .assignment-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- ================================================== -->
+    <!-- MAIN CARD -->
+    <!-- ================================================== -->
+
+    <div class="card">
+
+        <h1>
+            Give Subject for Faculty
+        </h1>
+
+
+        <!-- ================================================== -->
+        <!-- FLASH MESSAGES -->
+        <!-- ================================================== -->
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="message
+                        {% if category == 'success' %}
+                            success
+                        {% else %}
+                            error
+                        {% endif %}
+                    ">
+
+                        {{ message }}
+
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <!-- ================================================== -->
+        <!-- FACULTY -->
+        <!-- ================================================== -->
+
+        <div class="faculty-box">
+
+            <label for="facultySelect">
+                Select Faculty
+            </label>
+
+            <form method="GET"
+                  action="{{ url_for('admin_give_subject_for_faculty') }}">
+
+                <select
+                    id="facultySelect"
+                    name="faculty_id"
+                    onchange="this.form.submit()"
+                    required
+                >
+
+                    <option value="">
+                        -- Select Faculty --
+                    </option>
+
+
+                    {% for faculty_item in faculty_list | default(faculty | default([])) %}
+
+                        {% set current_faculty_id =
+                            faculty_item.get('faculty_id',
+                            faculty_item.get('id', '')) %}
+
+                        {% set current_faculty_name =
+                            faculty_item.get('name',
+                            faculty_item.get('faculty_name', 'Faculty')) %}
+
+                        <option
+                            value="{{ current_faculty_id }}"
+                            {% if selected_faculty_id|string == current_faculty_id|string %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ current_faculty_name }}
+
+                            {% if current_faculty_id %}
+                                ({{ current_faculty_id }})
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </form>
+
+
+            {% if selected_faculty %}
+
+                <div class="faculty-info"
+                     style="display:block;">
+
+                    <strong>
+                        Selected Faculty:
+                    </strong>
+
+                    {{ selected_faculty.get('name',
+                       selected_faculty.get('faculty_name', '')) }}
+
+                    {% if selected_faculty.get('faculty_id') %}
+
+                        — {{ selected_faculty.get('faculty_id') }}
+
+                    {% elif selected_faculty.get('id') %}
+
+                        — {{ selected_faculty.get('id') }}
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if selected_faculty_id %}
+
+
+        <!-- ================================================== -->
+        <!-- ASSIGNMENT ADD SECTION -->
+        <!-- ================================================== -->
+
+        <h2>
+            Add Course / Semester / Section / Subject
+        </h2>
+
+
+        <div class="assignment-grid">
+
+
+            <!-- COURSE -->
+
+            <div class="field">
+
+                <label for="courseSelect">
+                    Course
+                </label>
+
+                <select id="courseSelect">
+
+                    <option value="">
+                        -- Select Course --
+                    </option>
+
+                    {% for course in courses | default([]) %}
+
+                        {% set course_name =
+                            course.get('name',
+                            course.get('course_name',
+                            course.get('course', ''))) %}
+
+                        {% if course_name %}
+
+                            <option value="{{ course_name }}">
+                                {{ course_name }}
+                            </option>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- SEMESTER -->
+
+            <div class="field">
+
+                <label for="semesterSelect">
+                    Semester
+                </label>
+
+                <select id="semesterSelect">
+
+                    <option value="">
+                        -- Select Semester --
+                    </option>
+
+                    {% for semester in semesters | default([]) %}
+
+                        <option value="{{ semester }}">
+                            Semester {{ semester }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- SECTION -->
+
+            <div class="field">
+
+                <label for="sectionSelect">
+                    Section
+                </label>
+
+                <select id="sectionSelect">
+
+                    <option value="">
+                        -- Select Section --
+                    </option>
+
+                    {% for section in sections | default([]) %}
+
+                        <option value="{{ section }}">
+                            Section {{ section }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <!-- SUBJECT -->
+
+            <div class="field">
+
+                <label for="subjectSelect">
+                    Subject
+                </label>
+
+                <select id="subjectSelect"
+                        disabled>
+
+                    <option value="">
+                        -- Select Course & Semester First --
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- ADD -->
+
+            <div class="field">
+
+                <button
+                    type="button"
+                    class="add-btn"
+                    onclick="addAssignment()"
+                >
+                    + Add
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="info"
+             id="subjectInfo">
+
+            First select Course and Semester.
+            Uske baad us Course + Semester ke subjects yahan dikhenge.
+
+        </div>
+
+
+        <!-- ================================================== -->
+        <!-- SAVE FORM -->
+        <!-- ================================================== -->
+
+        <form
+            method="POST"
+            action="{{ url_for('admin_give_subject_for_faculty') }}"
+            id="assignmentForm"
+        >
+
+            <input
+                type="hidden"
+                name="faculty_id"
+                value="{{ selected_faculty_id }}"
+            >
+
+            <input
+                type="hidden"
+                name="assignments_json"
+                id="assignmentsJson"
+                value="[]"
+            >
+
+
+            <!-- ================================================== -->
+            <!-- ASSIGNMENT LIST -->
+            <!-- ================================================== -->
+
+            <div style="margin-top:30px;">
+
+                <h2>
+                    Assigned Subjects
+                </h2>
+
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Course
+                                </th>
+
+                                <th>
+                                    Semester
+                                </th>
+
+                                <th>
+                                    Section
+                                </th>
+
+                                <th>
+                                    Subject
+                                </th>
+
+                                <th>
+                                    Action
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="assignmentBody">
+
+                            <!-- JavaScript yahan rows dalega -->
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================== -->
+            <!-- SAVE -->
+            <!-- ================================================== -->
+
+            <button
+                type="submit"
+                class="save-btn"
+                onclick="prepareAssignmentsBeforeSubmit()"
+            >
+
+                Save Faculty Assignments
+
+            </button>
+
+        </form>
+
+
+        {% else %}
+
+
+        <div class="info">
+
+            Please select a faculty first.
+
+        </div>
+
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+/* ==========================================================
+   SUBJECT DATA FROM FLASK
+   ========================================================== */
+
+let allSubjects =
+    {{ subjects | default([]) | tojson }};
+
+
+/* ==========================================================
+   EXISTING ASSIGNMENTS
+   ========================================================== */
+
+let assignments =
+    {{ current_assignments | default([]) | tojson }};
+
+
+/* ==========================================================
+   SAFETY CHECK
+   ========================================================== */
+
+if (!Array.isArray(allSubjects)) {
+
+    allSubjects = [];
+
+}
+
+
+if (!Array.isArray(assignments)) {
+
+    assignments = [];
+
+}
+
+
+/* ==========================================================
+   NORMALIZE OLD ASSIGNMENTS
+   ========================================================== */
+
+assignments = assignments.map(function(item) {
+
+    if (!item || typeof item !== "object") {
+
+        return null;
+
+    }
+
+
+    return {
+
+        course:
+            String(
+                item.course || ""
+            ).trim(),
+
+        semester:
+            String(
+                item.semester || ""
+            ).trim(),
+
+        section:
+            String(
+                item.section || ""
+            ).trim().toUpperCase(),
+
+        subject:
+            String(
+                item.subject ||
+                item.subject_name ||
+                ""
+            ).trim()
+
+    };
+
+}).filter(function(item) {
+
+    return item !== null;
+
+});
+
+
+/* ==========================================================
+   GET SUBJECT NAME
+   ========================================================== */
+
+function getSubjectName(subject) {
+
+    if (!subject || typeof subject !== "object") {
+
+        return "";
+
+    }
+
+    return String(
+
+        subject.subject_name ||
+        subject.name ||
+        subject.subject ||
+        ""
+
+    ).trim();
+
+}
+
+
+/* ==========================================================
+   GET SUBJECT COURSE
+   ========================================================== */
+
+function getSubjectCourse(subject) {
+
+    if (!subject || typeof subject !== "object") {
+
+        return "";
+
+    }
+
+    return String(
+
+        subject.course ||
+        subject.course_name ||
+        ""
+
+    ).trim();
+
+}
+
+
+/* ==========================================================
+   GET SUBJECT SEMESTER
+   ========================================================== */
+
+function getSubjectSemester(subject) {
+
+    if (!subject || typeof subject !== "object") {
+
+        return "";
+
+    }
+
+    return String(
+
+        subject.semester ||
+        subject.sem ||
+        ""
+
+    ).trim();
+
+}
+
+
+/* ==========================================================
+   LOAD SUBJECT DROPDOWN
+   ========================================================== */
+
+function loadSubjects() {
+
+    const courseSelect =
+        document.getElementById(
+            "courseSelect"
+        );
+
+
+    const semesterSelect =
+        document.getElementById(
+            "semesterSelect"
+        );
+
+
+    const subjectSelect =
+        document.getElementById(
+            "subjectSelect"
+        );
+
+
+    const subjectInfo =
+        document.getElementById(
+            "subjectInfo"
+        );
+
+
+    if (
+        !courseSelect ||
+        !semesterSelect ||
+        !subjectSelect
+    ) {
+
+        return;
+
+    }
+
+
+    const selectedCourse =
+        String(
+            courseSelect.value || ""
+        ).trim();
+
+
+    const selectedSemester =
+        String(
+            semesterSelect.value || ""
+        ).trim();
+
+
+    /* ======================================================
+       RESET
+       ====================================================== */
+
+    subjectSelect.innerHTML = "";
+
+
+    /* ======================================================
+       COURSE / SEMESTER NOT SELECTED
+       ====================================================== */
+
+    if (
+        !selectedCourse ||
+        !selectedSemester
+    ) {
+
+        subjectSelect.disabled = true;
+
+
+        const option =
+            document.createElement("option");
+
+        option.value = "";
+
+        option.textContent =
+            "-- Select Course & Semester First --";
+
+        subjectSelect.appendChild(
+            option
+        );
+
+
+        if (subjectInfo) {
+
+            subjectInfo.textContent =
+                "First select Course and Semester. Uske baad us Course + Semester ke subjects yahan dikhenge.";
+
+        }
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       FIND MATCHING SUBJECTS
+       ====================================================== */
+
+    const matchingSubjects = [];
+
+
+    for (
+        const subject of allSubjects
+    ) {
+
+        const subjectCourse =
+            getSubjectCourse(
+                subject
+            );
+
+
+        const subjectSemester =
+            getSubjectSemester(
+                subject
+            );
+
+
+        const subjectName =
+            getSubjectName(
+                subject
+            );
+
+
+        if (!subjectName) {
+
+            continue;
+
+        }
+
+
+        if (
+
+            subjectCourse.toLowerCase()
+            ===
+            selectedCourse.toLowerCase()
+
+            &&
+
+            subjectSemester
+            ===
+            selectedSemester
+
+        ) {
+
+            const alreadyExists =
+                matchingSubjects.some(
+                    function(existing) {
+
+                        return (
+                            existing.toLowerCase()
+                            ===
+                            subjectName.toLowerCase()
+                        );
+
+                    }
+                );
+
+
+            if (!alreadyExists) {
+
+                matchingSubjects.push(
+                    subjectName
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /* ======================================================
+       NO SUBJECT
+       ====================================================== */
+
+    if (
+        matchingSubjects.length === 0
+    ) {
+
+        subjectSelect.disabled = true;
+
+
+        const option =
+            document.createElement("option");
+
+        option.value = "";
+
+        option.textContent =
+            "-- No Subject Found --";
+
+        subjectSelect.appendChild(
+            option
+        );
+
+
+        if (subjectInfo) {
+
+            subjectInfo.textContent =
+                "Is Course aur Semester ke liye koi subject nahi mila.";
+
+        }
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       ADD DEFAULT OPTION
+       ====================================================== */
+
+    const defaultOption =
+        document.createElement("option");
+
+    defaultOption.value = "";
+
+    defaultOption.textContent =
+        "-- Select Subject --";
+
+    subjectSelect.appendChild(
+        defaultOption
+    );
+
+
+    /* ======================================================
+       ADD SUBJECTS
+       ====================================================== */
+
+    matchingSubjects.sort(
+        function(a, b) {
+
+            return a.localeCompare(
+                b
+            );
+
+        }
+    );
+
+
+    for (
+        const subjectName of matchingSubjects
+    ) {
+
+        const option =
+            document.createElement("option");
+
+        option.value =
+            subjectName;
+
+        option.textContent =
+            subjectName;
+
+        subjectSelect.appendChild(
+            option
+        );
+
+    }
+
+
+    subjectSelect.disabled = false;
+
+
+    if (subjectInfo) {
+
+        subjectInfo.textContent =
+            matchingSubjects.length
+            +
+            " subject(s) found for "
+            +
+            selectedCourse
+            +
+            " - Semester "
+            +
+            selectedSemester
+            +
+            ".";
+
+    }
+
+}
+
+
+/* ==========================================================
+   ADD ASSIGNMENT
+   ========================================================== */
+
+function addAssignment() {
+
+
+    const course =
+        document.getElementById(
+            "courseSelect"
+        ).value.trim();
+
+
+    const semester =
+        document.getElementById(
+            "semesterSelect"
+        ).value.trim();
+
+
+    const section =
+        document.getElementById(
+            "sectionSelect"
+        ).value.trim().toUpperCase();
+
+
+    const subject =
+        document.getElementById(
+            "subjectSelect"
+        ).value.trim();
+
+
+    /* ======================================================
+       VALIDATION
+       ====================================================== */
+
+    if (!course) {
+
+        alert(
+            "Please select Course."
+        );
+
+        return;
+
+    }
+
+
+    if (!semester) {
+
+        alert(
+            "Please select Semester."
+        );
+
+        return;
+
+    }
+
+
+    if (!section) {
+
+        alert(
+            "Please select Section."
+        );
+
+        return;
+
+    }
+
+
+    if (!subject) {
+
+        alert(
+            "Please select Subject."
+        );
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       DUPLICATE CHECK
+       ====================================================== */
+
+    const duplicate =
+        assignments.some(
+            function(item) {
+
+                return (
+
+                    String(
+                        item.course || ""
+                    ).trim().toLowerCase()
+                    ===
+                    course.toLowerCase()
+
+                    &&
+
+                    String(
+                        item.semester || ""
+                    ).trim()
+                    ===
+                    semester
+
+                    &&
+
+                    String(
+                        item.section || ""
+                    ).trim().toUpperCase()
+                    ===
+                    section
+
+                    &&
+
+                    String(
+                        item.subject || ""
+                    ).trim().toLowerCase()
+                    ===
+                    subject.toLowerCase()
+
+                );
+
+            }
+        );
+
+
+    if (duplicate) {
+
+        alert(
+            "Ye Course + Semester + Section + Subject already assigned hai."
+        );
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       ADD
+       ====================================================== */
+
+    assignments.push({
+
+        course: course,
+
+        semester: semester,
+
+        section: section,
+
+        subject: subject
+
+    });
+
+
+    /* ======================================================
+       IMPORTANT:
+       LIST TURANT REFRESH
+       ====================================================== */
+
+    renderAssignments();
+
+
+    updateAssignmentsJson();
+
+
+    /* ======================================================
+       RESET ONLY SECTION + SUBJECT
+       ====================================================== */
+
+    document.getElementById(
+        "sectionSelect"
+    ).value = "";
+
+
+    document.getElementById(
+        "subjectSelect"
+    ).value = "";
+
+
+}
+
+
+/* ==========================================================
+   RENDER ASSIGNMENTS
+   ========================================================== */
+
+function renderAssignments() {
+
+
+    const body =
+        document.getElementById(
+            "assignmentBody"
+        );
+
+
+    if (!body) {
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       CLEAR OLD TABLE
+       ====================================================== */
+
+    body.innerHTML = "";
+
+
+    /* ======================================================
+       EMPTY
+       ====================================================== */
+
+    if (
+        assignments.length === 0
+    ) {
+
+        const row =
+            document.createElement("tr");
+
+
+        const cell =
+            document.createElement("td");
+
+
+        cell.colSpan = 5;
+
+        cell.className =
+            "empty-message";
+
+        cell.textContent =
+            "Abhi koi Course / Semester / Section / Subject assign nahi kiya gaya hai.";
+
+
+        row.appendChild(
+            cell
+        );
+
+
+        body.appendChild(
+            row
+        );
+
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       ADD EACH ASSIGNMENT
+       ====================================================== */
+
+    assignments.forEach(
+        function(item, index) {
+
+
+            const row =
+                document.createElement("tr");
+
+
+            /* COURSE */
+
+            const courseCell =
+                document.createElement("td");
+
+            courseCell.textContent =
+                item.course || "";
+
+            row.appendChild(
+                courseCell
+            );
+
+
+            /* SEMESTER */
+
+            const semesterCell =
+                document.createElement("td");
+
+            semesterCell.textContent =
+                "Semester "
+                +
+                (
+                    item.semester || ""
+                );
+
+            row.appendChild(
+                semesterCell
+            );
+
+
+            /* SECTION */
+
+            const sectionCell =
+                document.createElement("td");
+
+            sectionCell.textContent =
+                "Section "
+                +
+                (
+                    item.section || ""
+                );
+
+            row.appendChild(
+                sectionCell
+            );
+
+
+            /* SUBJECT */
+
+            const subjectCell =
+                document.createElement("td");
+
+            subjectCell.textContent =
+                item.subject || "—";
+
+            row.appendChild(
+                subjectCell
+            );
+
+
+            /* ACTION */
+
+            const actionCell =
+                document.createElement("td");
+
+
+            const removeButton =
+                document.createElement("button");
+
+
+            removeButton.type =
+                "button";
+
+
+            removeButton.className =
+                "remove-btn";
+
+
+            removeButton.textContent =
+                "Remove";
+
+
+            removeButton.onclick =
+                function() {
+
+                    removeAssignment(
+                        index
+                    );
+
+                };
+
+
+            actionCell.appendChild(
+                removeButton
+            );
+
+
+            row.appendChild(
+                actionCell
+            );
+
+
+            /* ADD ROW */
+
+            body.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   REMOVE ASSIGNMENT
+   ========================================================== */
+
+function removeAssignment(index) {
+
+
+    if (
+        index < 0 ||
+        index >= assignments.length
+    ) {
+
+        return;
+
+    }
+
+
+    assignments.splice(
+        index,
+        1
+    );
+
+
+    renderAssignments();
+
+
+    updateAssignmentsJson();
+
+}
+
+
+/* ==========================================================
+   UPDATE HIDDEN JSON
+   ========================================================== */
+
+function updateAssignmentsJson() {
+
+
+    const hiddenInput =
+        document.getElementById(
+            "assignmentsJson"
+        );
+
+
+    if (!hiddenInput) {
+
+        return;
+
+    }
+
+
+    hiddenInput.value =
+        JSON.stringify(
+            assignments
+        );
+
+}
+
+
+/* ==========================================================
+   BEFORE FORM SUBMIT
+   ========================================================== */
+
+function prepareAssignmentsBeforeSubmit() {
+
+    updateAssignmentsJson();
+
+}
+
+
+/* ==========================================================
+   COURSE CHANGE
+   ========================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+
+        const courseSelect =
+            document.getElementById(
+                "courseSelect"
+            );
+
+
+        const semesterSelect =
+            document.getElementById(
+                "semesterSelect"
+            );
+
+
+        if (courseSelect) {
+
+            courseSelect.addEventListener(
+                "change",
+                function() {
+
+                    loadSubjects();
+
+                }
+            );
+
+        }
+
+
+        if (semesterSelect) {
+
+            semesterSelect.addEventListener(
+                "change",
+                function() {
+
+                    loadSubjects();
+
+                }
+            );
+
+        }
+
+
+        /* ==============================================
+           INITIAL PAGE LOAD
+           ============================================== */
+
+        renderAssignments();
+
+
+        updateAssignmentsJson();
+
+
+    }
+);
+
+
+</script>
+
+</body>
+
+</html>
