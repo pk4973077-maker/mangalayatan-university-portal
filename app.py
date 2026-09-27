@@ -496,8 +496,8 @@ def admin_subjects():
         return security_check
 
     admin_department = str(
-    session.get("admin_department", "")
-).strip()
+        session.get("admin_department", "")
+    ).strip()
 
     subjects = []
     courses = []
@@ -524,7 +524,28 @@ def admin_subjects():
     # Course Management se
     # =========================
 
-    courses = get_admin_courses()
+    all_courses = get_admin_courses()
+
+    # ==========================================
+    # SIRF LOGIN ADMIN KE DEPARTMENT KE COURSES
+    # ==========================================
+
+    courses = []
+
+    for item in all_courses:
+
+        if isinstance(item, dict):
+
+            course_department = str(
+                item.get("department", "")
+            ).strip()
+
+            if (
+                course_department.lower()
+                == admin_department.lower()
+            ):
+
+                courses.append(item)
 
 
     # =========================
@@ -565,8 +586,8 @@ def admin_subjects():
 
         # =========================
         # CHECK COURSE
-        # Admin Course Management
-        # se hi course allowed hoga
+        # Sirf login department
+        # ka course allowed hoga
         # =========================
 
         valid_course = None
@@ -608,8 +629,6 @@ def admin_subjects():
                 subject.get("course", "")
             ).strip()
 
-            # Purane records ke liye
-            # department ko ignore kiya jayega
 
             if (
                 str(
@@ -630,11 +649,11 @@ def admin_subjects():
                 == semester
 
                 and str(
-    subject.get(
-        "department", ""
-    )
-).strip().lower()
-== admin_department.lower()
+                    subject.get(
+                        "department", ""
+                    )
+                ).strip().lower()
+                == admin_department.lower()
             ):
 
                 return (
@@ -682,21 +701,21 @@ def admin_subjects():
 
         subject = {
 
-    "subject_id":
-        subject_id,
+            "subject_id":
+                subject_id,
 
-    "subject_name":
-        subject_name,
+            "subject_name":
+                subject_name,
 
-    "course":
-        valid_course,
+            "course":
+                valid_course,
 
-    "semester":
-        semester,
+            "semester":
+                semester,
 
-    "department":
-        admin_department
-}
+            "department":
+                admin_department
+        }
 
 
         subjects.append(subject)
@@ -738,8 +757,11 @@ def admin_subjects():
             )
         ).strip().lower()
 
+
         if (
-            subject_department == admin_department.lower()
+            subject_department
+            == admin_department.lower()
+
             or not subject_department
         ):
 
