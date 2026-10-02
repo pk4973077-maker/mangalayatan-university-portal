@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Attempt Quiz</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(
+                135deg,
+                #f5f3ff,
+                #ede9fe,
+                #faf5ff
+            );
+            min-height: 100vh;
+            color: #241044;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .header {
+            background: linear-gradient(
+                135deg,
+                #5b21b6,
+                #7c3aed,
+                #9333ea
+            );
+
+            color: white;
+            padding: 20px 30px;
+
+            box-shadow:
+                0 5px 20px rgba(76, 29, 149, 0.25);
+
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: auto;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            gap: 20px;
+        }
+
+        .quiz-title h1 {
+            font-size: 25px;
+            margin-bottom: 5px;
+        }
+
+        .quiz-title p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        /* =========================
+           TIMER
+        ========================= */
+
+        .timer-box {
+            background: white;
+            color: #5b21b6;
+
+            min-width: 145px;
+
+            padding: 12px 18px;
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            box-shadow:
+                0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .timer-label {
+            display: block;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+            text-transform: uppercase;
+
+            margin-bottom: 4px;
+        }
+
+        #timer {
+            font-size: 25px;
+
+            font-weight: bold;
+
+            letter-spacing: 1px;
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        .container {
+            max-width: 1200px;
+
+            margin: 30px auto;
+
+            padding: 0 20px 50px;
+        }
+
+        /* =========================
+           QUIZ INFORMATION
+        ========================= */
+
+        .quiz-info {
+            background: white;
+
+            border: 1px solid #e9d5ff;
+
+            border-radius: 16px;
+
+            padding: 18px 20px;
+
+            margin-bottom: 22px;
+
+            box-shadow:
+                0 8px 25px rgba(76, 29, 149, 0.08);
+        }
+
+        .info-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(auto-fit, minmax(150px, 1fr));
+
+            gap: 12px;
+        }
+
+        .info-item {
+            background: #faf5ff;
+
+            border: 1px solid #ede9fe;
+
+            border-radius: 10px;
+
+            padding: 11px;
+        }
+
+        .info-item span {
+            display: block;
+
+            color: #7c3aed;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            text-transform: uppercase;
+
+            margin-bottom: 4px;
+        }
+
+        .info-item strong {
+            color: #2e1065;
+
+            font-size: 14px;
+        }
+
+        /* =========================
+           CONTENT LAYOUT
+        ========================= */
+
+        .quiz-layout {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr) 290px;
+
+            gap: 22px;
+
+            align-items: start;
+        }
+
+        /* =========================
+           QUESTION CARD
+        ========================= */
+
+        .question-card {
+            background: white;
+
+            border: 1px solid #e9d5ff;
+
+            border-radius: 18px;
+
+            padding: 28px;
+
+            box-shadow:
+                0 8px 25px rgba(76, 29, 149, 0.10);
+        }
+
+        .question-top {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 15px;
+
+            margin-bottom: 22px;
+        }
+
+        .question-number {
+            color: #5b21b6;
+
+            font-size: 16px;
+
+            font-weight: bold;
+        }
+
+        .question-marks {
+            background: #ede9fe;
+
+            color: #6d28d9;
+
+            padding: 7px 12px;
+
+            border-radius: 20px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+        .question-text {
+            color: #241044;
+
+            font-size: 20px;
+
+            line-height: 1.6;
+
+            font-weight: 600;
+
+            margin-bottom: 25px;
+
+            white-space: pre-wrap;
+        }
+
+        /* =========================
+           OPTIONS
+        ========================= */
+
+        .options {
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 13px;
+        }
+
+        .option {
+            display: flex;
+
+            align-items: center;
+
+            gap: 13px;
+
+            background: #faf5ff;
+
+            border: 2px solid #ede9fe;
+
+            border-radius: 12px;
+
+            padding: 15px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .option:hover {
+            border-color: #a78bfa;
+
+            background: #f5f3ff;
+        }
+
+        .option.selected {
+            border-color: #7c3aed;
+
+            background: #ede9fe;
+        }
+
+        .option input {
+            width: 19px;
+
+            height: 19px;
+
+            accent-color: #7c3aed;
+
+            cursor: pointer;
+
+            flex-shrink: 0;
+        }
+
+        .option-label {
+            width: 31px;
+
+            height: 31px;
+
+            border-radius: 50%;
+
+            background: #ddd6fe;
+
+            color: #4c1d95;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-weight: bold;
+
+            flex-shrink: 0;
+        }
+
+        .option-text {
+            color: #3b0764;
+
+            font-size: 15px;
+
+            line-height: 1.5;
+        }
+
+        /* =========================
+           NAVIGATION BUTTONS
+        ========================= */
+
+        .navigation {
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 12px;
+
+            margin-top: 28px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #ede9fe;
+        }
+
+        .nav-btn {
+            border: none;
+
+            border-radius: 10px;
+
+            padding: 12px 22px;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .previous-btn {
+            background: #ede9fe;
+
+            color: #5b21b6;
+        }
+
+        .previous-btn:hover {
+            background: #ddd6fe;
+        }
+
+        .next-btn {
+            background: linear-gradient(
+                135deg,
+                #5b21b6,
+                #7c3aed
+            );
+
+            color: white;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 6px 15px rgba(91,33,182,0.25);
+        }
+
+        /* =========================
+           QUESTION PALETTE
+        ========================= */
+
+        .palette-card {
+            background: white;
+
+            border: 1px solid #e9d5ff;
+
+            border-radius: 18px;
+
+            padding: 20px;
+
+            box-shadow:
+                0 8px 25px rgba(76, 29, 149, 0.10);
+
+            position: sticky;
+
+            top: 105px;
+        }
+
+        .palette-card h3 {
+            color: #4c1d95;
+
+            font-size: 18px;
+
+            margin-bottom: 6px;
+        }
+
+        .palette-card p {
+            color: #6b7280;
+
+            font-size: 12px;
+
+            margin-bottom: 18px;
+        }
+
+        .palette {
+            display: grid;
+
+            grid-template-columns:
+                repeat(5, 1fr);
+
+            gap: 8px;
+        }
+
+        .palette-btn {
+            width: 42px;
+
+            height: 42px;
+
+            border-radius: 9px;
+
+            border: 1px solid #ddd6fe;
+
+            background: white;
+
+            color: #5b21b6;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.15s;
+        }
+
+        .palette-btn:hover {
+            border-color: #7c3aed;
+
+            transform: translateY(-1px);
+        }
+
+        .palette-btn.current {
+            background: #7c3aed;
+
+            color: white;
+
+            border-color: #7c3aed;
+        }
+
+        .palette-btn.answered {
+            background: #dcfce7;
+
+            color: #166534;
+
+            border-color: #86efac;
+        }
+
+        .palette-btn.current.answered {
+            background: #7c3aed;
+
+            color: white;
+
+            border-color: #7c3aed;
+        }
+
+        /* =========================
+           LEGEND
+        ========================= */
+
+        .legend {
+            margin-top: 18px;
+
+            border-top: 1px solid #ede9fe;
+
+            padding-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            margin-bottom: 8px;
+
+            color: #6b7280;
+
+            font-size: 12px;
+        }
+
+        .legend-dot {
+            width: 14px;
+
+            height: 14px;
+
+            border-radius: 4px;
+
+            border: 1px solid #ddd6fe;
+        }
+
+        .legend-current {
+            background: #7c3aed;
+
+            border-color: #7c3aed;
+        }
+
+        .legend-answered {
+            background: #dcfce7;
+
+            border-color: #86efac;
+        }
+
+        .legend-unanswered {
+            background: white;
+        }
+
+        /* =========================
+           SUBMIT
+        ========================= */
+
+        .submit-box {
+            margin-top: 20px;
+
+            padding-top: 18px;
+
+            border-top: 1px solid #ede9fe;
+        }
+
+        .submit-btn {
+            width: 100%;
+
+            border: none;
+
+            background: linear-gradient(
+                135deg,
+                #16a34a,
+                #15803d
+            );
+
+            color: white;
+
+            padding: 13px;
+
+            border-radius: 10px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 7px 17px rgba(22,163,74,0.22);
+        }
+
+        /* =========================
+           HIDDEN QUESTIONS
+        ========================= */
+
+        .question {
+            display: none;
+        }
+
+        .question.active {
+            display: block;
+        }
+
+        /* =========================
+           WARNING
+        ========================= */
+
+        .timer-warning {
+            animation: timerPulse 0.8s infinite alternate;
+        }
+
+        @keyframes timerPulse {
+
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.04);
+            }
+
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 850px) {
+
+            .quiz-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .palette-card {
+                position: static;
+            }
+
+            .palette {
+                grid-template-columns:
+                    repeat(8, 1fr);
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .header {
+                padding: 16px;
+            }
+
+            .header-inner {
+                flex-direction: column;
+
+                align-items: stretch;
+            }
+
+            .timer-box {
+                width: 100%;
+            }
+
+            .container {
+                padding: 0 12px 40px;
+
+                margin-top: 20px;
+            }
+
+            .question-card {
+                padding: 20px;
+            }
+
+            .question-text {
+                font-size: 17px;
+            }
+
+            .palette {
+                grid-template-columns:
+                    repeat(5, 1fr);
+            }
+
+            .palette-btn {
+                width: 100%;
+
+                height: 38px;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <div class="header">
+
+        <div class="header-inner">
+
+            <div class="quiz-title">
+
+                <h1>
+                    🧠 {{ quiz.get("quiz_name", "Online Quiz") }}
+                </h1>
+
+                <p>
+                    Attempt the quiz carefully and submit before time ends.
+                </p>
+
+            </div>
+
+
+            <div class="timer-box" id="timerBox">
+
+                <span class="timer-label">
+                    ⏱ Time Left
+                </span>
+
+                <span id="timer">
+                    --:--
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <div class="container">
+
+
+        <!-- =================================================
+             QUIZ INFORMATION
+        ================================================== -->
+
+        <div class="quiz-info">
+
+            <div class="info-grid">
+
+
+                <div class="info-item">
+
+                    <span>
+                        Course
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("course", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span>
+                        Semester
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("semester", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span>
+                        Section
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("section", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span>
+                        Subject
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("subject", "") }}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span>
+                        Total Questions
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("questions", [])|length }}
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <span>
+                        Total Marks
+                    </span>
+
+                    <strong>
+                        {{ quiz.get("total_marks", 0) }}
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             QUIZ FORM
+        ================================================== -->
+
+        <form
+            method="POST"
+            action="/student-submit-quiz/{{ quiz.get('quiz_id') }}"
+            id="quizForm"
+        >
+
+            <div class="quiz-layout">
+
+
+                <!-- =========================================
+                     QUESTIONS
+                ========================================== -->
+
+                <div class="question-card">
+
+
+                    {% for question in quiz.get("questions", []) %}
+
+                    <div
+                        class="question {% if loop.first %}active{% endif %}"
+                        data-question="{{ loop.index0 }}"
+                    >
+
+                        <div class="question-top">
+
+                            <div class="question-number">
+
+                                Question
+                                {{ loop.index }}
+                                of
+                                {{ quiz.get("questions", [])|length }}
+
+                            </div>
+
+
+                            <div class="question-marks">
+
+                                {{ question.get("marks", 0) }}
+                                Mark{% if question.get("marks", 0) != 1 %}s{% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- QUESTION -->
+
+                        <div class="question-text">
+
+                            {{ question.get("question", "") }}
+
+                        </div>
+
+
+                        <!-- OPTIONS -->
+
+                        <div class="options">
+
+
+                            <label class="option">
+
+                                <input
+                                    type="radio"
+                                    name="answer_{{ question.get('question_id', loop.index) }}"
+                                    value="A"
+                                    onchange="selectAnswer({{ loop.index0 }}, this)"
+                                >
+
+                                <span class="option-label">
+                                    A
+                                </span>
+
+                                <span class="option-text">
+                                    {{ question.get("option_a", "") }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="option">
+
+                                <input
+                                    type="radio"
+                                    name="answer_{{ question.get('question_id', loop.index) }}"
+                                    value="B"
+                                    onchange="selectAnswer({{ loop.index0 }}, this)"
+                                >
+
+                                <span class="option-label">
+                                    B
+                                </span>
+
+                                <span class="option-text">
+                                    {{ question.get("option_b", "") }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="option">
+
+                                <input
+                                    type="radio"
+                                    name="answer_{{ question.get('question_id', loop.index) }}"
+                                    value="C"
+                                    onchange="selectAnswer({{ loop.index0 }}, this)"
+                                >
+
+                                <span class="option-label">
+                                    C
+                                </span>
+
+                                <span class="option-text">
+                                    {{ question.get("option_c", "") }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="option">
+
+                                <input
+                                    type="radio"
+                                    name="answer_{{ question.get('question_id', loop.index) }}"
+                                    value="D"
+                                    onchange="selectAnswer({{ loop.index0 }}, this)"
+                                >
+
+                                <span class="option-label">
+                                    D
+                                </span>
+
+                                <span class="option-text">
+                                    {{ question.get("option_d", "") }}
+                                </span>
+
+                            </label>
+
+
+                        </div>
+
+
+                    </div>
+
+                    {% endfor %}
+
+
+                    <!-- =====================================
+                         NAVIGATION
+                    ====================================== -->
+
+                    <div class="navigation">
+
+                        <button
+                            type="button"
+                            class="nav-btn previous-btn"
+                            id="previousBtn"
+                            onclick="previousQuestion()"
+                        >
+                            ← Previous
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="nav-btn next-btn"
+                            id="nextBtn"
+                            onclick="nextQuestion()"
+                        >
+                            Next →
+                        </button>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =========================================
+                     RIGHT SIDEBAR
+                ========================================== -->
+
+                <div class="palette-card">
+
+                    <h3>
+                        Question Navigation
+                    </h3>
+
+                    <p>
+                        Click a number to open that question.
+                    </p>
+
+
+                    <div class="palette" id="palette">
+
+
+                        {% for question in quiz.get("questions", []) %}
+
+                        <button
+                            type="button"
+                            class="palette-btn {% if loop.first %}current{% endif %}"
+                            id="palette-{{ loop.index0 }}"
+                            onclick="goToQuestion({{ loop.index0 }})"
+                        >
+                            {{ loop.index }}
+                        </button>
+
+                        {% endfor %}
+
+
+                    </div>
+
+
+                    <!-- LEGEND -->
+
+                    <div class="legend">
+
+                        <div class="legend-item">
+
+                            <span
+                                class="legend-dot legend-current"
+                            ></span>
+
+                            Current
+
+                        </div>
+
+
+                        <div class="legend-item">
+
+                            <span
+                                class="legend-dot legend-answered"
+                            ></span>
+
+                            Answered
+
+                        </div>
+
+
+                        <div class="legend-item">
+
+                            <span
+                                class="legend-dot legend-unanswered"
+                            ></span>
+
+                            Not Attempted
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- SUBMIT -->
+
+                    <div class="submit-box">
+
+                        <button
+                            type="button"
+                            class="submit-btn"
+                            onclick="confirmSubmit()"
+                        >
+                            📤 Submit Quiz
+                        </button>
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+        </form>
+
+
+    </div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script>
+
+        /* ==================================================
+           VARIABLES
+        ================================================== */
+
+        const questions =
+            document.querySelectorAll(".question");
+
+        const paletteButtons =
+            document.querySelectorAll(".palette-btn");
+
+        const totalQuestions =
+            questions.length;
+
+        let currentQuestion = 0;
+
+
+        /* ==================================================
+           TIMER
+        ================================================== */
+
+        let timeLimitMinutes =
+            Number(
+                {{ quiz.get("time_limit", 0) or 0 }}
+            );
+
+        let totalSeconds =
+            timeLimitMinutes * 60;
+
+
+        /*
+         * Agar backend se time limit nahi mili,
+         * timer ko 0 par rakhna.
+         */
+
+        function updateTimer() {
+
+            if (totalSeconds < 0) {
+                totalSeconds = 0;
+            }
+
+
+            const minutes =
+                Math.floor(totalSeconds / 60);
+
+            const seconds =
+                totalSeconds % 60;
+
+
+            document.getElementById("timer").textContent =
+                String(minutes).padStart(2, "0")
+                + ":"
+                + String(seconds).padStart(2, "0");
+
+
+            if (totalSeconds <= 60) {
+
+                document
+                    .getElementById("timerBox")
+                    .classList.add("timer-warning");
+
+            }
+
+
+            if (totalSeconds <= 0) {
+
+                clearInterval(timerInterval);
+
+                alert(
+                    "Time is over. Your quiz will be submitted automatically."
+                );
+
+                submitQuizAutomatically();
+
+                return;
+
+            }
+
+
+            totalSeconds--;
+
+        }
+
+
+        updateTimer();
+
+
+        const timerInterval =
+            setInterval(updateTimer, 1000);
+
+
+        /* ==================================================
+           SHOW QUESTION
+        ================================================== */
+
+        function showQuestion(index) {
+
+            if (index < 0) {
+                index = 0;
+            }
+
+
+            if (index >= totalQuestions) {
+                index = totalQuestions - 1;
+            }
+
+
+            currentQuestion = index;
+
+
+            questions.forEach(function(question, i) {
+
+                question.classList.remove("active");
+
+                if (i === currentQuestion) {
+
+                    question.classList.add("active");
+
+                }
+
+            });
+
+
+            paletteButtons.forEach(function(button, i) {
+
+                button.classList.remove("current");
+
+                if (i === currentQuestion) {
+
+                    button.classList.add("current");
+
+                }
+
+            });
+
+
+            updateNavigationButtons();
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+        }
+
+
+        /* ==================================================
+           NEXT
+        ================================================== */
+
+        function nextQuestion() {
+
+            if (currentQuestion < totalQuestions - 1) {
+
+                showQuestion(
+                    currentQuestion + 1
+                );
+
+            } else {
+
+                confirmSubmit();
+
+            }
+
+        }
+
+
+        /* ==================================================
+           PREVIOUS
+        ================================================== */
+
+        function previousQuestion() {
+
+            if (currentQuestion > 0) {
+
+                showQuestion(
+                    currentQuestion - 1
+                );
+
+            }
+
+        }
+
+
+        /* ==================================================
+           GO TO QUESTION
+        ================================================== */
+
+        function goToQuestion(index) {
+
+            showQuestion(index);
+
+        }
+
+
+        /* ==================================================
+           NAVIGATION BUTTON STATE
+        ================================================== */
+
+        function updateNavigationButtons() {
+
+            const previousBtn =
+                document.getElementById("previousBtn");
+
+            const nextBtn =
+                document.getElementById("nextBtn");
+
+
+            if (currentQuestion === 0) {
+
+                previousBtn.disabled = true;
+
+                previousBtn.style.opacity = "0.5";
+
+                previousBtn.style.cursor = "not-allowed";
+
+            } else {
+
+                previousBtn.disabled = false;
+
+                previousBtn.style.opacity = "1";
+
+                previousBtn.style.cursor = "pointer";
+
+            }
+
+
+            if (currentQuestion === totalQuestions - 1) {
+
+                nextBtn.textContent =
+                    "Review / Submit →";
+
+            } else {
+
+                nextBtn.textContent =
+                    "Next →";
+
+            }
+
+        }
+
+
+        /* ==================================================
+           ANSWER SELECTION
+        ================================================== */
+
+        function selectAnswer(
+            questionIndex,
+            input
+        ) {
+
+            const question =
+                questions[questionIndex];
+
+
+            const options =
+                question.querySelectorAll(".option");
+
+
+            options.forEach(function(option) {
+
+                option.classList.remove(
+                    "selected"
+                );
+
+            });
+
+
+            const selectedOption =
+                input.closest(".option");
+
+
+            if (selectedOption) {
+
+                selectedOption.classList.add(
+                    "selected"
+                );
+
+            }
+
+
+            const paletteButton =
+                document.getElementById(
+                    "palette-" + questionIndex
+                );
+
+
+            if (paletteButton) {
+
+                paletteButton.classList.add(
+                    "answered"
+                );
+
+            }
+
+        }
+
+
+        /* ==================================================
+           CHECK ANSWERS
+        ================================================== */
+
+        function getAnsweredCount() {
+
+            let answered = 0;
+
+
+            questions.forEach(function(question) {
+
+                const checked =
+                    question.querySelector(
+                        'input[type="radio"]:checked'
+                    );
+
+
+                if (checked) {
+
+                    answered++;
+
+                }
+
+            });
+
+
+            return answered;
+
+        }
+
+
+        /* ==================================================
+           CONFIRM SUBMIT
+        ================================================== */
+
+        function confirmSubmit() {
+
+            const answered =
+                getAnsweredCount();
+
+
+            const unanswered =
+                totalQuestions - answered;
+
+
+            let message =
+                "Are you sure you want to submit the quiz?";
+
+
+            message +=
+                "\n\nAnswered: "
+                + answered
+                + " / "
+                + totalQuestions;
+
+
+            message +=
+                "\nUnanswered: "
+                + unanswered;
+
+
+            if (unanswered > 0) {
+
+                message +=
+                    "\n\nYou still have unanswered questions.";
+
+            }
+
+
+            if (confirm(message)) {
+
+                submitQuizAutomatically();
+
+            }
+
+        }
+
+
+        /* ==================================================
+           AUTO SUBMIT
+        ================================================== */
+
+        function submitQuizAutomatically() {
+
+            clearInterval(timerInterval);
+
+
+            const form =
+                document.getElementById(
+                    "quizForm"
+                );
+
+
+            if (form) {
+
+                form.submit();
+
+            }
+
+        }
+
+
+        /* ==================================================
+           PREVENT ACCIDENTAL PAGE LEAVE
+        ================================================== */
+
+        let quizSubmitted = false;
+
+
+        document
+            .getElementById("quizForm")
+            .addEventListener(
+                "submit",
+                function() {
+
+                    quizSubmitted = true;
+
+                }
+            );
+
+
+        window.addEventListener(
+            "beforeunload",
+            function(event) {
+
+                if (!quizSubmitted) {
+
+                    event.preventDefault();
+
+                    event.returnValue = "";
+
+                }
+
+            }
+        );
+
+
+        /* ==================================================
+           INITIALIZE
+        ================================================== */
+
+        showQuestion(0);
+
+    </script>
+
+</body>
+</html>

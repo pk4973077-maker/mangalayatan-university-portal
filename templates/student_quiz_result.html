@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quiz Result</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            min-height: 100vh;
+            color: #1f2937;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .header {
+            background: linear-gradient(135deg, #6d28d9, #7c3aed);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            margin-bottom: 25px;
+        }
+
+        .header .icon {
+            font-size: 55px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        /* =========================
+           QUIZ INFORMATION
+        ========================= */
+
+        .quiz-info {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .quiz-info h2 {
+            color: #5b21b6;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .info-box {
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .info-value {
+            color: #4c1d95;
+            font-size: 16px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        /* =========================
+           RESULT SCORE
+        ========================= */
+
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .result-title {
+            text-align: center;
+            color: #5b21b6;
+            font-size: 25px;
+            margin-bottom: 25px;
+        }
+
+        .score-main {
+            text-align: center;
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            border: 2px solid #ddd6fe;
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .score-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #6d28d9;
+            margin-bottom: 8px;
+        }
+
+        .score-label {
+            font-size: 15px;
+            color: #6b7280;
+        }
+
+        .percentage {
+            margin-top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #7c3aed;
+        }
+
+        /* =========================
+           STATISTICS
+        ========================= */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .stat-card {
+            border-radius: 15px;
+            padding: 22px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-card .stat-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .stat-number {
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .correct-card {
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+        }
+
+        .correct-card .stat-number {
+            color: #047857;
+        }
+
+        .wrong-card {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .wrong-card .stat-number {
+            color: #dc2626;
+        }
+
+        .unattempted-card {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .unattempted-card .stat-number {
+            color: #ea580c;
+        }
+
+        .total-card {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .total-card .stat-number {
+            color: #2563eb;
+        }
+
+        /* =========================
+           SUBMISSION DETAILS
+        ========================= */
+
+        .submission-card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .submission-card h2 {
+            color: #5b21b6;
+            font-size: 21px;
+            margin-bottom: 18px;
+        }
+
+        .submission-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .submission-item {
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .submission-item strong {
+            display: block;
+            color: #4b5563;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .submission-item span {
+            color: #111827;
+            font-size: 15px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        /* =========================
+           BUTTONS
+        ========================= */
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            border: none;
+            border-radius: 10px;
+            padding: 13px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #6d28d9;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5b21b6;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .btn-secondary:hover {
+            background: #ddd6fe;
+            transform: translateY(-2px);
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 900px) {
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            body {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 22px 15px;
+            }
+
+            .header h1 {
+                font-size: 25px;
+            }
+
+            .header .icon {
+                font-size: 45px;
+            }
+
+            .quiz-info,
+            .result-card,
+            .submission-card {
+                padding: 18px;
+            }
+
+            .info-grid,
+            .stats-grid,
+            .submission-details {
+                grid-template-columns: 1fr;
+            }
+
+            .score-number {
+                font-size: 40px;
+            }
+
+            .percentage {
+                font-size: 24px;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- =========================
+         HEADER
+    ========================= -->
+
+    <div class="header">
+
+        <div class="icon">🎉</div>
+
+        <h1>Quiz Completed</h1>
+
+        <p>Your quiz has been submitted successfully.</p>
+
+    </div>
+
+
+    <!-- =========================
+         QUIZ INFORMATION
+    ========================= -->
+
+    <div class="quiz-info">
+
+        <h2>📚 Quiz Information</h2>
+
+        <div class="info-grid">
+
+            <div class="info-box">
+                <div class="info-label">Quiz Name</div>
+
+                <div class="info-value">
+                    {{ quiz.get("quiz_name", "Quiz") }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Course</div>
+
+                <div class="info-value">
+                    {{ quiz.get("course", "-") }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Semester</div>
+
+                <div class="info-value">
+                    {{ quiz.get("semester", "-") }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Section</div>
+
+                <div class="info-value">
+                    {{ quiz.get("section", "-") }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Subject</div>
+
+                <div class="info-value">
+                    {{ quiz.get("subject", "-") }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Total Questions</div>
+
+                <div class="info-value">
+                    {{ quiz.get("questions", [])|length }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Total Marks</div>
+
+                <div class="info-value">
+                    {{ result.get("total_marks", quiz.get("total_marks", 0)) }}
+                </div>
+            </div>
+
+
+            <div class="info-box">
+                <div class="info-label">Time Limit</div>
+
+                <div class="info-value">
+                    {{ quiz.get("time_limit", 0) }} Minutes
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         RESULT
+    ========================= -->
+
+    <div class="result-card">
+
+        <div class="result-title">
+            📊 Your Result
+        </div>
+
+
+        <!-- MAIN SCORE -->
+
+        <div class="score-main">
+
+            <div class="score-number">
+                {{ result.get("score", 0) }}
+                /
+                {{ result.get("total_marks", 0) }}
+            </div>
+
+            <div class="score-label">
+                Score / Total Marks
+            </div>
+
+            <div class="percentage">
+                {{ result.get("percentage", 0) }}%
+            </div>
+
+        </div>
+
+
+        <!-- STATISTICS -->
+
+        <div class="stats-grid">
+
+            <!-- Correct -->
+
+            <div class="stat-card correct-card">
+
+                <div class="stat-icon">
+                    ✅
+                </div>
+
+                <div class="stat-number">
+                    {{ result.get("correct", 0) }}
+                </div>
+
+                <div class="stat-label">
+                    Correct
+                </div>
+
+            </div>
+
+
+            <!-- Wrong -->
+
+            <div class="stat-card wrong-card">
+
+                <div class="stat-icon">
+                    ❌
+                </div>
+
+                <div class="stat-number">
+                    {{ result.get("wrong", 0) }}
+                </div>
+
+                <div class="stat-label">
+                    Wrong
+                </div>
+
+            </div>
+
+
+            <!-- Unattempted -->
+
+            <div class="stat-card unattempted-card">
+
+                <div class="stat-icon">
+                    ⏭️
+                </div>
+
+                <div class="stat-number">
+                    {{ result.get("unattempted", 0) }}
+                </div>
+
+                <div class="stat-label">
+                    Unattempted
+                </div>
+
+            </div>
+
+
+            <!-- Total Questions -->
+
+            <div class="stat-card total-card">
+
+                <div class="stat-icon">
+                    📝
+                </div>
+
+                <div class="stat-number">
+                    {{ quiz.get("questions", [])|length }}
+                </div>
+
+                <div class="stat-label">
+                    Total Questions
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         SUBMISSION DETAILS
+    ========================= -->
+
+    <div class="submission-card">
+
+        <h2>🕒 Submission Details</h2>
+
+        <div class="submission-details">
+
+            <div class="submission-item">
+
+                <strong>Student Enrollment</strong>
+
+                <span>
+                    {{ result.get("student_enrollment", "-") }}
+                </span>
+
+            </div>
+
+
+            <div class="submission-item">
+
+                <strong>Submission Time</strong>
+
+                <span>
+                    {{ result.get("submitted_at", "-") }}
+                </span>
+
+            </div>
+
+
+            <div class="submission-item">
+
+                <strong>Maximum Attempts</strong>
+
+                <span>
+                    {{ quiz.get("max_attempts", 1) }}
+                </span>
+
+            </div>
+
+
+            <div class="submission-item">
+
+                <strong>Quiz Status</strong>
+
+                <span>
+                    Submitted Successfully
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             BUTTONS
+        ========================= -->
+
+        <div class="buttons">
+
+            <a
+                href="/student-quiz"
+                class="btn btn-primary"
+            >
+                📚 Back to Quiz
+            </a>
+
+
+            <a
+                href="/student-dashboard"
+                class="btn btn-secondary"
+            >
+                🏠 Student Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

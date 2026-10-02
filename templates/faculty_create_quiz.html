@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Make Quiz</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f3ff;
+            color: #1f2937;
+        }
+
+        .topbar {
+            background: #7c3aed;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            background: rgba(255,255,255,0.18);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.28);
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #5b21b6;
+            font-size: 21px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 7px;
+            font-size: 14px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            background: white;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 2px rgba(124,58,237,0.10);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .assignment-note {
+            background: #f3e8ff;
+            border-left: 4px solid #7c3aed;
+            padding: 13px 15px;
+            border-radius: 7px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .flash.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .question-card {
+            border: 1px solid #ddd6fe;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #faf9ff;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .question-title {
+            font-size: 17px;
+            font-weight: bold;
+            color: #5b21b6;
+        }
+
+        .remove-btn {
+            border: none;
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 8px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .remove-btn:hover {
+            background: #fecaca;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .question-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .add-question {
+            width: 100%;
+            padding: 13px;
+            border: 2px dashed #a78bfa;
+            background: #faf5ff;
+            color: #6d28d9;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .add-question:hover {
+            background: #f3e8ff;
+        }
+
+        .total-box {
+            background: #ede9fe;
+            color: #4c1d95;
+            padding: 15px;
+            border-radius: 9px;
+            margin-top: 20px;
+            font-size: 17px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .submit-area {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            border: none;
+            background: #7c3aed;
+            color: white;
+            padding: 13px 25px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .submit-btn:hover {
+            background: #6d28d9;
+        }
+
+        .cancel-btn {
+            text-decoration: none;
+            background: #e5e7eb;
+            color: #374151;
+            padding: 13px 22px;
+            border-radius: 9px;
+            font-weight: bold;
+        }
+
+        .help-text {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 700px) {
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .topbar h1 {
+                font-size: 19px;
+            }
+
+            .container {
+                width: 96%;
+                margin: 18px auto;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .grid,
+            .options-grid,
+            .question-bottom {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full {
+                grid-column: auto;
+            }
+
+            .submit-area {
+                flex-direction: column;
+            }
+
+            .submit-btn,
+            .cancel-btn {
+                text-align: center;
+                width: 100%;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+
+    <h1>📝 Make Quiz</h1>
+
+    <a href="/faculty-dashboard" class="back-btn">
+        ← Faculty Dashboard
+    </a>
+
+</div>
+
+
+<div class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for category, message in messages %}
+
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <form
+        method="POST"
+        action="/faculty-create-quiz"
+        id="quizForm"
+    >
+
+
+        <!-- ==================================================
+             QUIZ BASIC INFORMATION
+        ================================================== -->
+
+        <div class="card">
+
+            <h2>📋 Quiz Information</h2>
+
+            <div class="assignment-note">
+
+                <strong>Important:</strong>
+                You can create a quiz only for the
+                Course, Semester, Section and Subject
+                assigned to your faculty account.
+
+            </div>
+
+
+            <div class="grid">
+
+
+                <!-- COURSE -->
+
+                <div class="form-group">
+
+                    <label for="course">
+                        Course
+                    </label>
+
+                    <select
+                        id="course"
+                        name="course"
+                        required
+                    >
+
+                        <option value="">
+                            Select Course
+                        </option>
+
+                        {% set courses = [] %}
+
+                        {% for item in assignments %}
+
+                            {% if item.course not in courses %}
+
+                                {% set _ = courses.append(item.course) %}
+
+                                <option value="{{ item.course }}">
+                                    {{ item.course }}
+                                </option>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- SEMESTER -->
+
+                <div class="form-group">
+
+                    <label for="semester">
+                        Semester
+                    </label>
+
+                    <select
+                        id="semester"
+                        name="semester"
+                        required
+                    >
+
+                        <option value="">
+                            Select Semester
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- SECTION -->
+
+                <div class="form-group">
+
+                    <label for="section">
+                        Section
+                    </label>
+
+                    <select
+                        id="section"
+                        name="section"
+                        required
+                    >
+
+                        <option value="">
+                            Select Section
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- SUBJECT -->
+
+                <div class="form-group">
+
+                    <label for="subject">
+                        Subject
+                    </label>
+
+                    <select
+                        id="subject"
+                        name="subject"
+                        required
+                    >
+
+                        <option value="">
+                            Select Subject
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- QUIZ NAME -->
+
+                <div class="form-group full">
+
+                    <label for="quiz_name">
+                        Quiz Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="quiz_name"
+                        name="quiz_name"
+                        placeholder="Enter quiz name"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- TIME LIMIT -->
+
+                <div class="form-group">
+
+                    <label for="time_limit">
+                        Attempt Time Limit (Minutes)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="time_limit"
+                        name="time_limit"
+                        min="1"
+                        placeholder="Example: 30"
+                        required
+                    >
+
+                    <div class="help-text">
+                        Maximum time allowed for one attempt.
+                    </div>
+
+                </div>
+
+
+                <!-- MAX ATTEMPTS -->
+
+                <div class="form-group">
+
+                    <label for="max_attempts">
+                        Maximum Attempts
+                    </label>
+
+                    <input
+                        type="number"
+                        id="max_attempts"
+                        name="max_attempts"
+                        min="1"
+                        value="1"
+                        required
+                    >
+
+                    <div class="help-text">
+                        Number of times a student can attempt this quiz.
+                    </div>
+
+                </div>
+
+
+                <!-- START -->
+
+                <div class="form-group">
+
+                    <label for="start_datetime">
+                        Quiz Start Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        id="start_datetime"
+                        name="start_datetime"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- END -->
+
+                <div class="form-group">
+
+                    <label for="end_datetime">
+                        Quiz End Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        id="end_datetime"
+                        name="end_datetime"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             QUESTIONS
+        ================================================== -->
+
+        <div class="card">
+
+            <h2>❓ Questions</h2>
+
+            <div id="questionsContainer"></div>
+
+
+            <button
+                type="button"
+                class="add-question"
+                onclick="addQuestion()"
+            >
+                + Add Question
+            </button>
+
+
+            <div class="total-box">
+
+                Total Marks:
+                <span id="totalMarks">
+                    0
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             SAVE TO MY QUIZ
+        ================================================== -->
+
+        <div class="card">
+
+            <div class="submit-area">
+
+                <a
+                    href="/faculty-dashboard"
+                    class="cancel-btn"
+                >
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="submit-btn"
+                >
+                    💾 Save to My Quiz
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+
+    /*
+    ============================================================
+    FACULTY ASSIGNMENTS
+    ============================================================
+    */
+
+    const assignments = {{ assignments | tojson }};
+
+
+    /*
+    ============================================================
+    ELEMENTS
+    ============================================================
+    */
+
+    const courseSelect =
+        document.getElementById("course");
+
+    const semesterSelect =
+        document.getElementById("semester");
+
+    const sectionSelect =
+        document.getElementById("section");
+
+    const subjectSelect =
+        document.getElementById("subject");
+
+
+    /*
+    ============================================================
+    COURSE CHANGE
+    ============================================================
+    */
+
+    courseSelect.addEventListener(
+        "change",
+        function () {
+
+            const course =
+                this.value.trim().toLowerCase();
+
+
+            semesterSelect.innerHTML =
+                '<option value="">Select Semester</option>';
+
+            sectionSelect.innerHTML =
+                '<option value="">Select Section</option>';
+
+            subjectSelect.innerHTML =
+                '<option value="">Select Subject</option>';
+
+
+            if (!course) {
+
+                return;
+
+            }
+
+
+            const semesters = [];
+
+
+            assignments.forEach(
+                function (item) {
+
+                    if (
+                        String(item.course)
+                            .trim()
+                            .toLowerCase()
+                        ===
+                        course
+                    ) {
+
+                        const semester =
+                            String(
+                                item.semester
+                            ).trim();
+
+
+                        if (
+                            semester
+                            &&
+                            !semesters.includes(
+                                semester
+                            )
+                        ) {
+
+                            semesters.push(
+                                semester
+                            );
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            semesters.sort(
+                function (a, b) {
+
+                    const numberA =
+                        parseInt(a);
+
+                    const numberB =
+                        parseInt(b);
+
+
+                    if (
+                        !isNaN(numberA)
+                        &&
+                        !isNaN(numberB)
+                    ) {
+
+                        return numberA - numberB;
+
+                    }
+
+                    return a.localeCompare(b);
+
+                }
+            );
+
+
+            semesters.forEach(
+                function (semester) {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        semester;
+
+                    option.textContent =
+                        semester;
+
+                    semesterSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /*
+    ============================================================
+    SEMESTER CHANGE
+    ============================================================
+    */
+
+    semesterSelect.addEventListener(
+        "change",
+        function () {
+
+            const course =
+                courseSelect.value
+                    .trim()
+                    .toLowerCase();
+
+            const semester =
+                this.value.trim();
+
+
+            sectionSelect.innerHTML =
+                '<option value="">Select Section</option>';
+
+            subjectSelect.innerHTML =
+                '<option value="">Select Subject</option>';
+
+
+            if (
+                !course
+                ||
+                !semester
+            ) {
+
+                return;
+
+            }
+
+
+            const sections = [];
+
+
+            assignments.forEach(
+                function (item) {
+
+                    const itemCourse =
+                        String(
+                            item.course
+                        )
+                        .trim()
+                        .toLowerCase();
+
+                    const itemSemester =
+                        String(
+                            item.semester
+                        )
+                        .trim();
+
+                    const section =
+                        String(
+                            item.section
+                        )
+                        .trim()
+                        .toUpperCase();
+
+
+                    if (
+                        itemCourse === course
+                        &&
+                        itemSemester === semester
+                        &&
+                        section
+                        &&
+                        !sections.includes(
+                            section
+                        )
+                    ) {
+
+                        sections.push(
+                            section
+                        );
+
+                    }
+
+                }
+            );
+
+
+            sections.sort();
+
+
+            sections.forEach(
+                function (section) {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        section;
+
+                    option.textContent =
+                        section;
+
+                    sectionSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /*
+    ============================================================
+    SECTION CHANGE
+    ============================================================
+    */
+
+    sectionSelect.addEventListener(
+        "change",
+        function () {
+
+            const course =
+                courseSelect.value
+                    .trim()
+                    .toLowerCase();
+
+            const semester =
+                semesterSelect.value.trim();
+
+            const section =
+                this.value
+                    .trim()
+                    .toUpperCase();
+
+
+            subjectSelect.innerHTML =
+                '<option value="">Select Subject</option>';
+
+
+            if (
+                !course
+                ||
+                !semester
+                ||
+                !section
+            ) {
+
+                return;
+
+            }
+
+
+            const subjects = [];
+
+
+            assignments.forEach(
+                function (item) {
+
+                    const itemCourse =
+                        String(
+                            item.course
+                        )
+                        .trim()
+                        .toLowerCase();
+
+                    const itemSemester =
+                        String(
+                            item.semester
+                        )
+                        .trim();
+
+                    const itemSection =
+                        String(
+                            item.section
+                        )
+                        .trim()
+                        .toUpperCase();
+
+                    const subject =
+                        String(
+                            item.subject
+                        )
+                        .trim();
+
+
+                    if (
+                        itemCourse === course
+                        &&
+                        itemSemester === semester
+                        &&
+                        itemSection === section
+                        &&
+                        subject
+                        &&
+                        !subjects.includes(
+                            subject
+                        )
+                    ) {
+
+                        subjects.push(
+                            subject
+                        );
+
+                    }
+
+                }
+            );
+
+
+            subjects.sort(
+                function (a, b) {
+
+                    return a.localeCompare(b);
+
+                }
+            );
+
+
+            subjects.forEach(
+                function (subject) {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value =
+                        subject;
+
+                    option.textContent =
+                        subject;
+
+                    subjectSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /*
+    ============================================================
+    QUESTIONS
+    ============================================================
+    */
+
+    let questionCounter = 0;
+
+
+    function addQuestion() {
+
+        questionCounter++;
+
+
+        const container =
+            document.getElementById(
+                "questionsContainer"
+            );
+
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "question-card";
+
+
+        card.setAttribute(
+            "data-question-number",
+            questionCounter
+        );
+
+
+        card.innerHTML = `
+
+            <div class="question-header">
+
+                <div class="question-title">
+                    Question ${questionCounter}
+                </div>
+
+                <button
+                    type="button"
+                    class="remove-btn"
+                    onclick="removeQuestion(this)"
+                >
+                    Remove
+                </button>
+
+            </div>
+
+
+            <input
+                type="hidden"
+                name="question_number"
+                value="${questionCounter}"
+            >
+
+
+            <div class="form-group">
+
+                <label>
+                    Question
+                </label>
+
+                <textarea
+                    name="question_${questionCounter}"
+                    placeholder="Enter question"
+                    required
+                ></textarea>
+
+            </div>
+
+
+            <div class="options-grid">
+
+                <div class="form-group">
+
+                    <label>
+                        Option A
+                    </label>
+
+                    <input
+                        type="text"
+                        name="option_a_${questionCounter}"
+                        placeholder="Enter option A"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Option B
+                    </label>
+
+                    <input
+                        type="text"
+                        name="option_b_${questionCounter}"
+                        placeholder="Enter option B"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Option C
+                    </label>
+
+                    <input
+                        type="text"
+                        name="option_c_${questionCounter}"
+                        placeholder="Enter option C"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Option D
+                    </label>
+
+                    <input
+                        type="text"
+                        name="option_d_${questionCounter}"
+                        placeholder="Enter option D"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="question-bottom">
+
+                <div class="form-group">
+
+                    <label>
+                        Correct Answer
+                    </label>
+
+                    <select
+                        name="correct_answer_${questionCounter}"
+                        required
+                    >
+
+                        <option value="">
+                            Select Correct Answer
+                        </option>
+
+                        <option value="A">
+                            A
+                        </option>
+
+                        <option value="B">
+                            B
+                        </option>
+
+                        <option value="C">
+                            C
+                        </option>
+
+                        <option value="D">
+                            D
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Marks
+                    </label>
+
+                    <input
+                        type="number"
+                        name="marks_${questionCounter}"
+                        min="0.5"
+                        step="0.5"
+                        value="1"
+                        required
+                        oninput="calculateTotalMarks()"
+                    >
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        container.appendChild(
+            card
+        );
+
+
+        calculateTotalMarks();
+
+    }
+
+
+    /*
+    ============================================================
+    REMOVE QUESTION
+    ============================================================
+    */
+
+    function removeQuestion(button) {
+
+        const card =
+            button.closest(
+                ".question-card"
+            );
+
+
+        if (card) {
+
+            card.remove();
+
+        }
+
+
+        renumberQuestions();
+
+        calculateTotalMarks();
+
+    }
+
+
+    /*
+    ============================================================
+    RENUMBER QUESTIONS
+    ============================================================
+    */
+
+    function renumberQuestions() {
+
+        const cards =
+            document.querySelectorAll(
+                ".question-card"
+            );
+
+
+        cards.forEach(
+            function (card, index) {
+
+                const number =
+                    index + 1;
+
+
+                card.setAttribute(
+                    "data-question-number",
+                    number
+                );
+
+
+                const title =
+                    card.querySelector(
+                        ".question-title"
+                    );
+
+
+                if (title) {
+
+                    title.textContent =
+                        "Question " + number;
+
+                }
+
+
+                const hidden =
+                    card.querySelector(
+                        'input[name="question_number"]'
+                    );
+
+
+                if (hidden) {
+
+                    hidden.value =
+                        number;
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /*
+    ============================================================
+    TOTAL MARKS
+    ============================================================
+    */
+
+    function calculateTotalMarks() {
+
+        const marksInputs =
+            document.querySelectorAll(
+                'input[name^="marks_"]'
+            );
+
+
+        let total = 0;
+
+
+        marksInputs.forEach(
+            function (input) {
+
+                const value =
+                    parseFloat(
+                        input.value
+                    );
+
+
+                if (
+                    !isNaN(value)
+                ) {
+
+                    total += value;
+
+                }
+
+            }
+        );
+
+
+        document.getElementById(
+            "totalMarks"
+        ).textContent =
+            total.toFixed(2);
+
+    }
+
+
+    /*
+    ============================================================
+    FORM VALIDATION
+    ============================================================
+    */
+
+    document.getElementById(
+        "quizForm"
+    ).addEventListener(
+        "submit",
+        function (event) {
+
+            const questions =
+                document.querySelectorAll(
+                    ".question-card"
+                );
+
+
+            if (
+                questions.length === 0
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please add at least one question."
+                );
+
+                return;
+
+            }
+
+
+            const start =
+                document.getElementById(
+                    "start_datetime"
+                ).value;
+
+            const end =
+                document.getElementById(
+                    "end_datetime"
+                ).value;
+
+
+            if (
+                start
+                &&
+                end
+                &&
+                new Date(start)
+                >=
+                new Date(end)
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Quiz End Date & Time must be after Start Date & Time."
+                );
+
+                return;
+
+            }
+
+        }
+    );
+
+
+    /*
+    ============================================================
+    FIRST QUESTION
+    ============================================================
+    */
+
+    addQuestion();
+
+</script>
+
+</body>
+</html>

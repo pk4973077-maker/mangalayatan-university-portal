@@ -23837,6 +23837,3936 @@ def faculty_assignment_filter(response):
     return response
 
 
+# ============================================================
+# QUIZ SYSTEM - FACULTY + STUDENT
+# ============================================================
+# COMPLETE QUIZ BACKEND
+# ============================================================
+# IMPORTANT:
+# Keep only ONE copy of this Quiz System backend.
+# Do not keep another duplicate quiz route block.
+# ============================================================
+
+
+QUIZZES_FILE = "quizzes.json"
+
+
+# ============================================================
+# QUIZ FILE HELPERS
+# ============================================================
+
+def load_quizzes():
+
+    if not os.path.exists(QUIZZES_FILE):
+        return []
+
+    try:
+
+        with open(
+            QUIZZES_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            data = json.load(file)
+
+        if isinstance(data, list):
+            return data
+
+        return []
+
+    except Exception as e:
+
+        print("QUIZ LOAD ERROR:", e)
+
+        return []
+
+
+def save_quizzes(quizzes):
+
+    try:
+
+        with open(
+            QUIZZES_FILE,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                quizzes,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+        return True
+
+    except Exception as e:
+
+        print(
+            "QUIZ SAVE ERROR:",
+            e
+        )
+
+        return False
+
+
+# ============================================================
+# QUIZ DATETIME HELPER
+# ============================================================
+
+def quiz_datetime_to_string(value):
+
+    value = str(
+        value or ""
+    ).strip()
+
+    if not value:
+        return ""
+
+    return value
+
+
+# ============================================================
+# FIND STUDENT BY ENROLLMENT
+# ============================================================
+
+def get_quiz_student_by_enrollment(enrollment):
+
+    enrollment = str(
+        enrollment or ""
+    ).strip()
+
+    if not enrollment:
+        return None
+
+    students = []
+
+    if os.path.exists(STUDENTS_FILE):
+
+        try:
+
+            with open(
+                STUDENTS_FILE,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                students = json.load(file)
+
+            if not isinstance(
+                students,
+                list
+            ):
+                students = []
+
+        except Exception as e:
+
+            print(
+                "QUIZ STUDENT LOAD ERROR:",
+                e
+            )
+
+            students = []
+
+    for student in students:
+
+        if not isinstance(
+            student,
+            dict
+        ):
+            continue
+
+        student_enrollment = str(
+            student.get(
+                "enrollment",
+                ""
+            )
+        ).strip()
+
+        if student_enrollment == enrollment:
+
+            return student
+
+    return None
+
+
+# ============================================================
+# GET STUDENT NAME
+# ============================================================
+
+def get_quiz_student_name(enrollment):
+
+    student = get_quiz_student_by_enrollment(
+        enrollment
+    )
+
+    if not student:
+        return "Unknown Student"
+
+    name = str(
+        student.get(
+            "name",
+            ""
+        )
+    ).strip()
+
+    if not name:
+
+        name = str(
+            student.get(
+                "student_name",
+                ""
+            )
+        ).strip()
+
+    if not name:
+
+        name = str(
+            student.get(
+                "full_name",
+                ""
+            )
+        ).strip()
+
+    if not name:
+        return "Unknown Student"
+
+    return name
+
+
+# ============================================================
+# FACULTY CREATE QUIZ
+# ============================================================
+
+@app.route(
+    "/faculty-create-quiz",
+    methods=["GET", "POST"]
+)
+def faculty_create_quiz():
+
+    # --------------------------------------------------------
+    # FACULTY LOGIN
+    # --------------------------------------------------------
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # FACULTY ASSIGNMENTS
+    # --------------------------------------------------------
+
+    allowed_combinations = (
+        get_faculty_allowed_combinations(
+            faculty_id
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # GET
+    # --------------------------------------------------------
+
+    if request.method == "GET":
+
+        return render_template(
+            "faculty_create_quiz.html",
+            allowed_combinations=allowed_combinations,
+            assignments=allowed_combinations
+        )
+
+
+    # --------------------------------------------------------
+    # POST DATA
+    # --------------------------------------------------------
+
+    course = str(
+        request.form.get(
+            "course",
+            ""
+        )
+    ).strip()
+
+    semester = str(
+        request.form.get(
+            "semester",
+            ""
+        )
+    ).strip()
+
+    section = str(
+        request.form.get(
+            "section",
+            ""
+        )
+    ).strip().upper()
+
+    subject = str(
+        request.form.get(
+            "subject",
+            ""
+        )
+    ).strip()
+
+    quiz_name = str(
+        request.form.get(
+            "quiz_name",
+            ""
+        )
+    ).strip()
+
+    time_limit = str(
+        request.form.get(
+            "time_limit",
+            ""
+        )
+    ).strip()
+
+    start_datetime = quiz_datetime_to_string(
+        request.form.get(
+            "start_datetime",
+            ""
+        )
+    )
+
+    end_datetime = quiz_datetime_to_string(
+        request.form.get(
+            "end_datetime",
+            ""
+        )
+    )
+
+    max_attempts_raw = str(
+        request.form.get(
+            "max_attempts",
+            "1"
+        )
+    ).strip()
+
+
+    # --------------------------------------------------------
+    # BASIC VALIDATION
+    # --------------------------------------------------------
+
+    if not course:
+
+        flash(
+            "Please select Course.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if not semester:
+
+        flash(
+            "Please select Semester.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if not section:
+
+        flash(
+            "Please select Section.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if not subject:
+
+        flash(
+            "Please select Subject.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if not quiz_name:
+
+        flash(
+            "Please enter Quiz Name.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # FACULTY ASSIGNMENT SECURITY
+    # --------------------------------------------------------
+
+    assignment_allowed = False
+
+    for item in allowed_combinations:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        item_course = str(
+            item.get(
+                "course",
+                ""
+            )
+        ).strip()
+
+        item_semester = str(
+            item.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+        item_section = str(
+            item.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+        item_subject = str(
+            item.get(
+                "subject",
+                ""
+            )
+        ).strip()
+
+
+        if (
+            item_course.lower()
+            == course.lower()
+            and
+            item_semester
+            == semester
+            and
+            item_section
+            == section
+            and
+            item_subject.lower()
+            == subject.lower()
+        ):
+
+            assignment_allowed = True
+
+            break
+
+
+    if not assignment_allowed:
+
+        flash(
+            "You are not assigned this Course, Semester, Section and Subject.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # TIME LIMIT
+    # --------------------------------------------------------
+
+    try:
+
+        time_limit_value = int(
+            time_limit
+        )
+
+    except Exception:
+
+        time_limit_value = 0
+
+
+    if time_limit_value <= 0:
+
+        flash(
+            "Time Limit must be greater than 0 minutes.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # MAX ATTEMPTS
+    # --------------------------------------------------------
+
+    try:
+
+        max_attempts_value = int(
+            max_attempts_raw
+        )
+
+    except Exception:
+
+        max_attempts_value = 1
+
+
+    if max_attempts_value <= 0:
+
+        max_attempts_value = 1
+
+
+    # --------------------------------------------------------
+    # DATE / TIME
+    # --------------------------------------------------------
+
+    if not start_datetime:
+
+        flash(
+            "Please select Quiz Start Date and Time.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if not end_datetime:
+
+        flash(
+            "Please select Quiz End Date and Time.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    if end_datetime <= start_datetime:
+
+        flash(
+            "Quiz End Date and Time must be after Start Date and Time.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # QUESTIONS
+    # --------------------------------------------------------
+
+    questions = []
+
+    question_numbers = request.form.getlist(
+        "question_number"
+    )
+
+
+    # --------------------------------------------------------
+    # NEW QUESTION FORMAT
+    # --------------------------------------------------------
+
+    if question_numbers:
+
+        for number in question_numbers:
+
+            number = str(
+                number
+            ).strip()
+
+            if not number:
+                continue
+
+
+            question_text = str(
+                request.form.get(
+                    "question_" + number,
+                    ""
+                )
+            ).strip()
+
+
+            option_a = str(
+                request.form.get(
+                    "option_a_" + number,
+                    ""
+                )
+            ).strip()
+
+
+            option_b = str(
+                request.form.get(
+                    "option_b_" + number,
+                    ""
+                )
+            ).strip()
+
+
+            option_c = str(
+                request.form.get(
+                    "option_c_" + number,
+                    ""
+                )
+            ).strip()
+
+
+            option_d = str(
+                request.form.get(
+                    "option_d_" + number,
+                    ""
+                )
+            ).strip()
+
+
+            correct_answer = str(
+                request.form.get(
+                    "correct_answer_" + number,
+                    ""
+                )
+            ).strip().upper()
+
+
+            marks_text = str(
+                request.form.get(
+                    "marks_" + number,
+                    "1"
+                )
+            ).strip()
+
+
+            if not question_text:
+                continue
+
+
+            if (
+                not option_a
+                or
+                not option_b
+                or
+                not option_c
+                or
+                not option_d
+            ):
+
+                flash(
+                    "Every question must have all four options.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "faculty_create_quiz"
+                    )
+                )
+
+
+            if correct_answer not in {
+                "A",
+                "B",
+                "C",
+                "D"
+            }:
+
+                flash(
+                    "Correct answer must be A, B, C or D.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "faculty_create_quiz"
+                    )
+                )
+
+
+            try:
+
+                marks = float(
+                    marks_text
+                )
+
+                if marks <= 0:
+                    raise ValueError
+
+            except Exception:
+
+                flash(
+                    "Question marks must be greater than 0.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "faculty_create_quiz"
+                    )
+                )
+
+
+            questions.append({
+
+                "question_id":
+                    str(
+                        uuid.uuid4()
+                    ),
+
+                "question":
+                    question_text,
+
+                "option_a":
+                    option_a,
+
+                "option_b":
+                    option_b,
+
+                "option_c":
+                    option_c,
+
+                "option_d":
+                    option_d,
+
+                "correct_answer":
+                    correct_answer,
+
+                "marks":
+                    marks
+
+            })
+
+
+    # --------------------------------------------------------
+    # OLD QUESTION FORMAT
+    # --------------------------------------------------------
+
+    else:
+
+        question_texts = request.form.getlist(
+            "question_text"
+        )
+
+        option_as = request.form.getlist(
+            "option_a"
+        )
+
+        option_bs = request.form.getlist(
+            "option_b"
+        )
+
+        option_cs = request.form.getlist(
+            "option_c"
+        )
+
+        option_ds = request.form.getlist(
+            "option_d"
+        )
+
+        correct_answers = request.form.getlist(
+            "correct_answer"
+        )
+
+        question_marks = request.form.getlist(
+            "question_marks"
+        )
+
+
+        for index, question_text in enumerate(
+            question_texts
+        ):
+
+            question_text = str(
+                question_text
+            ).strip()
+
+            if not question_text:
+                continue
+
+
+            option_a = (
+                option_as[index].strip()
+                if index < len(option_as)
+                else ""
+            )
+
+
+            option_b = (
+                option_bs[index].strip()
+                if index < len(option_bs)
+                else ""
+            )
+
+
+            option_c = (
+                option_cs[index].strip()
+                if index < len(option_cs)
+                else ""
+            )
+
+
+            option_d = (
+                option_ds[index].strip()
+                if index < len(option_ds)
+                else ""
+            )
+
+
+            correct_answer = (
+                correct_answers[index].strip().upper()
+                if index < len(correct_answers)
+                else ""
+            )
+
+
+            marks_raw = (
+                question_marks[index].strip()
+                if index < len(question_marks)
+                else "1"
+            )
+
+
+            if (
+                not option_a
+                or
+                not option_b
+                or
+                not option_c
+                or
+                not option_d
+            ):
+
+                flash(
+                    "Every question must have all four options.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "faculty_create_quiz"
+                    )
+                )
+
+
+            if correct_answer not in {
+                "A",
+                "B",
+                "C",
+                "D"
+            }:
+
+                flash(
+                    "Correct answer must be A, B, C or D.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "faculty_create_quiz"
+                    )
+                )
+
+
+            try:
+
+                marks = float(
+                    marks_raw
+                )
+
+                if marks <= 0:
+                    raise ValueError
+
+            except Exception:
+
+                marks = 1
+
+
+            questions.append({
+
+                "question_id":
+                    str(
+                        uuid.uuid4()
+                    ),
+
+                "question":
+                    question_text,
+
+                "option_a":
+                    option_a,
+
+                "option_b":
+                    option_b,
+
+                "option_c":
+                    option_c,
+
+                "option_d":
+                    option_d,
+
+                "correct_answer":
+                    correct_answer,
+
+                "marks":
+                    marks
+
+            })
+
+
+    # --------------------------------------------------------
+    # QUESTION REQUIRED
+    # --------------------------------------------------------
+
+    if not questions:
+
+        flash(
+            "Please add at least one question.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # TOTAL MARKS
+    # --------------------------------------------------------
+
+    total_marks = 0
+
+    for question in questions:
+
+        try:
+
+            total_marks += float(
+                question.get(
+                    "marks",
+                    0
+                )
+            )
+
+        except Exception:
+
+            pass
+
+
+    # --------------------------------------------------------
+    # QUIZ ID
+    # --------------------------------------------------------
+
+    quiz_id = str(
+        uuid.uuid4()
+    )
+
+
+    # --------------------------------------------------------
+    # QUIZ OBJECT
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # New quiz is saved as DRAFT.
+    # Faculty will publish it from My Quiz.
+    # --------------------------------------------------------
+
+    quiz = {
+
+        "quiz_id":
+            quiz_id,
+
+        "faculty_id":
+            faculty_id,
+
+        "quiz_name":
+            quiz_name,
+
+        "course":
+            course,
+
+        "semester":
+            semester,
+
+        "section":
+            section,
+
+        "subject":
+            subject,
+
+        "time_limit":
+            time_limit_value,
+
+        "start_datetime":
+            start_datetime,
+
+        "end_datetime":
+            end_datetime,
+
+        "max_attempts":
+            max_attempts_value,
+
+        "total_marks":
+            total_marks,
+
+        "questions":
+            questions,
+
+        "published":
+            False,
+
+        "created_at":
+            str(
+                __import__(
+                    "datetime"
+                ).datetime.now()
+            )
+
+    }
+
+
+    # --------------------------------------------------------
+    # SAVE QUIZ
+    # --------------------------------------------------------
+
+    quizzes = load_quizzes()
+
+    quizzes.append(
+        quiz
+    )
+
+
+    if not save_quizzes(
+        quizzes
+    ):
+
+        flash(
+            "Quiz could not be saved.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_create_quiz"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # SUCCESS
+    # --------------------------------------------------------
+
+    flash(
+        "Quiz saved to My Quiz as Draft.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "faculty_quizzes"
+        )
+    )
+
+
+# ============================================================
+# FACULTY MY QUIZZES
+# ============================================================
+
+@app.route(
+    "/faculty-quizzes"
+)
+def faculty_quizzes():
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    quizzes = load_quizzes()
+
+    faculty_quizzes_data = []
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "faculty_id",
+                ""
+            )
+        ).strip() != faculty_id:
+
+            continue
+
+
+        faculty_quizzes_data.append(
+            quiz
+        )
+
+
+    # Newest quiz first.
+    faculty_quizzes_data.reverse()
+
+
+    return render_template(
+        "faculty_quizzes.html",
+        quizzes=faculty_quizzes_data
+    )
+
+
+# ============================================================
+# FACULTY PUBLISH QUIZ
+# ============================================================
+
+@app.route(
+    "/faculty-publish-quiz/<quiz_id>",
+    methods=["POST"]
+)
+def faculty_publish_quiz(
+    quiz_id
+):
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    quizzes = load_quizzes()
+
+    quiz_found = False
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != str(
+            quiz_id
+        ).strip():
+
+            continue
+
+
+        if str(
+            quiz.get(
+                "faculty_id",
+                ""
+            )
+        ).strip() != faculty_id:
+
+            return (
+                "You are not allowed to publish this quiz.",
+                403
+            )
+
+
+        quiz["published"] = True
+
+        quiz_found = True
+
+        break
+
+
+    if not quiz_found:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    if not save_quizzes(
+        quizzes
+    ):
+
+        flash(
+            "Quiz could not be published.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_quizzes"
+            )
+        )
+
+
+    flash(
+        "Quiz published successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "faculty_quizzes"
+        )
+    )
+
+
+# ============================================================
+# FACULTY UNPUBLISH QUIZ
+# ============================================================
+
+@app.route(
+    "/faculty-unpublish-quiz/<quiz_id>",
+    methods=["POST"]
+)
+def faculty_unpublish_quiz(
+    quiz_id
+):
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    quizzes = load_quizzes()
+
+    quiz_found = False
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != str(
+            quiz_id
+        ).strip():
+
+            continue
+
+
+        if str(
+            quiz.get(
+                "faculty_id",
+                ""
+            )
+        ).strip() != faculty_id:
+
+            return (
+                "You are not allowed to unpublish this quiz.",
+                403
+            )
+
+
+        quiz["published"] = False
+
+        quiz_found = True
+
+        break
+
+
+    if not quiz_found:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    if not save_quizzes(
+        quizzes
+    ):
+
+        flash(
+            "Quiz could not be unpublished.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "faculty_quizzes"
+            )
+        )
+
+
+    flash(
+        "Quiz unpublished successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "faculty_quizzes"
+        )
+    )
+
+
+# ============================================================
+# STUDENT AVAILABLE QUIZZES
+# ============================================================
+
+@app.route(
+    "/student-quiz"
+)
+def student_quiz():
+
+    student_enrollment = str(
+        session.get(
+            "student_enrollment",
+            ""
+        )
+    ).strip()
+
+
+    if not student_enrollment:
+
+        return redirect(
+            url_for(
+                "student_login"
+            )
+        )
+
+
+    student = get_quiz_student_by_enrollment(
+        student_enrollment
+    )
+
+
+    student_course = str(
+        session.get(
+            "student_course",
+            ""
+        )
+    ).strip()
+
+    student_semester = str(
+        session.get(
+            "student_semester",
+            ""
+        )
+    ).strip()
+
+    student_section = str(
+        session.get(
+            "student_section",
+            ""
+        )
+    ).strip().upper()
+
+
+    if student:
+
+        if not student_course:
+
+            student_course = str(
+                student.get(
+                    "course",
+                    ""
+                )
+            ).strip()
+
+
+        if not student_semester:
+
+            student_semester = str(
+                student.get(
+                    "semester",
+                    ""
+                )
+            ).strip()
+
+
+        if not student_section:
+
+            student_section = str(
+                student.get(
+                    "section",
+                    ""
+                )
+            ).strip().upper()
+
+
+    quizzes = load_quizzes()
+
+    available_quizzes = []
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if not quiz.get(
+            "published",
+            False
+        ):
+            continue
+
+
+        quiz_course = str(
+            quiz.get(
+                "course",
+                ""
+            )
+        ).strip().lower()
+
+
+        quiz_semester = str(
+            quiz.get(
+                "semester",
+                ""
+            )
+        ).strip()
+
+
+        quiz_section = str(
+            quiz.get(
+                "section",
+                ""
+            )
+        ).strip().upper()
+
+
+        if quiz_course != student_course.lower():
+            continue
+
+
+        if quiz_semester != student_semester:
+            continue
+
+
+        if quiz_section != student_section:
+            continue
+
+
+        available_quizzes.append(
+            quiz
+        )
+
+
+    return render_template(
+        "student_quiz.html",
+        quizzes=available_quizzes,
+        student=student
+    )
+
+
+# ============================================================
+# STUDENT START QUIZ
+# ============================================================
+
+@app.route(
+    "/student-start-quiz/<quiz_id>",
+    methods=["GET"]
+)
+def student_start_quiz(
+    quiz_id
+):
+
+    student_enrollment = str(
+        session.get(
+            "student_enrollment",
+            ""
+        )
+    ).strip()
+
+
+    if not student_enrollment:
+
+        return redirect(
+            url_for(
+                "student_login"
+            )
+        )
+
+
+    quiz_id = str(
+        quiz_id
+    ).strip()
+
+
+    quizzes = load_quizzes()
+
+    selected_quiz = None
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() == quiz_id:
+
+            selected_quiz = quiz
+
+            break
+
+
+    if selected_quiz is None:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    # --------------------------------------------------------
+    # PUBLISHED CHECK
+    # --------------------------------------------------------
+
+    if not selected_quiz.get(
+        "published",
+        False
+    ):
+
+        return (
+            "This quiz is not published.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # STUDENT DETAILS
+    # --------------------------------------------------------
+
+    student = get_quiz_student_by_enrollment(
+        student_enrollment
+    )
+
+
+    student_course = str(
+        session.get(
+            "student_course",
+            ""
+        )
+    ).strip()
+
+    student_semester = str(
+        session.get(
+            "student_semester",
+            ""
+        )
+    ).strip()
+
+    student_section = str(
+        session.get(
+            "student_section",
+            ""
+        )
+    ).strip().upper()
+
+
+    if student:
+
+        if not student_course:
+
+            student_course = str(
+                student.get(
+                    "course",
+                    ""
+                )
+            ).strip()
+
+
+        if not student_semester:
+
+            student_semester = str(
+                student.get(
+                    "semester",
+                    ""
+                )
+            ).strip()
+
+
+        if not student_section:
+
+            student_section = str(
+                student.get(
+                    "section",
+                    ""
+                )
+            ).strip().upper()
+
+
+    # --------------------------------------------------------
+    # COURSE CHECK
+    # --------------------------------------------------------
+
+    if str(
+        selected_quiz.get(
+            "course",
+            ""
+        )
+    ).strip().lower() != student_course.lower():
+
+        return (
+            "You are not allowed to attempt this quiz.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # SEMESTER CHECK
+    # --------------------------------------------------------
+
+    if str(
+        selected_quiz.get(
+            "semester",
+            ""
+        )
+    ).strip() != student_semester:
+
+        return (
+            "You are not allowed to attempt this quiz.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # SECTION CHECK
+    # --------------------------------------------------------
+
+    if str(
+        selected_quiz.get(
+            "section",
+            ""
+        )
+    ).strip().upper() != student_section:
+
+        return (
+            "You are not allowed to attempt this quiz.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # LOAD PREVIOUS RESULTS
+    # --------------------------------------------------------
+
+    results_file = "quiz_results.json"
+
+    all_results = []
+
+
+    if os.path.exists(
+        results_file
+    ):
+
+        try:
+
+            with open(
+                results_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                all_results = json.load(file)
+
+
+            if not isinstance(
+                all_results,
+                list
+            ):
+
+                all_results = []
+
+
+        except Exception:
+
+            all_results = []
+
+
+    # --------------------------------------------------------
+    # MAX ATTEMPTS CHECK
+    # --------------------------------------------------------
+
+    try:
+
+        max_attempts = int(
+            selected_quiz.get(
+                "max_attempts",
+                1
+            )
+        )
+
+    except Exception:
+
+        max_attempts = 1
+
+
+    if max_attempts <= 0:
+
+        max_attempts = 1
+
+
+    student_attempts = 0
+
+
+    for result in all_results:
+
+        if not isinstance(
+            result,
+            dict
+        ):
+            continue
+
+
+        if str(
+            result.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != quiz_id:
+
+            continue
+
+
+        if str(
+            result.get(
+                "student_enrollment",
+                ""
+            )
+        ).strip() != student_enrollment:
+
+            continue
+
+
+        student_attempts += 1
+
+
+    if student_attempts >= max_attempts:
+
+        return (
+            "You have already used the maximum number of attempts for this quiz.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # QUIZ DATE/TIME
+    # --------------------------------------------------------
+
+    now = __import__(
+        "datetime"
+    ).datetime.now()
+
+
+    start_value = str(
+        selected_quiz.get(
+            "start_datetime",
+            ""
+        )
+    ).strip()
+
+
+    end_value = str(
+        selected_quiz.get(
+            "end_datetime",
+            ""
+        )
+    ).strip()
+
+
+    try:
+
+        quiz_start = (
+            __import__(
+                "datetime"
+            ).datetime.fromisoformat(
+                start_value
+            )
+        )
+
+
+        quiz_end = (
+            __import__(
+                "datetime"
+            ).datetime.fromisoformat(
+                end_value
+            )
+        )
+
+
+    except Exception:
+
+        return (
+            "Quiz date/time is invalid.",
+            400
+        )
+
+
+    if now < quiz_start:
+
+        return (
+            "This quiz has not started yet.",
+            403
+        )
+
+
+    if now > quiz_end:
+
+        return (
+            "This quiz has already ended.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # ACTIVE QUIZ SESSION
+    # --------------------------------------------------------
+
+    session[
+        "active_quiz_id"
+    ] = quiz_id
+
+
+    session[
+        "active_quiz_student"
+    ] = student_enrollment
+
+
+    session[
+        "quiz_started_at"
+    ] = now.isoformat()
+
+
+    return render_template(
+        "student_take_quiz.html",
+        quiz=selected_quiz,
+        student=student
+    )
+
+
+# ============================================================
+# STUDENT SUBMIT QUIZ
+# ============================================================
+
+@app.route(
+    "/student-submit-quiz/<quiz_id>",
+    methods=["POST"]
+)
+def student_submit_quiz(
+    quiz_id
+):
+
+    student_enrollment = str(
+        session.get(
+            "student_enrollment",
+            ""
+        )
+    ).strip()
+
+
+    if not student_enrollment:
+
+        return redirect(
+            url_for(
+                "student_login"
+            )
+        )
+
+
+    quiz_id = str(
+        quiz_id
+    ).strip()
+
+
+    # --------------------------------------------------------
+    # ACTIVE QUIZ CHECK
+    # --------------------------------------------------------
+
+    active_quiz_id = str(
+        session.get(
+            "active_quiz_id",
+            ""
+        )
+    ).strip()
+
+
+    if active_quiz_id:
+
+        if active_quiz_id != quiz_id:
+
+            return (
+                "Invalid quiz session.",
+                403
+            )
+
+
+    # --------------------------------------------------------
+    # LOAD QUIZ
+    # --------------------------------------------------------
+
+    quizzes = load_quizzes()
+
+    selected_quiz = None
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() == quiz_id:
+
+            selected_quiz = quiz
+
+            break
+
+
+    if selected_quiz is None:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    # --------------------------------------------------------
+    # CHECK PREVIOUS ATTEMPTS
+    # --------------------------------------------------------
+
+    results_file = "quiz_results.json"
+
+    all_results = []
+
+
+    if os.path.exists(
+        results_file
+    ):
+
+        try:
+
+            with open(
+                results_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                all_results = json.load(file)
+
+
+            if not isinstance(
+                all_results,
+                list
+            ):
+
+                all_results = []
+
+
+        except Exception:
+
+            all_results = []
+
+
+    try:
+
+        max_attempts = int(
+            selected_quiz.get(
+                "max_attempts",
+                1
+            )
+        )
+
+    except Exception:
+
+        max_attempts = 1
+
+
+    if max_attempts <= 0:
+
+        max_attempts = 1
+
+
+    student_attempts = 0
+
+
+    for old_result in all_results:
+
+        if not isinstance(
+            old_result,
+            dict
+        ):
+            continue
+
+
+        if str(
+            old_result.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != quiz_id:
+
+            continue
+
+
+        if str(
+            old_result.get(
+                "student_enrollment",
+                ""
+            )
+        ).strip() != student_enrollment:
+
+            continue
+
+
+        student_attempts += 1
+
+
+    if student_attempts >= max_attempts:
+
+        return (
+            "You have already used the maximum number of attempts for this quiz.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # CALCULATE RESULT
+    # --------------------------------------------------------
+
+    score = 0
+
+    correct = 0
+
+    wrong = 0
+
+    unattempted = 0
+
+    total_marks = 0
+
+
+    questions = selected_quiz.get(
+        "questions",
+        []
+    )
+
+
+    for index, question in enumerate(
+        questions
+    ):
+
+        if not isinstance(
+            question,
+            dict
+        ):
+            continue
+
+
+        question_id = str(
+            question.get(
+                "question_id",
+                ""
+            )
+        ).strip()
+
+
+        submitted_answer = ""
+
+
+        # ----------------------------------------------------
+        # QUESTION ID FORMAT
+        # ----------------------------------------------------
+
+        if question_id:
+
+            submitted_answer = str(
+                request.form.get(
+                    "answer_" + question_id,
+                    ""
+                )
+            ).strip().upper()
+
+
+        # ----------------------------------------------------
+        # INDEX FORMAT
+        # ----------------------------------------------------
+
+        if not submitted_answer:
+
+            submitted_answer = str(
+                request.form.get(
+                    "answer_" + str(index),
+                    ""
+                )
+            ).strip().upper()
+
+
+        # ----------------------------------------------------
+        # SUPPORT question_INDEX FORMAT
+        # ----------------------------------------------------
+
+        if not submitted_answer:
+
+            submitted_answer = str(
+                request.form.get(
+                    "question_" + str(index),
+                    ""
+                )
+            ).strip().upper()
+
+
+        correct_answer = str(
+            question.get(
+                "correct_answer",
+                ""
+            )
+        ).strip().upper()
+
+
+        try:
+
+            marks = float(
+                question.get(
+                    "marks",
+                    1
+                )
+            )
+
+        except Exception:
+
+            marks = 1
+
+
+        if marks <= 0:
+
+            marks = 1
+
+
+        total_marks += marks
+
+
+        if not submitted_answer:
+
+            unattempted += 1
+
+
+        elif submitted_answer == correct_answer:
+
+            correct += 1
+
+            score += marks
+
+
+        else:
+
+            wrong += 1
+
+
+    # --------------------------------------------------------
+    # PERCENTAGE
+    # --------------------------------------------------------
+
+    percentage = 0
+
+
+    if total_marks > 0:
+
+        percentage = round(
+            (
+                score
+                /
+                total_marks
+            ) * 100,
+            2
+        )
+
+
+    # --------------------------------------------------------
+    # RESULT
+    # --------------------------------------------------------
+
+    result = {
+
+        "result_id":
+            str(
+                uuid.uuid4()
+            ),
+
+        "quiz_id":
+            quiz_id,
+
+        "student_enrollment":
+            student_enrollment,
+
+        "score":
+            score,
+
+        "total_marks":
+            total_marks,
+
+        "percentage":
+            percentage,
+
+        "correct":
+            correct,
+
+        "wrong":
+            wrong,
+
+        "unattempted":
+            unattempted,
+
+        "submitted_at":
+            __import__(
+                "datetime"
+            ).datetime.now().isoformat()
+
+    }
+
+
+    # --------------------------------------------------------
+    # SAVE RESULT
+    # --------------------------------------------------------
+
+    all_results.append(
+        result
+    )
+
+
+    try:
+
+        with open(
+            results_file,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                all_results,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+    except Exception as e:
+
+        print(
+            "QUIZ RESULT SAVE ERROR:",
+            e
+        )
+
+        return (
+            "Result could not be saved.",
+            500
+        )
+
+
+    # --------------------------------------------------------
+    # CLEAR SESSION
+    # --------------------------------------------------------
+
+    session.pop(
+        "active_quiz_id",
+        None
+    )
+
+    session.pop(
+        "active_quiz_student",
+        None
+    )
+
+    session.pop(
+        "quiz_started_at",
+        None
+    )
+
+
+    # --------------------------------------------------------
+    # SHOW STUDENT RESULT
+    # --------------------------------------------------------
+
+    return render_template(
+        "student_quiz_result.html",
+        result=result,
+        quiz=selected_quiz
+    )
+
+
+# ============================================================
+# FACULTY QUIZ RESULTS
+# ============================================================
+
+@app.route(
+    "/faculty-quiz-results/<quiz_id>"
+)
+def faculty_quiz_results(
+    quiz_id
+):
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    quizzes = load_quizzes()
+
+    selected_quiz = None
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() == str(
+            quiz_id
+        ).strip():
+
+            selected_quiz = quiz
+
+            break
+
+
+    if selected_quiz is None:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    # --------------------------------------------------------
+    # FACULTY OWNERSHIP
+    # --------------------------------------------------------
+
+    if str(
+        selected_quiz.get(
+            "faculty_id",
+            ""
+        )
+    ).strip() != faculty_id:
+
+        return (
+            "You are not allowed to view these results.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # LOAD RESULTS
+    # --------------------------------------------------------
+
+    results_file = "quiz_results.json"
+
+    all_results = []
+
+
+    if os.path.exists(
+        results_file
+    ):
+
+        try:
+
+            with open(
+                results_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                all_results = json.load(file)
+
+
+            if not isinstance(
+                all_results,
+                list
+            ):
+
+                all_results = []
+
+
+        except Exception:
+
+            all_results = []
+
+
+    # --------------------------------------------------------
+    # FILTER RESULTS
+    # --------------------------------------------------------
+
+    quiz_results = []
+
+
+    for result in all_results:
+
+        if not isinstance(
+            result,
+            dict
+        ):
+            continue
+
+
+        if str(
+            result.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != str(
+            quiz_id
+        ).strip():
+
+            continue
+
+
+        # ----------------------------------------------------
+        # ADD STUDENT NAME
+        # ----------------------------------------------------
+
+        enrollment = str(
+            result.get(
+                "student_enrollment",
+                ""
+            )
+        ).strip()
+
+
+        result_copy = dict(
+            result
+        )
+
+
+        result_copy[
+            "student_name"
+        ] = get_quiz_student_name(
+            enrollment
+        )
+
+
+        quiz_results.append(
+            result_copy
+        )
+
+
+    # --------------------------------------------------------
+    # SHOW RESULTS
+    # --------------------------------------------------------
+
+    return render_template(
+        "faculty_quiz_results.html",
+        quiz=selected_quiz,
+        results=quiz_results
+    )
+
+
+# ============================================================
+# FACULTY QUIZ RESULTS - EXCEL
+# ============================================================
+
+@app.route(
+    "/faculty-quiz-results-excel/<quiz_id>"
+)
+def faculty_quiz_results_excel(
+    quiz_id
+):
+
+    faculty_id = str(
+        session.get(
+            "faculty_id",
+            ""
+        )
+    ).strip()
+
+
+    if not faculty_id:
+
+        return redirect(
+            url_for(
+                "faculty_login"
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # LOAD QUIZ
+    # --------------------------------------------------------
+
+    quizzes = load_quizzes()
+
+    selected_quiz = None
+
+
+    for quiz in quizzes:
+
+        if not isinstance(
+            quiz,
+            dict
+        ):
+            continue
+
+
+        if str(
+            quiz.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() == str(
+            quiz_id
+        ).strip():
+
+            selected_quiz = quiz
+
+            break
+
+
+    if selected_quiz is None:
+
+        return (
+            "Quiz not found.",
+            404
+        )
+
+
+    # --------------------------------------------------------
+    # FACULTY OWNERSHIP
+    # --------------------------------------------------------
+
+    if str(
+        selected_quiz.get(
+            "faculty_id",
+            ""
+        )
+    ).strip() != faculty_id:
+
+        return (
+            "You are not allowed to export these results.",
+            403
+        )
+
+
+    # --------------------------------------------------------
+    # OPENPYXL
+    # --------------------------------------------------------
+
+    try:
+
+        from openpyxl import Workbook
+
+        from openpyxl.styles import (
+            Font,
+            Alignment,
+            PatternFill,
+            Border,
+            Side
+        )
+
+        from openpyxl.utils import (
+            get_column_letter
+        )
+
+        from io import BytesIO
+
+        from flask import send_file
+
+    except Exception as e:
+
+        print(
+            "OPENPYXL IMPORT ERROR:",
+            e
+        )
+
+        return (
+            "Excel export requires openpyxl to be installed.",
+            500
+        )
+
+
+    # --------------------------------------------------------
+    # LOAD RESULTS
+    # --------------------------------------------------------
+
+    results_file = "quiz_results.json"
+
+    all_results = []
+
+
+    if os.path.exists(
+        results_file
+    ):
+
+        try:
+
+            with open(
+                results_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                all_results = json.load(file)
+
+
+            if not isinstance(
+                all_results,
+                list
+            ):
+
+                all_results = []
+
+
+        except Exception:
+
+            all_results = []
+
+
+    # --------------------------------------------------------
+    # FILTER RESULTS
+    # --------------------------------------------------------
+
+    quiz_results = []
+
+
+    for result in all_results:
+
+        if not isinstance(
+            result,
+            dict
+        ):
+            continue
+
+
+        if str(
+            result.get(
+                "quiz_id",
+                ""
+            )
+        ).strip() != str(
+            quiz_id
+        ).strip():
+
+            continue
+
+
+        enrollment = str(
+            result.get(
+                "student_enrollment",
+                ""
+            )
+        ).strip()
+
+
+        result_copy = dict(
+            result
+        )
+
+
+        result_copy[
+            "student_name"
+        ] = get_quiz_student_name(
+            enrollment
+        )
+
+
+        quiz_results.append(
+            result_copy
+        )
+
+
+    # --------------------------------------------------------
+    # CREATE WORKBOOK
+    # --------------------------------------------------------
+
+    workbook = Workbook()
+
+    worksheet = workbook.active
+
+    worksheet.title = "Quiz Results"
+
+
+    # --------------------------------------------------------
+    # STYLES
+    # --------------------------------------------------------
+
+    title_font = Font(
+        bold=True,
+        size=16
+    )
+
+    label_font = Font(
+        bold=True
+    )
+
+    header_font = Font(
+        bold=True,
+        color="FFFFFF"
+    )
+
+    header_fill = PatternFill(
+        fill_type="solid",
+        fgColor="6A1B9A"
+    )
+
+    thin_side = Side(
+        style="thin",
+        color="D9D9D9"
+    )
+
+    thin_border = Border(
+        left=thin_side,
+        right=thin_side,
+        top=thin_side,
+        bottom=thin_side
+    )
+
+
+    # --------------------------------------------------------
+    # QUIZ INFORMATION - TOP
+    # --------------------------------------------------------
+
+    worksheet.merge_cells(
+        "A1:J1"
+    )
+
+    worksheet["A1"] = (
+        selected_quiz.get(
+            "quiz_name",
+            "Quiz"
+        )
+    )
+
+    worksheet["A1"].font = title_font
+
+    worksheet["A1"].alignment = Alignment(
+        horizontal="center"
+    )
+
+
+    # --------------------------------------------------------
+    # DATE / TIME
+    # --------------------------------------------------------
+
+    start_datetime = str(
+        selected_quiz.get(
+            "start_datetime",
+            ""
+        )
+    ).strip()
+
+
+    end_datetime = str(
+        selected_quiz.get(
+            "end_datetime",
+            ""
+        )
+    ).strip()
+
+
+    exam_date = ""
+
+    start_time = ""
+
+    end_time = ""
+
+
+    try:
+
+        start_dt = (
+            __import__(
+                "datetime"
+            ).datetime.fromisoformat(
+                start_datetime
+            )
+        )
+
+        exam_date = start_dt.strftime(
+            "%d-%m-%Y"
+        )
+
+        start_time = start_dt.strftime(
+            "%I:%M %p"
+        )
+
+    except Exception:
+
+        if "T" in start_datetime:
+
+            parts = start_datetime.split(
+                "T",
+                1
+            )
+
+            exam_date = parts[0]
+
+            start_time = parts[1]
+
+
+    try:
+
+        end_dt = (
+            __import__(
+                "datetime"
+            ).datetime.fromisoformat(
+                end_datetime
+            )
+        )
+
+        end_time = end_dt.strftime(
+            "%I:%M %p"
+        )
+
+    except Exception:
+
+        if "T" in end_datetime:
+
+            parts = end_datetime.split(
+                "T",
+                1
+            )
+
+            end_time = parts[1]
+
+
+        # --------------------------------------------------------
+    # TOP INFORMATION
+    # REQUIRED ORDER:
+    # Course
+    # Semester
+    # Section
+    # Subject
+    # Date
+    # Time
+    # --------------------------------------------------------
+
+    info = [
+
+        (
+            "Course",
+            selected_quiz.get(
+                "course",
+                ""
+            )
+        ),
+
+        (
+            "Semester",
+            selected_quiz.get(
+                "semester",
+                ""
+            )
+        ),
+
+        (
+            "Section",
+            selected_quiz.get(
+                "section",
+                ""
+            )
+        ),
+
+        (
+            "Subject",
+            selected_quiz.get(
+                "subject",
+                ""
+            )
+        ),
+
+        (
+            "Date",
+            exam_date
+        ),
+
+        (
+            "Time",
+            start_time
+        )
+
+    ]
+
+    row = 3
+
+
+    for label, value in info:
+
+        worksheet.cell(
+            row=row,
+            column=1
+        ).value = label
+
+        worksheet.cell(
+            row=row,
+            column=1
+        ).font = label_font
+
+
+        worksheet.merge_cells(
+            start_row=row,
+            start_column=2,
+            end_row=row,
+            end_column=4
+        )
+
+
+        worksheet.cell(
+            row=row,
+            column=2
+        ).value = value
+
+
+        row += 1
+
+
+    # --------------------------------------------------------
+    # RESULT TABLE START
+    # --------------------------------------------------------
+
+    header_row = row + 1
+
+
+    headers = [
+
+        "S.No",
+
+        "Student Name",
+
+        "Student Enrollment",
+
+        "Score",
+
+        "Total Marks",
+
+        "Percentage",
+
+        "Correct",
+
+        "Wrong",
+
+        "Unattempted",
+
+        "Submitted At"
+
+    ]
+
+
+    for column_number, header in enumerate(
+        headers,
+        start=1
+    ):
+
+        cell = worksheet.cell(
+            row=header_row,
+            column=column_number
+        )
+
+        cell.value = header
+
+        cell.font = header_font
+
+        cell.fill = header_fill
+
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center"
+        )
+
+        cell.border = thin_border
+
+
+    # --------------------------------------------------------
+    # RESULT DATA
+    # --------------------------------------------------------
+
+    for index, result in enumerate(
+        quiz_results,
+        start=1
+    ):
+
+        result_row = (
+            header_row + index
+        )
+
+
+        values = [
+
+            index,
+
+            result.get(
+                "student_name",
+                "Unknown Student"
+            ),
+
+            result.get(
+                "student_enrollment",
+                ""
+            ),
+
+            result.get(
+                "score",
+                0
+            ),
+
+            result.get(
+                "total_marks",
+                selected_quiz.get(
+                    "total_marks",
+                    0
+                )
+            ),
+
+            result.get(
+                "percentage",
+                0
+            ),
+
+            result.get(
+                "correct",
+                0
+            ),
+
+            result.get(
+                "wrong",
+                0
+            ),
+
+            result.get(
+                "unattempted",
+                0
+            ),
+
+            result.get(
+                "submitted_at",
+                ""
+            )
+
+        ]
+
+
+        for column_number, value in enumerate(
+            values,
+            start=1
+        ):
+
+            cell = worksheet.cell(
+                row=result_row,
+                column=column_number
+            )
+
+            cell.value = value
+
+            cell.border = thin_border
+
+            cell.alignment = Alignment(
+                vertical="center"
+            )
+
+
+    # --------------------------------------------------------
+    # COLUMN WIDTHS
+    # --------------------------------------------------------
+
+    widths = {
+
+        "A": 10,
+
+        "B": 28,
+
+        "C": 22,
+
+        "D": 14,
+
+        "E": 15,
+
+        "F": 15,
+
+        "G": 12,
+
+        "H": 12,
+
+        "I": 15,
+
+        "J": 28
+
+    }
+
+
+    for column, width in widths.items():
+
+        worksheet.column_dimensions[
+            column
+        ].width = width
+
+
+    # --------------------------------------------------------
+    # FREEZE RESULT HEADER
+    # --------------------------------------------------------
+
+    worksheet.freeze_panes = (
+        "A" + str(
+            header_row + 1
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # OUTPUT
+    # --------------------------------------------------------
+
+    output = BytesIO()
+
+    workbook.save(
+        output
+    )
+
+    output.seek(0)
+
+
+    # --------------------------------------------------------
+    # FILE NAME
+    # --------------------------------------------------------
+
+    quiz_name = str(
+        selected_quiz.get(
+            "quiz_name",
+            "Quiz"
+        )
+    ).strip()
+
+
+    safe_quiz_name = "".join(
+
+        character
+
+        for character in quiz_name
+
+        if (
+            character.isalnum()
+            or
+            character in (
+                " ",
+                "_",
+                "-"
+            )
+        )
+
+    ).strip()
+
+
+    if not safe_quiz_name:
+
+        safe_quiz_name = "Quiz"
+
+
+    filename = (
+        safe_quiz_name
+        +
+        "_Results.xlsx"
+    )
+
+
+    return send_file(
+
+        output,
+
+        as_attachment=True,
+
+        download_name=filename,
+
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        )
+
+    )
+
+
+# ============================================================
+# END OF ONLINE QUIZ SYSTEM
+# ============================================================
+
+
+
+
+# ============================================================
+# FACULTY DELETE QUIZ
+# ============================================================
+
+@app.route("/faculty-delete-quiz/<quiz_id>", methods=["POST"])
+def faculty_delete_quiz(quiz_id):
+
+    # --------------------------------------------------------
+    # FACULTY LOGIN CHECK
+    # --------------------------------------------------------
+    faculty_id = session.get("faculty_id")
+
+    if not faculty_id:
+        flash("Please login as faculty first.", "error")
+        return redirect(url_for("faculty_login"))
+
+
+    # --------------------------------------------------------
+    # LOAD QUIZZES
+    # --------------------------------------------------------
+    quizzes = load_quizzes()
+
+    selected_quiz = None
+
+    for quiz in quizzes:
+
+        if str(quiz.get("quiz_id", "")) == str(quiz_id):
+
+            selected_quiz = quiz
+            break
+
+
+    # --------------------------------------------------------
+    # QUIZ NOT FOUND
+    # --------------------------------------------------------
+    if not selected_quiz:
+
+        flash("Quiz not found.", "error")
+        return redirect(url_for("faculty_quizzes"))
+
+
+    # --------------------------------------------------------
+    # OWNERSHIP CHECK
+    # Only the faculty who created the quiz can delete it.
+    # --------------------------------------------------------
+    if str(selected_quiz.get("faculty_id", "")) != str(faculty_id):
+
+        flash(
+            "You are not allowed to delete this quiz.",
+            "error"
+        )
+
+        return redirect(url_for("faculty_quizzes"))
+
+
+    # --------------------------------------------------------
+    # REMOVE QUIZ
+    # --------------------------------------------------------
+    quizzes = [
+        quiz
+        for quiz in quizzes
+        if str(quiz.get("quiz_id", "")) != str(quiz_id)
+    ]
+
+
+    # --------------------------------------------------------
+    # SAVE UPDATED QUIZ LIST
+    # --------------------------------------------------------
+    save_quizzes(quizzes)
+
+
+    # --------------------------------------------------------
+    # DELETE RESULTS OF THIS QUIZ
+    # --------------------------------------------------------
+    try:
+
+        if os.path.exists(QUIZ_RESULTS_FILE):
+
+            with open(
+                QUIZ_RESULTS_FILE,
+                "r",
+                encoding="utf-8"
+            ) as f:
+
+                quiz_results = json.load(f)
+
+
+            if not isinstance(quiz_results, list):
+                quiz_results = []
+
+
+            quiz_results = [
+                result
+                for result in quiz_results
+                if str(result.get("quiz_id", "")) != str(quiz_id)
+            ]
+
+
+            with open(
+                QUIZ_RESULTS_FILE,
+                "w",
+                encoding="utf-8"
+            ) as f:
+
+                json.dump(
+                    quiz_results,
+                    f,
+                    indent=4,
+                    ensure_ascii=False
+                )
+
+
+    except Exception as e:
+
+        print(
+            "Error deleting quiz results:",
+            e
+        )
+
+
+    # --------------------------------------------------------
+    # CLEAR ACTIVE QUIZ SESSION
+    # --------------------------------------------------------
+    if str(session.get("active_quiz_id", "")) == str(quiz_id):
+
+        session.pop(
+            "active_quiz_id",
+            None
+        )
+
+        session.pop(
+            "active_quiz_student",
+            None
+        )
+
+        session.pop(
+            "quiz_started_at",
+            None
+        )
+
+
+    # --------------------------------------------------------
+    # SUCCESS MESSAGE
+    # --------------------------------------------------------
+    flash(
+        "Quiz deleted successfully.",
+        "success"
+    )
+
+
+    # --------------------------------------------------------
+    # BACK TO MY QUIZ
+    # --------------------------------------------------------
+    return redirect(
+        url_for("faculty_quizzes")
+    )
+
+
+
+# ============================================================
+# STUDENT THEME BACKEND
+# ============================================================
+
+@app.route("/student-theme", methods=["GET", "POST"])
+def student_theme():
+
+    # ========================================================
+    # STUDENT LOGIN CHECK
+    # ========================================================
+
+    if "student_enrollment" not in session:
+
+        return {
+            "success": False,
+            "message": "Student login required."
+        }, 401
+
+
+    student_enrollment = str(
+        session.get(
+            "student_enrollment",
+            ""
+        )
+    ).strip()
+
+
+    if not student_enrollment:
+
+        return {
+            "success": False,
+            "message": "Student enrollment not found."
+        }, 401
+
+
+    # ========================================================
+    # CREATE TABLE
+    # ========================================================
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS student_themes (
+
+                    enrollment TEXT PRIMARY KEY,
+
+                    theme_type TEXT NOT NULL DEFAULT 'normal',
+
+                    theme_name TEXT NOT NULL DEFAULT 'normal',
+
+                    custom_color TEXT NOT NULL DEFAULT '',
+
+                    updated_at TIMESTAMPTZ
+                    NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
+
+
+    # ========================================================
+    # GET SAVED THEME
+    # ========================================================
+
+    if request.method == "GET":
+
+        conn = get_connection()
+
+        try:
+
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    SELECT
+                        enrollment,
+                        theme_type,
+                        theme_name,
+                        custom_color,
+                        updated_at
+                    FROM student_themes
+                    WHERE enrollment = %s
+                    LIMIT 1
+                """, (
+                    student_enrollment,
+                ))
+
+                saved_theme = cur.fetchone()
+
+        finally:
+
+            conn.close()
+
+
+        # ----------------------------------------------------
+        # NO THEME SAVED
+        # ----------------------------------------------------
+
+        if not saved_theme:
+
+            return {
+                "success": True,
+                "theme_type": "normal",
+                "theme_name": "normal",
+                "custom_color": ""
+            }
+
+
+        return {
+            "success": True,
+            "theme_type": str(
+                saved_theme.get(
+                    "theme_type",
+                    "normal"
+                )
+            ),
+
+            "theme_name": str(
+                saved_theme.get(
+                    "theme_name",
+                    "normal"
+                )
+            ),
+
+            "custom_color": str(
+                saved_theme.get(
+                    "custom_color",
+                    ""
+                )
+            )
+        }
+
+
+    # ========================================================
+    # SAVE THEME
+    # ========================================================
+
+    data = request.get_json(
+        silent=True
+    )
+
+    if not isinstance(data, dict):
+
+        return {
+            "success": False,
+            "message": "Invalid theme data."
+        }, 400
+
+
+    theme_type = str(
+        data.get(
+            "theme_type",
+            "normal"
+        )
+    ).strip().lower()
+
+
+    theme_name = str(
+        data.get(
+            "theme_name",
+            "normal"
+        )
+    ).strip().lower()
+
+
+    custom_color = str(
+        data.get(
+            "custom_color",
+            ""
+        )
+    ).strip()
+
+
+    # ========================================================
+    # ALLOWED THEMES
+    # ========================================================
+
+    allowed_themes = {
+
+        "normal",
+
+        "butterfly",
+
+        "blossom",
+
+        "fairy",
+
+        "unicorn",
+
+        "hearts",
+
+        "monster",
+
+        "doraemon",
+
+        "lion",
+
+        "space",
+
+        "neon",
+
+        "custom"
+    }
+
+
+    # ========================================================
+    # THEME VALIDATION
+    # ========================================================
+
+    if theme_type not in {
+        "theme",
+        "custom",
+        "normal"
+    }:
+
+        return {
+            "success": False,
+            "message": "Invalid theme type."
+        }, 400
+
+
+    if theme_name not in allowed_themes:
+
+        return {
+            "success": False,
+            "message": "Invalid theme."
+        }, 400
+
+
+    # ========================================================
+    # NORMAL THEME
+    # ========================================================
+
+    if theme_type == "normal":
+
+        theme_name = "normal"
+
+        custom_color = ""
+
+
+    # ========================================================
+    # CUSTOM COLOR CHECK
+    # ========================================================
+
+    if theme_type == "custom":
+
+        import re
+
+        if not re.fullmatch(
+            r"#[0-9a-fA-F]{6}",
+            custom_color
+        ):
+
+            return {
+                "success": False,
+                "message": "Invalid custom colour."
+            }, 400
+
+        theme_name = "custom"
+
+
+    # ========================================================
+    # SAVE / UPDATE
+    # ========================================================
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                INSERT INTO student_themes
+                (
+                    enrollment,
+                    theme_type,
+                    theme_name,
+                    custom_color,
+                    updated_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP
+                )
+
+                ON CONFLICT (enrollment)
+
+                DO UPDATE SET
+
+                    theme_type =
+                        EXCLUDED.theme_type,
+
+                    theme_name =
+                        EXCLUDED.theme_name,
+
+                    custom_color =
+                        EXCLUDED.custom_color,
+
+                    updated_at =
+                        CURRENT_TIMESTAMP
+            """, (
+                student_enrollment,
+                theme_type,
+                theme_name,
+                custom_color
+            ))
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
+
+
+    # ========================================================
+    # SUCCESS
+    # ========================================================
+
+    return {
+        "success": True,
+
+        "message": "Theme saved successfully.",
+
+        "theme_type": theme_type,
+
+        "theme_name": theme_name,
+
+        "custom_color": custom_color
+    }
+
+
+
+@app.route("/student-profile-photo", methods=["POST"])
+def student_profile_photo():
+    if "student_enrollment" not in session:
+        return {
+            "success": False,
+            "message": "Student login required."
+        }, 401
+
+    student_enrollment = str(
+        session.get("student_enrollment", "")
+    ).strip()
+
+    if not student_enrollment:
+        return {
+            "success": False,
+            "message": "Student enrollment not found."
+        }, 400
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return {
+            "success": False,
+            "message": "Invalid photo request."
+        }, 400
+
+    profile_photo = str(
+        data.get("profile_photo", "")
+    ).strip()
+
+    # Check image data
+    if not profile_photo.startswith("data:image/"):
+        return {
+            "success": False,
+            "message": "Invalid image data."
+        }, 400
+
+    if "," not in profile_photo:
+        return {
+            "success": False,
+            "message": "Invalid image format."
+        }, 400
+
+    header, encoded_image = profile_photo.split(",", 1)
+    header_lower = header.lower()
+
+    # Allow only JPG, PNG and WEBP
+    if not (
+        header_lower.startswith("data:image/jpeg;")
+        or header_lower.startswith("data:image/jpg;")
+        or header_lower.startswith("data:image/png;")
+        or header_lower.startswith("data:image/webp;")
+    ):
+        return {
+            "success": False,
+            "message": "Only JPG, PNG or WEBP images are allowed."
+        }, 400
+
+    # Maximum 4 MB
+    if len(profile_photo) > 4 * 1024 * 1024:
+        return {
+            "success": False,
+            "message": "Photo is too large. Please use a smaller photo."
+        }, 413
+
+    if not encoded_image:
+        return {
+            "success": False,
+            "message": "Photo data is empty."
+        }, 400
+
+    # Load students
+    students = []
+
+    try:
+        if os.path.exists(STUDENTS_FILE):
+            with open(STUDENTS_FILE, "r", encoding="utf-8") as file:
+                students = json.load(file)
+
+        if not isinstance(students, list):
+            students = []
+
+    except Exception:
+        return {
+            "success": False,
+            "message": "Student data could not be loaded."
+        }, 500
+
+    # Find logged-in student
+    student_index = None
+
+    for index, item in enumerate(students):
+        if not isinstance(item, dict):
+            continue
+
+        if str(
+            item.get("enrollment", "")
+        ).strip() == student_enrollment:
+            student_index = index
+            break
+
+    if student_index is None:
+        return {
+            "success": False,
+            "message": "Student not found."
+        }, 404
+
+    student = students[student_index]
+
+    # One-time upload check
+    existing_photo = str(
+        student.get("profile_photo", "")
+        or student.get("profilePhoto", "")
+    ).strip()
+
+    if existing_photo:
+        return {
+            "success": False,
+            "already_uploaded": True,
+            "message": "Profile photo has already been uploaded once."
+        }, 409
+
+    # Save photo
+    student["profile_photo"] = profile_photo
+
+    try:
+        with open(STUDENTS_FILE, "w", encoding="utf-8") as file:
+            json.dump(
+                students,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+    except Exception as e:
+        print("STUDENT PROFILE PHOTO SAVE ERROR:", e)
+
+        return {
+            "success": False,
+            "message": "Photo could not be saved. Please try again."
+        }, 500
+
+    return {
+        "success": True,
+        "message": "Profile photo uploaded successfully."
+    }, 200
+    
+
 
 
 # =========================

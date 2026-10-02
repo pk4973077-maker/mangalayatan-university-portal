@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ quiz.get("quiz_name", "Online Quiz") }}</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            margin: 30px auto;
+        }
+
+        .quiz-header {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .quiz-header h1 {
+            margin: 0 0 15px;
+            font-size: 28px;
+            color: #1f3c88;
+        }
+
+        .quiz-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .info-box {
+            background: #f5f7fb;
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .info-box strong {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-box span {
+            font-size: 15px;
+            font-weight: bold;
+            color: #222;
+        }
+
+        .timer-box {
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            background: #1f3c88;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .timer-box.warning {
+            background: #d97706;
+        }
+
+        .timer-box.danger {
+            background: #c62828;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+        }
+
+        .question-number {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1f3c88;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .option {
+            display: block;
+            margin: 10px 0;
+            padding: 13px 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fafafa;
+        }
+
+        .option:hover {
+            background: #eef3ff;
+            border-color: #1f3c88;
+        }
+
+        .option input {
+            margin-right: 10px;
+        }
+
+        .option label {
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .submit-area {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+
+        .submit-btn {
+            border: none;
+            background: #1f3c88;
+            color: white;
+            padding: 14px 35px;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background: #162e6b;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 12px;
+            text-decoration: none;
+            color: #1f3c88;
+            font-weight: bold;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                width: 92%;
+                margin-top: 15px;
+            }
+
+            .quiz-header h1 {
+                font-size: 22px;
+            }
+
+            .question-text {
+                font-size: 16px;
+            }
+
+            .submit-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- QUIZ HEADER -->
+
+    <div class="quiz-header">
+
+        <h1>
+            {{ quiz.get("quiz_name", "Online Quiz") }}
+        </h1>
+
+        <div class="quiz-info">
+
+            <div class="info-box">
+                <strong>Course</strong>
+                <span>
+                    {{ quiz.get("course", "") }}
+                </span>
+            </div>
+
+            <div class="info-box">
+                <strong>Semester</strong>
+                <span>
+                    {{ quiz.get("semester", "") }}
+                </span>
+            </div>
+
+            <div class="info-box">
+                <strong>Section</strong>
+                <span>
+                    {{ quiz.get("section", "") or "All" }}
+                </span>
+            </div>
+
+            <div class="info-box">
+                <strong>Subject</strong>
+                <span>
+                    {{ quiz.get("subject", "") }}
+                </span>
+            </div>
+
+            <div class="info-box">
+                <strong>Total Marks</strong>
+                <span>
+                    {{ quiz.get("total_marks", "") }}
+                </span>
+            </div>
+
+            <div class="info-box">
+                <strong>Time Limit</strong>
+                <span>
+                    {{ quiz.get("time_limit", "") }} minutes
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- TIMER -->
+
+    <div class="timer-box" id="timerBox">
+
+        Time Remaining:
+        <span id="timer">
+            Loading...
+        </span>
+
+    </div>
+
+
+    <!-- QUIZ FORM -->
+
+    <form
+        method="POST"
+        action="/student-submit-quiz/{{ quiz.get('quiz_id') }}"
+        id="quizForm"
+    >
+
+        {% set questions = quiz.get("questions", []) %}
+
+        {% if questions %}
+
+            {% for question in questions %}
+
+                <div class="question-card">
+
+                    <div class="question-number">
+                        Question {{ loop.index }}
+                    </div>
+
+                    <div class="question-text">
+
+                        {{ question.get("question", "") }}
+
+                    </div>
+
+
+                    {% if question.get("option_a") is not none %}
+
+                        <div class="option">
+
+                            <input
+                                type="radio"
+                                id="q{{ loop.index }}_a"
+                                name="question_{{ loop.index0 }}"
+                                value="A"
+                            >
+
+                            <label for="q{{ loop.index }}_a">
+                                A. {{ question.get("option_a", "") }}
+                            </label>
+
+                        </div>
+
+
+                        <div class="option">
+
+                            <input
+                                type="radio"
+                                id="q{{ loop.index }}_b"
+                                name="question_{{ loop.index0 }}"
+                                value="B"
+                            >
+
+                            <label for="q{{ loop.index }}_b">
+                                B. {{ question.get("option_b", "") }}
+                            </label>
+
+                        </div>
+
+
+                        <div class="option">
+
+                            <input
+                                type="radio"
+                                id="q{{ loop.index }}_c"
+                                name="question_{{ loop.index0 }}"
+                                value="C"
+                            >
+
+                            <label for="q{{ loop.index }}_c">
+                                C. {{ question.get("option_c", "") }}
+                            </label>
+
+                        </div>
+
+
+                        <div class="option">
+
+                            <input
+                                type="radio"
+                                id="q{{ loop.index }}_d"
+                                name="question_{{ loop.index0 }}"
+                                value="D"
+                            >
+
+                            <label for="q{{ loop.index }}_d">
+                                D. {{ question.get("option_d", "") }}
+                            </label>
+
+                        </div>
+
+                    {% else %}
+
+                        {% set options = question.get("options", {}) %}
+
+                        {% for key, value in options.items() %}
+
+                            <div class="option">
+
+                                <input
+                                    type="radio"
+                                    id="q{{ loop.index }}_{{ key }}"
+                                    name="question_{{ loop.index0 }}"
+                                    value="{{ key }}"
+                                >
+
+                                <label for="q{{ loop.index }}_{{ key }}">
+
+                                    {{ key }}. {{ value }}
+
+                                </label>
+
+                            </div>
+
+                        {% endfor %}
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+
+            <!-- SUBMIT -->
+
+            <div class="submit-area">
+
+                <button
+                    type="submit"
+                    class="submit-btn"
+                    id="submitBtn"
+                >
+                    Submit Quiz
+                </button>
+
+                <br>
+
+                <a
+                    href="/student-quiz"
+                    class="back-btn"
+                    onclick="return confirm('Are you sure you want to leave this quiz? Your answers may not be saved.');"
+                >
+                    Back to Quiz List
+                </a>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty">
+
+                <h3>No questions found</h3>
+
+                <p>
+                    This quiz does not contain any questions.
+                </p>
+
+                <a
+                    href="/student-quiz"
+                    class="back-btn"
+                >
+                    Back to Quiz List
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<script>
+
+    /*
+        QUIZ TIMER
+    */
+
+    let timeLimit = {{ quiz.get("time_limit", 0) | int }};
+
+    let totalSeconds = timeLimit * 60;
+
+    const timerElement = document.getElementById("timer");
+    const timerBox = document.getElementById("timerBox");
+    const quizForm = document.getElementById("quizForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+
+    function updateTimer() {
+
+        if (totalSeconds <= 0) {
+
+            timerElement.textContent = "00:00";
+
+            if (timerBox) {
+                timerBox.classList.add("danger");
+            }
+
+            if (quizForm) {
+
+                alert(
+                    "Time is over. Your quiz will be submitted automatically."
+                );
+
+                quizForm.submit();
+
+            }
+
+            return;
+        }
+
+
+        let minutes = Math.floor(totalSeconds / 60);
+
+        let seconds = totalSeconds % 60;
+
+
+        let minuteText =
+            minutes < 10
+                ? "0" + minutes
+                : minutes;
+
+
+        let secondText =
+            seconds < 10
+                ? "0" + seconds
+                : seconds;
+
+
+        timerElement.textContent =
+            minuteText + ":" + secondText;
+
+
+        if (totalSeconds <= 60) {
+
+            timerBox.classList.remove("warning");
+            timerBox.classList.add("danger");
+
+        }
+
+        else if (totalSeconds <= 300) {
+
+            timerBox.classList.add("warning");
+
+        }
+
+
+        totalSeconds--;
+
+    }
+
+
+    updateTimer();
+
+
+    let timerInterval = setInterval(
+        updateTimer,
+        1000
+    );
+
+
+    /*
+        CONFIRM BEFORE FINAL SUBMISSION
+    */
+
+    if (quizForm) {
+
+        quizForm.addEventListener(
+            "submit",
+            function(event) {
+
+                let confirmed = confirm(
+                    "Are you sure you want to submit this quiz?"
+                );
+
+                if (!confirmed) {
+
+                    event.preventDefault();
+
+                    return;
+
+                }
+
+                clearInterval(timerInterval);
+
+                if (submitBtn) {
+
+                    submitBtn.disabled = true;
+
+                    submitBtn.textContent =
+                        "Submitting...";
+
+                }
+
+            }
+        );
+
+    }
+
+</script>
+
+</body>
+</html>
