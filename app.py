@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response, flash
+from flask import Flask, render_template, request, redirect, send_from_directory, send_file, session, url_for, Response, flash, jsonify
 from flask import make_response
 import base64
 import qrcode
@@ -27274,7 +27274,6 @@ def faculty_delete_quiz(quiz_id):
     )
 
 
-
 # ============================================================
 # STUDENT THEME BACKEND
 # ============================================================
@@ -27618,154 +27617,76 @@ def student_theme():
     }
 
 
-
 @app.route("/student-profile-photo", methods=["POST"])
 def student_profile_photo():
-    if "student_enrollment" not in session:
-        return {
+    enrollment = str(session.get("student_enrollment", "")).strip()
+
+    if not enrollment:
+        return jsonify({
             "success": False,
-            "message": "Student login required."
-        }, 401
+            "message": "Student session not found."
+        }), 401
 
-    student_enrollment = str(
-        session.get("student_enrollment", "")
-    ).strip()
+    data = request.get_json(silent=True) or {}
+    profile_photo = str(data.get("profile_photo", "")).strip()
 
-    if not student_enrollment:
-        return {
-            "success": False,
-            "message": "Student enrollment not found."
-        }, 400
-
-    data = request.get_json(silent=True)
-
-    if not isinstance(data, dict):
-        return {
-            "success": False,
-            "message": "Invalid photo request."
-        }, 400
-
-    profile_photo = str(
-        data.get("profile_photo", "")
-    ).strip()
-
-    # Check image data
     if not profile_photo.startswith("data:image/"):
-        return {
+        return jsonify({
             "success": False,
-            "message": "Invalid image data."
-        }, 400
-
-    if "," not in profile_photo:
-        return {
-            "success": False,
-            "message": "Invalid image format."
-        }, 400
-
-    header, encoded_image = profile_photo.split(",", 1)
-    header_lower = header.lower()
-
-    # Allow only JPG, PNG and WEBP
-    if not (
-        header_lower.startswith("data:image/jpeg;")
-        or header_lower.startswith("data:image/jpg;")
-        or header_lower.startswith("data:image/png;")
-        or header_lower.startswith("data:image/webp;")
-    ):
-        return {
-            "success": False,
-            "message": "Only JPG, PNG or WEBP images are allowed."
-        }, 400
-
-    # Maximum 4 MB
-    if len(profile_photo) > 4 * 1024 * 1024:
-        return {
-            "success": False,
-            "message": "Photo is too large. Please use a smaller photo."
-        }, 413
-
-    if not encoded_image:
-        return {
-            "success": False,
-            "message": "Photo data is empty."
-        }, 400
-
-    # Load students
-    students = []
+            "message": "Invalid profile photo."
+        }), 400
 
     try:
-        if os.path.exists(STUDENTS_FILE):
-            with open(STUDENTS_FILE, "r", encoding="utf-8") as file:
-                students = json.load(file)
-
-        if not isinstance(students, list):
-            students = []
-
+        with open(STUDENTS_FILE, "r", encoding="utf-8") as f:
+            students = json.load(f)
     except Exception:
-        return {
-            "success": False,
-            "message": "Student data could not be loaded."
-        }, 500
+        students = []
 
-    # Find logged-in student
-    student_index = None
+    student_found = False
 
-    for index, item in enumerate(students):
-        if not isinstance(item, dict):
+    for student in students:
+        if not isinstance(student, dict):
             continue
 
-        if str(
-            item.get("enrollment", "")
-        ).strip() == student_enrollment:
-            student_index = index
+        if str(student.get("enrollment", "")).strip() == enrollment:
+            # One-time upload protection
+            if student.get("profile_photo"):
+                return jsonify({
+                    "success": False,
+                    "message": "Profile photo can be uploaded only once."
+                }), 400
+
+            student["profile_photo"] = profile_photo
+            student_found = True
             break
 
-    if student_index is None:
-        return {
+    if not student_found:
+        return jsonify({
             "success": False,
             "message": "Student not found."
-        }, 404
-
-    student = students[student_index]
-
-    # One-time upload check
-    existing_photo = str(
-        student.get("profile_photo", "")
-        or student.get("profilePhoto", "")
-    ).strip()
-
-    if existing_photo:
-        return {
-            "success": False,
-            "already_uploaded": True,
-            "message": "Profile photo has already been uploaded once."
-        }, 409
-
-    # Save photo
-    student["profile_photo"] = profile_photo
+        }), 404
 
     try:
-        with open(STUDENTS_FILE, "w", encoding="utf-8") as file:
+        with open(STUDENTS_FILE, "w", encoding="utf-8") as f:
             json.dump(
                 students,
-                file,
+                f,
                 indent=4,
                 ensure_ascii=False
             )
-
     except Exception as e:
-        print("STUDENT PROFILE PHOTO SAVE ERROR:", e)
+        print("Profile photo save error:", e)
 
-        return {
+        return jsonify({
             "success": False,
-            "message": "Photo could not be saved. Please try again."
-        }, 500
+            "message": "Profile photo could not be saved."
+        }), 500
 
-    return {
+    return jsonify({
         "success": True,
-        "message": "Profile photo uploaded successfully."
-    }, 200
-    
+        "message": "Profile photo uploaded successfully.",
+        "profile_photo": profile_photo
+    })
 
 
 
