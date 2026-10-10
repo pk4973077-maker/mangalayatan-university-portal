@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>DCEA Notifications Manager</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .header {
+            background: #173b70;
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            margin: 0 0 10px;
+        }
+
+        .header p {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 10px 16px;
+            background: white;
+            color: #173b70;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: #173b70;
+        }
+
+        label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #2563eb;
+        }
+
+        button,
+        .button {
+            display: inline-block;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .primary-button {
+            background: #173b70;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .primary-button:hover {
+            background: #102b53;
+        }
+
+        .cancel-button {
+            background: #e5e7eb;
+            color: #1f2937;
+            margin-top: 20px;
+            margin-left: 8px;
+        }
+
+        .edit-button {
+            background: #f59e0b;
+            color: #111827;
+        }
+
+        .delete-button {
+            background: #dc2626;
+            color: white;
+        }
+
+        .notification-card {
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #173b70;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 15px;
+            background: #fff;
+        }
+
+        .notification-card h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .notification-card p {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .actions form {
+            margin: 0;
+        }
+
+        .message {
+            padding: 13px 16px;
+            border-radius: 7px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty-message {
+            color: #64748b;
+            text-align: center;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 650px) {
+            body {
+                padding: 12px;
+            }
+
+            .panel {
+                padding: 17px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .date-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>DCEA Notifications Manager</h1>
+
+        <p>
+            Manage Department of Computer Engineering and Applications
+            notifications from one place.
+        </p>
+
+        <a href="/admin-dashboard" class="back-button">
+            Back to Admin Dashboard
+        </a>
+
+    </div>
+
+
+    <!-- Flash Messages -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for category, message in messages %}
+
+                <div class="message
+                    {% if category == 'success' %}
+                        success
+                    {% else %}
+                        error
+                    {% endif %}
+                ">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- Add / Edit Notification Form -->
+
+    <div class="panel">
+
+        {% if edit_notification %}
+
+            <h2>Edit Notification</h2>
+
+            <form
+                method="POST"
+                action="/admin-dcea-notifications/edit/{{ edit_notification['id'] }}"
+            >
+
+        {% else %}
+
+            <h2>Add New Notification</h2>
+
+            <form
+                method="POST"
+                action="/admin-dcea-notifications/add"
+            >
+
+        {% endif %}
+
+
+            <label for="title">
+                Notification Title
+            </label>
+
+            <input
+                type="text"
+                id="title"
+                name="title"
+                maxlength="250"
+                placeholder="Enter notification title"
+                value="{{ edit_notification['title'] if edit_notification else '' }}"
+                required
+            >
+
+
+            <div class="date-row">
+
+                <div>
+
+                    <label for="date_from">
+                        Date From
+                    </label>
+
+                    <input
+                        type="date"
+                        id="date_from"
+                        name="date_from"
+                        value="{% if edit_notification and edit_notification['date_from'] %}{{ edit_notification['date_from'].strftime('%Y-%m-%d') }}{% endif %}"
+                        required
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label for="date_to">
+                        Date To
+                    </label>
+
+                    <input
+                        type="date"
+                        id="date_to"
+                        name="date_to"
+                        value="{% if edit_notification and edit_notification['date_to'] %}{{ edit_notification['date_to'].strftime('%Y-%m-%d') }}{% endif %}"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            {% if edit_notification %}
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Update Notification
+                </button>
+
+                <a
+                    href="/admin-dcea-notifications"
+                    class="button cancel-button"
+                >
+                    Cancel
+                </a>
+
+            {% else %}
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Notification
+                </button>
+
+            {% endif %}
+
+        </form>
+
+    </div>
+
+
+    <!-- Notifications List -->
+
+    <div class="panel">
+
+        <h2>All DCEA Notifications</h2>
+
+        {% if notifications %}
+
+            {% for notification in notifications %}
+
+                <div class="notification-card">
+
+                    <h3>
+                        {{ notification['title'] }}
+                    </h3>
+
+                    <p>
+                        <strong>Date From:</strong>
+
+                        {{ notification['date_from'].strftime('%d-%m-%Y') }}
+                    </p>
+
+                    <p>
+                        <strong>Date To:</strong>
+
+                        {{ notification['date_to'].strftime('%d-%m-%Y') }}
+                    </p>
+
+
+                    <div class="actions">
+
+                        <a
+                            href="/admin-dcea-notifications/edit/{{ notification['id'] }}"
+                            class="button edit-button"
+                        >
+                            Edit
+                        </a>
+
+
+                        <form
+                            method="POST"
+                            action="/admin-dcea-notifications/delete/{{ notification['id'] }}"
+                            onsubmit="return confirm('Kya aap is notification ko delete karna chahte hain?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="delete-button"
+                            >
+                                Delete
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-message">
+
+                <h3>No Notifications Found</h3>
+
+                <p>
+                    Abhi tak koi DCEA notification add nahi ki gayi hai.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<script>
+    const dateFromInput = document.getElementById("date_from");
+    const dateToInput = document.getElementById("date_to");
+
+    function updateDateValidation() {
+        if (dateFromInput.value) {
+            dateToInput.min = dateFromInput.value;
+        } else {
+            dateToInput.removeAttribute("min");
+        }
+
+        if (dateToInput.value) {
+            dateFromInput.max = dateToInput.value;
+        } else {
+            dateFromInput.removeAttribute("max");
+        }
+    }
+
+    dateFromInput.addEventListener("change", updateDateValidation);
+    dateToInput.addEventListener("change", updateDateValidation);
+
+    updateDateValidation();
+</script>
+
+</body>
+</html>

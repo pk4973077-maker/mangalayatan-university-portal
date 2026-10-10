@@ -385,26 +385,42 @@
 
                 </div>
 
+
+                <div>
+    <label for="email">Student Email Address</label>
+    <input
+        type="email"
+        id="email"
+        name="email"
+        placeholder="Enter student email address"
+        autocomplete="email"
+        maxlength="254"
+        required
+    >
+</div>
+
+
                 <!-- DEPARTMENT -->
 
 <div>
 
     <label>Department</label>
 
-    <select
-        name="department"
-        id="department"
-        required
-        disabled
-    >
+    <input
+    type="hidden"
+    name="department"
+    value="{{ session.get('admin_department', '') }}"
+>
 
-        <option value="{{ session.get('admin_department', '') }}" selected>
-
-            {{ session.get('admin_department', '') }}
-
-        </option>
-
-    </select>
+<select
+    id="department"
+    required
+    disabled
+>
+    <option value="{{ session.get('admin_department', '') }}" selected>
+        {{ session.get('admin_department', '') }}
+    </option>
+</select>
 
 </div>
 
