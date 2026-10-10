@@ -5,3 +5,4 @@ psycopg2-binary
 qrcode[pil]
 openpyxl
 reportlab
+python-dotenv
