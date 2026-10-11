@@ -850,9 +850,10 @@ def home():
         cursor.execute("""
             SELECT id, title, description, date_from, date_to
             FROM dcea_notifications
-            WHERE date_from >= %s
+            WHERE date_from <= %s + INTERVAL '10 days'
+              AND date_to >= %s
             ORDER BY date_from ASC, id ASC
-        """, (today,))
+        """, (today, today))
 
         rows = cursor.fetchall()
 
@@ -17127,106 +17128,76 @@ def generate_seating_arrangement():
         )
 
         # ----------------------------------------------------
-        # REMOVE LAB / LABORATORY / PRACTICAL
+        # COLLECT ALL SUBJECTS FOR THIS COURSE + SEMESTER
+        # from the selected department. Merge the fallback search
+        # even when the primary helper finds some subjects, so a
+        # partially matched list cannot silently omit subjects.
         # ----------------------------------------------------
 
-        combo_subjects = [
-            subject
-            for subject in combo_subjects
-            if not (
-                "lab"
-                in seating_text(
-                    subject
-                ).strip().lower()
-                or
-                "laboratory"
-                in seating_text(
-                    subject
-                ).strip().lower()
-                or
-                "practical"
-                in seating_text(
-                    subject
-                ).strip().lower()
+        subject_names = list(combo_subjects)
+
+        for subject in subjects:
+
+            if not isinstance(subject, dict):
+                continue
+
+            subject_course = seating_text(
+                subject.get("course", "")
             )
-        ]
-
-        # ----------------------------------------------------
-        # FALLBACK SUBJECT SEARCH
-        # ----------------------------------------------------
-
-        if not combo_subjects:
-
-            combo_subjects = []
-
-            for subject in subjects:
-
-                if not isinstance(
-                    subject,
-                    dict
-                ):
-                    continue
-
-                subject_course = seating_text(
-                    subject.get(
-                        "course",
-                        ""
-                    )
-                )
-
-                if (
-                    subject_course.lower()
-                    !=
-                    course.lower()
-                ):
-                    continue
-
-                subject_semester = seating_text(
-                    subject.get(
-                        "semester",
-                        ""
-                    )
-                )
-
-                if subject_semester != semester:
-                    continue
-
-                subject_name = seating_text(
-                    subject.get(
-                        "subject_name",
-                        ""
-                    )
-                )
-
-                if not subject_name:
-                    continue
-
-                subject_lower = (
-                    subject_name
-                    .strip()
-                    .lower()
-                )
-
-                if (
-                    "lab" in subject_lower
-                    or
-                    "laboratory" in subject_lower
-                    or
-                    "practical" in subject_lower
-                ):
-                    continue
-
-                combo_subjects.append(
-                    subject_name
-                )
-
-            combo_subjects = sorted(
-                list(
-                    dict.fromkeys(
-                        combo_subjects
-                    )
-                )
+            subject_semester = seating_text(
+                subject.get("semester", "")
             )
+            subject_department = seating_text(
+                subject.get("department", "")
+            )
+            subject_name = seating_text(
+                subject.get("subject_name", "")
+            )
+
+            if not subject_name:
+                continue
+
+            if subject_course.lower() != course.lower():
+                continue
+
+            if subject_semester != seating_text(semester):
+                continue
+
+            # If the subject has a department, match it to this cohort.
+            if (
+                subject_department
+                and subject_department.lower() != department.lower()
+            ):
+                continue
+
+            subject_names.append(subject_name)
+
+        # Exclude actual Lab/Laboratory/Practical subject labels.
+        # Use word checks so words such as "Collaboration" are not
+        # accidentally excluded just because they contain "lab".
+        combo_subjects = []
+        seen_subjects = set()
+
+        for subject_name in subject_names:
+            cleaned_name = seating_text(subject_name)
+            lowered_name = cleaned_name.lower()
+            words = set(lowered_name.replace("-", " ").replace("_", " ").split())
+
+            if (
+                "lab" in words
+                or "laboratory" in words
+                or "practical" in words
+            ):
+                continue
+
+            unique_name = lowered_name
+            if unique_name in seen_subjects:
+                continue
+
+            seen_subjects.add(unique_name)
+            combo_subjects.append(cleaned_name)
+
+        combo_subjects.sort(key=lambda name: name.lower())
 
         if not combo_subjects:
             continue
@@ -17437,10 +17408,12 @@ def generate_seating_arrangement():
 
         if exam_type == "Class Test":
 
+            # Class Test allows at most two subject exams per day,
+            # regardless of how many shifts were selected in setup.
             maximum_papers = (
                 len(valid_dates)
                 *
-                len(valid_shifts)
+                min(len(valid_shifts), 2)
             )
 
             if subject_count > maximum_papers:
@@ -17638,8 +17611,9 @@ def generate_seating_arrangement():
 
             else:
 
-                if same_day_count >= len(
-                    valid_shifts
+                if same_day_count >= min(
+                    len(valid_shifts),
+                    2
                 ):
                     return False
 
@@ -18373,6 +18347,7 @@ def generate_seating_arrangement():
             selected_shifts
 
     )
+
 
 
 # ============================================================
@@ -19714,119 +19689,150 @@ def give_exam_data():
 # STUDENT EXAM SCHEDULE
 # ============================================================
 
-@app.route(
-    "/student-exam-schedule"
-)
+@app.route("/student-exam-schedule")
 def student_exam_schedule():
 
+    # Student login check
     if "student_enrollment" not in session:
+        return redirect(url_for("student_login"))
 
-        return redirect(
-            url_for(
-                "student_login"
-            )
-        )
-
+    # Logged-in student ka enrollment number
     enrollment = str(
-        session.get(
-            "student_enrollment",
-            ""
-        )
+        session.get("student_enrollment", "")
     ).strip()
 
+    if not enrollment:
+        return redirect(url_for("student_login"))
+
+    # Saved examination schedules load karo
     records = exam_schedule_load_list(
         EXAM_STUDENT_SCHEDULE_FILE
     )
 
     student_records = []
 
+    # Aaj ki date
+    today = datetime.now().date()
+
+    # Supported date formats
+    date_formats = [
+        "%d %B %Y",
+        "%d %b %Y",
+        "%Y-%m-%d",
+        "%d-%m-%Y",
+        "%d/%m/%Y"
+    ]
+
+    # Sirf logged-in student aur aaj ki date ke exams
     for record in records:
 
-        if not isinstance(
-            record,
-            dict
-        ):
+        if not isinstance(record, dict):
             continue
 
+        # Enrollment number match karo
         record_enrollment = str(
-            record.get(
-                "enrollment",
-                ""
-            )
+            record.get("enrollment", "")
         ).strip()
 
-        if record_enrollment == enrollment:
+        if record_enrollment != enrollment:
+            continue
 
-            student_records.append(
-                record
-            )
+        # Exam ki date read karo
+        date_text = str(
+            record.get("date", "")
+        ).strip()
 
-    # ========================================================
-    # DATE-WISE + SHIFT-WISE SORTING
-    # ========================================================
+        exam_date = None
 
+        # Date ko supported formats mein parse karo
+        for date_format in date_formats:
+            try:
+                exam_date = datetime.strptime(
+                    date_text,
+                    date_format
+                ).date()
+
+                break
+
+            except (ValueError, TypeError):
+                continue
+
+        # Invalid date wale records skip karo
+        if exam_date is None:
+            continue
+
+        # Sirf aaj ke exams dikhao
+        if exam_date != today:
+            continue
+
+        # Student ka aaj ka exam record save karo
+        student_records.append(record)
+
+    # Date aur shift ke according sorting
     def student_schedule_sort_key(record):
 
-        # ----------------------------------------------------
-        # DATE
-        # ----------------------------------------------------
-
         date_text = str(
-            record.get(
-                "date",
-                ""
-            )
+            record.get("date", "")
         ).strip()
 
-        try:
+        exam_date = datetime.max.date()
 
-            exam_date = datetime.strptime(
-                date_text,
-                "%d %B %Y"
-            ).date()
+        for date_format in date_formats:
+            try:
+                exam_date = datetime.strptime(
+                    date_text,
+                    date_format
+                ).date()
 
-        except Exception:
+                break
 
-            exam_date = datetime.max.date()
+            except (ValueError, TypeError):
+                continue
 
-        # ----------------------------------------------------
-        # SHIFT
-        # ----------------------------------------------------
-
+        # Shift order
         shift_text = str(
-            record.get(
-                "shift",
-                ""
-            )
+            record.get("shift", "")
         ).strip().lower()
 
         if (
             shift_text.startswith("1")
             or "1st" in shift_text
+            or "morning" in shift_text
         ):
-
             shift_order = 1
 
         elif (
             shift_text.startswith("2")
             or "2nd" in shift_text
+            or "afternoon" in shift_text
         ):
-
             shift_order = 2
 
-        else:
+        elif (
+            shift_text.startswith("3")
+            or "3rd" in shift_text
+        ):
+            shift_order = 3
 
+        else:
             shift_order = 99
 
-        return (
-            exam_date,
-            shift_order
-        )
+        return exam_date, shift_order
 
+    # Records sort karo
     student_records.sort(
         key=student_schedule_sort_key
     )
 
+    # Debug information
+    print(
+        "EXAM FILTER DEBUG:",
+        "Enrollment:", enrollment,
+        "Today:", today,
+        "Records:", len(student_records)
+    )
+
+    # Student ko filtered examination schedule dikhao
     return render_template(
         "student_exam_schedule.html",
         exam_records=student_records
@@ -29171,11 +29177,14 @@ def important_notices():
 
 @app.route("/important-notice/<int:notice_id>")
 def view_single_important_notice(notice_id):
+    conn = None
+    cursor = None
 
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
+        # Pehle selected notice ko fetch karo
         cursor.execute("""
             SELECT id, title, description, date_from, date_to
             FROM dcea_notifications
@@ -29184,31 +29193,70 @@ def view_single_important_notice(notice_id):
 
         row = cursor.fetchone()
 
-        cursor.close()
-        conn.close()
-
         if not row:
             return "Important Notice not found.", 404
 
         if isinstance(row, dict):
-            notice = row
+            notice = {
+                "id": row["id"],
+                "title": row["title"],
+                "description": row.get("description", ""),
+                "date_from": row["date_from"],
+                "date_to": row["date_to"]
+            }
         else:
             notice = {
                 "id": row[0],
                 "title": row[1],
-                "description": row[2],
+                "description": row[2] or "",
                 "date_from": row[3],
                 "date_to": row[4]
             }
 
+        # Visible notices ko usi order mein fetch karo
+        today = dcea_india_today()
+
+        cursor.execute("""
+            SELECT id
+            FROM dcea_notifications
+            WHERE date_from >= %s
+            ORDER BY date_from ASC, id ASC
+        """, (today,))
+
+        rows = cursor.fetchall()
+
+        # Selected notice ka serial number nikalo
+        notice_number = None
+
+        for index, item in enumerate(rows, start=1):
+            if isinstance(item, dict):
+                current_id = item["id"]
+            else:
+                current_id = item[0]
+
+            if current_id == notice_id:
+                notice_number = index
+                break
+
+        # Agar notice visible list mein nahi hai
+        if notice_number is None:
+            notice_number = 1
+
         return render_template(
             "single_important_notice.html",
-            notice=notice
+            notice=notice,
+            notice_number=notice_number
         )
 
     except Exception as e:
         print("SINGLE NOTICE ERROR:", e)
         return "Unable to open this notice.", 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 # =========================
