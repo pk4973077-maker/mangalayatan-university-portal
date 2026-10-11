@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>DCEA Notifications Manager</title>
 
@@ -38,6 +34,7 @@
 
         .header h1 {
             margin: 0 0 10px;
+            overflow-wrap: anywhere;
         }
 
         .header p {
@@ -48,12 +45,16 @@
         .back-button {
             display: inline-block;
             margin-top: 18px;
-            padding: 10px 16px;
+            padding: 11px 16px;
             background: white;
             color: #173b70;
             border-radius: 6px;
             text-decoration: none;
             font-weight: bold;
+        }
+
+        .back-button:hover {
+            background: #eaf1fb;
         }
 
         .panel {
@@ -77,29 +78,60 @@
         }
 
         input[type="text"],
-        input[type="date"] {
+        input[type="date"],
+        textarea {
             width: 100%;
             padding: 12px;
             border: 1px solid #cbd5e1;
             border-radius: 7px;
             font-size: 15px;
+            font-family: Arial, sans-serif;
+            background: #fff;
+            color: #1f2937;
         }
 
-        input:focus {
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        input:focus,
+        textarea:focus {
             outline: 2px solid #93c5fd;
             border-color: #2563eb;
+        }
+
+        .help-text {
+            margin-top: 7px;
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .word-count {
+            margin-top: 7px;
+            font-size: 13px;
+            color: #64748b;
+            text-align: right;
+        }
+
+        .word-count.limit-reached {
+            color: #dc2626;
+            font-weight: bold;
         }
 
         button,
         .button {
             display: inline-block;
             border: none;
-            padding: 10px 15px;
+            padding: 11px 15px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             text-decoration: none;
             font-weight: bold;
+            font-family: Arial, sans-serif;
         }
 
         .primary-button {
@@ -119,9 +151,17 @@
             margin-left: 8px;
         }
 
+        .cancel-button:hover {
+            background: #d1d5db;
+        }
+
         .edit-button {
             background: #f59e0b;
             color: #111827;
+        }
+
+        .edit-button:hover {
+            background: #d97706;
         }
 
         .delete-button {
@@ -129,31 +169,66 @@
             color: white;
         }
 
+        .delete-button:hover {
+            background: #b91c1c;
+        }
+
         .notification-card {
             border: 1px solid #e2e8f0;
             border-left: 5px solid #173b70;
             border-radius: 8px;
-            padding: 18px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-bottom: 16px;
             background: #fff;
         }
 
         .notification-card h3 {
             margin-top: 0;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
+            line-height: 1.5;
             overflow-wrap: anywhere;
         }
 
+        .notice-number {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
         .notification-card p {
-            margin: 8px 0;
-            line-height: 1.5;
+            margin: 9px 0;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .description-text {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            color: #475569;
+            line-height: 1.7;
+        }
+
+        .description-label {
+            margin-top: 16px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .no-description {
+            color: #94a3b8;
+            font-style: italic;
         }
 
         .actions {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            margin-top: 16px;
+            margin-top: 18px;
         }
 
         .actions form {
@@ -185,10 +260,23 @@
             border-radius: 8px;
         }
 
+        .empty-message h3 {
+            color: #334155;
+            margin-top: 0;
+        }
+
         .date-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+        }
+
+        .section-description {
+            margin-top: -5px;
+            margin-bottom: 20px;
+            color: #64748b;
+            line-height: 1.6;
+            font-size: 14px;
         }
 
         @media (max-width: 650px) {
@@ -208,6 +296,19 @@
                 grid-template-columns: 1fr;
                 gap: 0;
             }
+
+            .notification-card {
+                padding: 16px;
+            }
+
+            .actions {
+                gap: 8px;
+            }
+
+            .actions .button,
+            .actions button {
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -216,7 +317,9 @@
 
 <div class="container">
 
-    <div class="header">
+    <!-- Page Header -->
+
+    <header class="header">
 
         <h1>DCEA Notifications Manager</h1>
 
@@ -226,10 +329,10 @@
         </p>
 
         <a href="/admin-dashboard" class="back-button">
-            Back to Admin Dashboard
+            ← Back to Admin Dashboard
         </a>
 
-    </div>
+    </header>
 
 
     <!-- Flash Messages -->
@@ -240,13 +343,10 @@
 
             {% for category, message in messages %}
 
-                <div class="message
-                    {% if category == 'success' %}
-                        success
-                    {% else %}
-                        error
-                    {% endif %}
-                ">
+                <div
+                    class="message {% if category == 'success' %}success{% else %}error{% endif %}"
+                    role="status"
+                >
                     {{ message }}
                 </div>
 
@@ -259,13 +359,18 @@
 
     <!-- Add / Edit Notification Form -->
 
-    <div class="panel">
+    <section class="panel">
 
         {% if edit_notification %}
 
             <h2>Edit Notification</h2>
 
+            <p class="section-description">
+                Update the title, event dates or description of this notification.
+            </p>
+
             <form
+                id="notificationForm"
                 method="POST"
                 action="/admin-dcea-notifications/edit/{{ edit_notification['id'] }}"
             >
@@ -274,13 +379,21 @@
 
             <h2>Add New Notification</h2>
 
+            <p class="section-description">
+                Add an important notice for the Department of Computer Engineering
+                and Applications.
+            </p>
+
             <form
+                id="notificationForm"
                 method="POST"
                 action="/admin-dcea-notifications/add"
             >
 
         {% endif %}
 
+
+            <!-- Notification Title -->
 
             <label for="title">
                 Notification Title
@@ -297,12 +410,14 @@
             >
 
 
+            <!-- Event Dates -->
+
             <div class="date-row">
 
                 <div>
 
                     <label for="date_from">
-                        Date From
+                        Event Start Date
                     </label>
 
                     <input
@@ -315,11 +430,10 @@
 
                 </div>
 
-
                 <div>
 
                     <label for="date_to">
-                        Date To
+                        Event End Date
                     </label>
 
                     <input
@@ -334,6 +448,40 @@
 
             </div>
 
+            <p class="help-text">
+                Select the starting and ending dates of the event.
+            </p>
+
+
+            <!-- Notification Description -->
+
+            <label for="description">
+                Notification Description (Maximum 250 words)
+            </label>
+
+            <textarea
+                id="description"
+                name="description"
+                maxlength="5000"
+                placeholder="Enter complete notification details..."
+                aria-describedby="descriptionHelp wordCount"
+            >{{ edit_notification['description'] if edit_notification and edit_notification.get('description') else '' }}</textarea>
+
+            <div id="descriptionHelp" class="help-text">
+                Description public Important Notices page par bhi dikhai jayegi
+                aur notification email mein bhi include ki ja sakti hai.
+            </div>
+
+            <div
+                id="wordCount"
+                class="word-count"
+                aria-live="polite"
+            >
+                0 / 250 words
+            </div>
+
+
+            <!-- Form Buttons -->
 
             {% if edit_notification %}
 
@@ -364,37 +512,89 @@
 
         </form>
 
-    </div>
+    </section>
 
 
-    <!-- Notifications List -->
+    <!-- All Notifications -->
 
-    <div class="panel">
+    <section class="panel">
 
         <h2>All DCEA Notifications</h2>
+
+        <p class="section-description">
+            Yahan admin ke dwara add ki gayi notifications ki list dikhegi.
+            Notice number database ID ke according rahega.
+        </p>
 
         {% if notifications %}
 
             {% for notification in notifications %}
 
-                <div class="notification-card">
+                <article class="notification-card">
+
+                    <div class="notice-number">
+                        Important Notice {{ notification['id'] }}
+                    </div>
 
                     <h3>
                         {{ notification['title'] }}
                     </h3>
 
-                    <p>
-                        <strong>Date From:</strong>
 
-                        {{ notification['date_from'].strftime('%d-%m-%Y') }}
-                    </p>
+                    <!-- Start Date -->
 
                     <p>
-                        <strong>Date To:</strong>
+                        <strong>Event Start Date:</strong>
 
-                        {{ notification['date_to'].strftime('%d-%m-%Y') }}
+                        {% if notification['date_from'] %}
+
+                            {{ notification['date_from'].strftime('%d-%m-%Y') }}
+
+                        {% else %}
+
+                            Not specified
+
+                        {% endif %}
                     </p>
 
+
+                    <!-- End Date -->
+
+                    <p>
+                        <strong>Event End Date:</strong>
+
+                        {% if notification['date_to'] %}
+
+                            {{ notification['date_to'].strftime('%d-%m-%Y') }}
+
+                        {% else %}
+
+                            Not specified
+
+                        {% endif %}
+                    </p>
+
+
+                    <!-- Description -->
+
+                    <div class="description-label">
+                        Description:
+                    </div>
+
+                    {% if notification.get('description') %}
+
+                        <p class="description-text">{{ notification['description'] }}</p>
+
+                    {% else %}
+
+                        <p class="description-text no-description">
+                            No description provided.
+                        </p>
+
+                    {% endif %}
+
+
+                    <!-- Edit and Delete -->
 
                     <div class="actions">
 
@@ -404,7 +604,6 @@
                         >
                             Edit
                         </a>
-
 
                         <form
                             method="POST"
@@ -423,7 +622,7 @@
 
                     </div>
 
-                </div>
+                </article>
 
             {% endfor %}
 
@@ -441,16 +640,30 @@
 
         {% endif %}
 
-    </div>
+    </section>
 
 </div>
 
 
 <script>
+    "use strict";
+
     const dateFromInput = document.getElementById("date_from");
     const dateToInput = document.getElementById("date_to");
 
+    const descriptionInput = document.getElementById("description");
+    const wordCountDisplay = document.getElementById("wordCount");
+
+    const notificationForm = document.getElementById("notificationForm");
+
+
+    /*
+     * Date validation
+     * Date To cannot be earlier than Date From.
+     */
+
     function updateDateValidation() {
+
         if (dateFromInput.value) {
             dateToInput.min = dateFromInput.value;
         } else {
@@ -464,10 +677,110 @@
         }
     }
 
+
+    /*
+     * Count description words.
+     */
+
+    function countDescriptionWords() {
+
+        const text = descriptionInput.value.trim();
+
+        if (text === "") {
+            return 0;
+        }
+
+        return text.split(/\s+/).length;
+    }
+
+
+    /*
+     * Update the live word counter.
+     */
+
+    function updateWordCount() {
+
+        const count = countDescriptionWords();
+
+        wordCountDisplay.textContent = count + " / 250 words";
+
+        if (count > 250) {
+
+            wordCountDisplay.classList.add("limit-reached");
+
+        } else {
+
+            wordCountDisplay.classList.remove("limit-reached");
+
+        }
+
+        return count;
+    }
+
+
+    /*
+     * Attach date validation events.
+     */
+
     dateFromInput.addEventListener("change", updateDateValidation);
+
     dateToInput.addEventListener("change", updateDateValidation);
 
+
+    /*
+     * Update word count while typing.
+     */
+
+    descriptionInput.addEventListener("input", updateWordCount);
+
+
+    /*
+     * Validate before submitting the form.
+     */
+
+    notificationForm.addEventListener("submit", function (event) {
+
+        const count = updateWordCount();
+
+        if (count > 250) {
+
+            event.preventDefault();
+
+            alert(
+                "Description maximum 250 words ki ho sakti hai. " +
+                "Aapki description mein " + count + " words hain."
+            );
+
+            descriptionInput.focus();
+
+            return;
+        }
+
+
+        if (
+            dateFromInput.value &&
+            dateToInput.value &&
+            dateToInput.value < dateFromInput.value
+        ) {
+
+            event.preventDefault();
+
+            alert("Event End Date, Event Start Date se pehle nahi ho sakti.");
+
+            dateToInput.focus();
+        }
+
+    });
+
+
+    /*
+     * Initialize values when the page opens.
+     */
+
     updateDateValidation();
+
+    updateWordCount();
+
 </script>
 
 </body>

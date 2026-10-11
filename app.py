@@ -839,8 +839,44 @@ def delete_subject(subject_id):
 @app.route("/")
 def home():
 
+    notifications = []
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        today = dcea_india_today()
+
+        cursor.execute("""
+            SELECT id, title, description, date_from, date_to
+            FROM dcea_notifications
+            WHERE date_from >= %s
+            ORDER BY date_from ASC, id ASC
+        """, (today,))
+
+        rows = cursor.fetchall()
+
+        for row in rows:
+            if isinstance(row, dict):
+                notifications.append(row)
+            else:
+                notifications.append({
+                    "id": row[0],
+                    "title": row[1],
+                    "description": row[2],
+                    "date_from": row[3],
+                    "date_to": row[4]
+                })
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        print("HOME NOTIFICATIONS ERROR:", e)
+
     return render_template(
-        "index.html"
+        "index.html",
+        notifications=notifications
     )
 
 
@@ -27817,24 +27853,43 @@ def student_profile_photo():
 
 # ============================================================
 # DCEA NOTIFICATIONS MANAGER
-# Features: Add, View, Edit, Delete
-# Fields: Title, Date From, Date To
+# Features:
+# Add, View, Edit, Delete
+# Title, Description (maximum 250 words), Date From, Date To
+# Gmail email notifications
+# Automatic reminder 10 days before event
+# Public notices disappear when Date From is in the past
 # Access: DCEA Admin Only
 # ============================================================
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
+import os
+import json
+import html
+import hmac
+import smtplib
+from email.message import EmailMessage
 
+
+# ============================================================
+# INDIA DATE
+# ============================================================
+
+def dcea_india_today():
+    """Return today's date in India Standard Time."""
+    return datetime.now(ZoneInfo("Asia/Kolkata")).date()
+
+
+# ============================================================
+# ADMIN ACCESS CHECK
+# ============================================================
 
 def dcea_notifications_admin_check():
-    """
-    Check whether the current logged-in admin belongs to DCEA.
-    """
+    """Allow only logged-in DCEA administrators."""
 
     result = admin_required()
 
-    # If admin_required redirects or returns a response,
-    # do not continue with the notification route.
     if result is not None:
         return result
 
@@ -27851,10 +27906,14 @@ def dcea_notifications_admin_check():
     return None
 
 
+# ============================================================
+# DATABASE TABLE AND SAFE MIGRATION
+# ============================================================
+
 def dcea_notifications_create_table():
     """
-    Create the notification table and migrate the earlier
-    notification_date column if it exists.
+    Create the notification table and safely migrate older records.
+    Existing notifications and their dates are preserved.
     """
 
     conn = get_connection()
@@ -27862,11 +27921,11 @@ def dcea_notifications_create_table():
     try:
         cur = conn.cursor()
 
-        # Create the table if it does not already exist.
         cur.execute("""
             CREATE TABLE IF NOT EXISTS dcea_notifications (
                 id SERIAL PRIMARY KEY,
                 title VARCHAR(250) NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
                 date_from DATE,
                 date_to DATE,
                 notification_date DATE,
@@ -27875,7 +27934,11 @@ def dcea_notifications_create_table():
             )
         """)
 
-        # Add missing columns safely.
+        cur.execute("""
+            ALTER TABLE dcea_notifications
+            ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''
+        """)
+
         cur.execute("""
             ALTER TABLE dcea_notifications
             ADD COLUMN IF NOT EXISTS date_from DATE
@@ -27891,7 +27954,7 @@ def dcea_notifications_create_table():
             ADD COLUMN IF NOT EXISTS notification_date DATE
         """)
 
-        # Preserve existing dates from the previous version.
+        # Migrate the previous notification_date field.
         cur.execute("""
             UPDATE dcea_notifications
             SET date_from = notification_date
@@ -27906,8 +27969,7 @@ def dcea_notifications_create_table():
               AND notification_date IS NOT NULL
         """)
 
-        # Supply dates for any remaining older rows.
-        # New notifications will always require both dates.
+        # Fill dates for any older records that have no dates.
         cur.execute("""
             UPDATE dcea_notifications
             SET date_from = CURRENT_DATE
@@ -27920,7 +27982,12 @@ def dcea_notifications_create_table():
             WHERE date_to IS NULL
         """)
 
-        # Ensure the two current date fields are mandatory.
+        cur.execute("""
+            UPDATE dcea_notifications
+            SET description = ''
+            WHERE description IS NULL
+        """)
+
         cur.execute("""
             ALTER TABLE dcea_notifications
             ALTER COLUMN date_from SET NOT NULL
@@ -27931,8 +27998,7 @@ def dcea_notifications_create_table():
             ALTER COLUMN date_to SET NOT NULL
         """)
 
-        # The old column may have been NOT NULL.
-        # It is no longer required for new notifications.
+        # Older database versions may have required notification_date.
         cur.execute("""
             ALTER TABLE dcea_notifications
             ALTER COLUMN notification_date DROP NOT NULL
@@ -27942,13 +28008,469 @@ def dcea_notifications_create_table():
 
     except Exception:
         conn.rollback()
+        app.logger.exception(
+            "Error creating or migrating DCEA notifications table."
+        )
         raise
 
     finally:
         conn.close()
 
 
-@app.route("/admin-dcea-notifications", methods=["GET"])
+# ============================================================
+# EMAIL LOG TABLE
+# Prevents duplicate automatic reminders
+# ============================================================
+
+def dcea_notification_email_log_create_table():
+    conn = get_connection()
+
+    try:
+        cur = conn.cursor()
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS dcea_notification_email_log (
+                id SERIAL PRIMARY KEY,
+                notification_id INTEGER NOT NULL,
+                email_type VARCHAR(30) NOT NULL,
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (notification_id, email_type)
+            )
+        """)
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        app.logger.exception(
+            "Could not create DCEA notification email log."
+        )
+        raise
+
+    finally:
+        conn.close()
+
+
+# ============================================================
+# DESCRIPTION VALIDATION
+# ============================================================
+
+def dcea_notification_word_count(description):
+    """Count words in the event description."""
+
+    return len(str(description or "").split())
+
+
+# ============================================================
+# FACULTY EMAIL ADDRESSES
+# ============================================================
+
+def get_dcea_faculty_emails():
+    """
+    Return unique, valid faculty email addresses.
+    """
+
+    faculty_emails = []
+
+    if not os.path.exists(FACULTY_FILE):
+        app.logger.warning("Faculty file not found.")
+        return []
+
+    try:
+        with open(
+            FACULTY_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+            faculty_list = json.load(file)
+
+        if not isinstance(faculty_list, list):
+            return []
+
+        for faculty in faculty_list:
+            if not isinstance(faculty, dict):
+                continue
+
+            email = str(
+                faculty.get("email", "")
+            ).strip()
+
+            if (
+                email
+                and "@" in email
+                and "." in email.rsplit("@", 1)[-1]
+            ):
+                faculty_emails.append(email)
+
+        unique = {}
+
+        for email in faculty_emails:
+            unique.setdefault(email.casefold(), email)
+
+        return list(unique.values())
+
+    except Exception:
+        app.logger.exception(
+            "Could not load faculty email addresses."
+        )
+        return []
+
+
+# ============================================================
+# DCEA STUDENT EMAIL ADDRESSES
+# ============================================================
+
+def get_dcea_student_emails():
+    """
+    Return unique, valid email addresses of DCEA students.
+    """
+
+    student_emails = []
+
+    if not os.path.exists(STUDENTS_FILE):
+        app.logger.warning("Students file not found.")
+        return []
+
+    try:
+        with open(
+            STUDENTS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+            students = json.load(file)
+
+        if not isinstance(students, list):
+            return []
+
+        for student in students:
+            if not isinstance(student, dict):
+                continue
+
+            department = str(
+                student.get("department", "")
+            ).strip().casefold()
+
+            if department != "dcea":
+                continue
+
+            email = str(
+                student.get("email", "")
+            ).strip()
+
+            if (
+                email
+                and "@" in email
+                and "." in email.rsplit("@", 1)[-1]
+            ):
+                student_emails.append(email)
+
+        unique = {}
+
+        for email in student_emails:
+            unique.setdefault(email.casefold(), email)
+
+        return list(unique.values())
+
+    except Exception:
+        app.logger.exception(
+            "Could not load DCEA student email addresses."
+        )
+        return []
+
+
+# ============================================================
+# EMAIL BODY
+# ============================================================
+
+def dcea_notification_email_body(
+    title,
+    description,
+    date_from,
+    date_to,
+    updated=False
+):
+    """
+    Build the plain-text email body.
+    The description is included in the email.
+    """
+
+    heading = (
+        "MANGALAYATAN UNIVERSITY\n"
+        "IMPORTANT INFORMATION"
+    )
+
+    if updated:
+        intro = "An event notification has been updated."
+    else:
+        intro = "A university event notification is available."
+
+    description = str(description or "").strip()
+
+    if not description:
+        description = "No additional description provided."
+
+    return (
+        f"{heading}\n\n"
+        f"{intro}\n\n"
+        f"Title: {title}\n"
+        f"Date: {date_from} - {date_to}\n\n"
+        f"Description:\n{description}\n\n"
+        "Please note the event dates and details.\n\n"
+        "Regards,\n"
+        "Mangalayatan University"
+    )
+
+
+# ============================================================
+# GMAIL SMTP SENDER
+# Requires GMAIL_ADDRESS and GMAIL_APP_PASSWORD
+# ============================================================
+
+def send_dcea_notification_email(recipients, subject, body):
+    """
+    Send both plain-text and HTML emails through Gmail SMTP.
+    """
+
+    sender = os.getenv(
+        "GMAIL_ADDRESS", ""
+    ).strip()
+
+    app_password = os.getenv(
+        "GMAIL_APP_PASSWORD", ""
+    ).replace(" ", "").strip()
+
+    if not sender or not app_password:
+        app.logger.error(
+            "DCEA email failed: Gmail environment variables missing."
+        )
+        return False
+
+    recipients = list(dict.fromkeys(
+        str(email).strip()
+        for email in recipients
+        if email and str(email).strip()
+    ))
+
+    if not recipients:
+        app.logger.warning(
+            "DCEA email skipped: no recipient addresses."
+        )
+        return False
+
+    all_sent = True
+
+    for recipient in recipients:
+        message = EmailMessage()
+
+        message["From"] = sender
+        message["To"] = recipient
+        message["Subject"] = subject
+
+        message.set_content(body)
+
+        escaped_body = html.escape(str(body)).replace(
+            "\n", "<br>"
+        )
+
+        html_body = f"""
+        <html>
+        <body style="
+            font-family:Arial,sans-serif;
+            color:#222;
+            line-height:1.7;
+            max-width:650px;
+            margin:auto;
+            padding:20px;
+        ">
+            <div style="
+                border-bottom:3px solid #17365d;
+                padding-bottom:15px;
+                margin-bottom:18px;
+            ">
+                <h2 style="color:#17365d;">
+                    Mangalayatan University
+                </h2>
+                <h3 style="color:#b42318;">
+                    IMPORTANT INFORMATION
+                </h3>
+            </div>
+
+            <div>{escaped_body}</div>
+        </body>
+        </html>
+        """
+
+        message.add_alternative(
+            html_body,
+            subtype="html"
+        )
+
+        try:
+            with smtplib.SMTP_SSL(
+                "smtp.gmail.com",
+                465,
+                timeout=20
+            ) as smtp:
+                smtp.login(sender, app_password)
+                smtp.send_message(message)
+
+            app.logger.info(
+                "DCEA notification email sent successfully to %s.",
+                recipient
+            )
+
+        except Exception:
+            all_sent = False
+            app.logger.exception(
+                "Failed to send DCEA notification email to %s.",
+                recipient
+            )
+
+    return all_sent
+
+
+# ============================================================
+# SEND EVENT EMAIL
+# ============================================================
+
+def dcea_send_notification_email(
+    notification_id,
+    title,
+    date_from,
+    date_to,
+    email_type,
+    description="",
+    updated=False
+):
+    """
+    Send the event notification to faculty and DCEA students.
+
+    Automatic reminders are logged only after successful sending.
+    """
+
+    try:
+        dcea_notification_email_log_create_table()
+
+        if email_type == "reminder":
+            conn = get_connection()
+
+            try:
+                cur = conn.cursor()
+
+                cur.execute("""
+                    SELECT id
+                    FROM dcea_notification_email_log
+                    WHERE notification_id = %s
+                      AND email_type = %s
+                """, (
+                    notification_id,
+                    email_type
+                ))
+
+                already_sent = cur.fetchone()
+
+            finally:
+                conn.close()
+
+            if already_sent:
+                app.logger.info(
+                    "DCEA reminder already sent for notification %s.",
+                    notification_id
+                )
+                return True
+
+        recipients = (
+            get_dcea_faculty_emails()
+            + get_dcea_student_emails()
+        )
+
+        unique_recipients = []
+        seen_emails = set()
+
+        for email in recipients:
+            email = str(email).strip()
+
+            if not email:
+                continue
+
+            email_key = email.casefold()
+
+            if email_key not in seen_emails:
+                seen_emails.add(email_key)
+                unique_recipients.append(email)
+
+        if not unique_recipients:
+            app.logger.warning(
+                "No faculty or DCEA student emails found for notification %s.",
+                notification_id
+            )
+            return False
+
+        subject = (
+            "Mangalayatan University - Important Information"
+        )
+
+        body = dcea_notification_email_body(
+            title=title,
+            description=description,
+            date_from=date_from,
+            date_to=date_to,
+            updated=updated
+        )
+
+        sent = send_dcea_notification_email(
+            unique_recipients,
+            subject,
+            body
+        )
+
+        if sent and email_type == "reminder":
+            conn = get_connection()
+
+            try:
+                cur = conn.cursor()
+
+                cur.execute("""
+                    INSERT INTO dcea_notification_email_log
+                        (notification_id, email_type)
+                    VALUES (%s, %s)
+                    ON CONFLICT (notification_id, email_type)
+                    DO NOTHING
+                """, (
+                    notification_id,
+                    email_type
+                ))
+
+                conn.commit()
+
+            except Exception:
+                conn.rollback()
+
+                app.logger.exception(
+                    "Could not save DCEA reminder email log."
+                )
+                return False
+
+            finally:
+                conn.close()
+
+        return sent
+
+    except Exception:
+        app.logger.exception(
+            "DCEA notification email processing failed."
+        )
+        return False
+
+
+# ============================================================
+# ADMIN: VIEW NOTIFICATIONS
+# ============================================================
+
+@app.route(
+    "/admin-dcea-notifications",
+    methods=["GET"]
+)
 def admin_dcea_notifications():
 
     access_result = dcea_notifications_admin_check()
@@ -27965,7 +28487,12 @@ def admin_dcea_notifications():
             cur = conn.cursor()
 
             cur.execute("""
-                SELECT id, title, date_from, date_to
+                SELECT
+                    id,
+                    title,
+                    description,
+                    date_from,
+                    date_to
                 FROM dcea_notifications
                 ORDER BY date_from DESC, id DESC
             """)
@@ -27976,19 +28503,23 @@ def admin_dcea_notifications():
 
             for row in rows:
                 if isinstance(row, dict):
-                    notifications.append({
+                    notification = {
                         "id": row["id"],
                         "title": row["title"],
+                        "description": row.get("description", ""),
                         "date_from": row["date_from"],
                         "date_to": row["date_to"]
-                    })
+                    }
                 else:
-                    notifications.append({
+                    notification = {
                         "id": row[0],
                         "title": row[1],
-                        "date_from": row[2],
-                        "date_to": row[3]
-                    })
+                        "description": row[2] or "",
+                        "date_from": row[3],
+                        "date_to": row[4]
+                    }
+
+                notifications.append(notification)
 
         finally:
             conn.close()
@@ -27999,9 +28530,9 @@ def admin_dcea_notifications():
             edit_notification=None
         )
 
-    except Exception as e:
+    except Exception:
         app.logger.exception(
-            "Error loading DCEA notifications"
+            "Error loading DCEA notifications."
         )
 
         return (
@@ -28011,7 +28542,14 @@ def admin_dcea_notifications():
         )
 
 
-@app.route("/admin-dcea-notifications/add", methods=["POST"])
+# ============================================================
+# ADMIN: ADD NOTIFICATION
+# ============================================================
+
+@app.route(
+    "/admin-dcea-notifications/add",
+    methods=["POST"]
+)
 def admin_dcea_notifications_add():
 
     access_result = dcea_notifications_admin_check()
@@ -28019,16 +28557,27 @@ def admin_dcea_notifications_add():
     if access_result is not None:
         return access_result
 
-    title = request.form.get("title", "").strip()
-    date_from_text = request.form.get("date_from", "").strip()
-    date_to_text = request.form.get("date_to", "").strip()
+    title = request.form.get(
+        "title", ""
+    ).strip()
+
+    description = request.form.get(
+        "description", ""
+    ).strip()
+
+    date_from_text = request.form.get(
+        "date_from", ""
+    ).strip()
+
+    date_to_text = request.form.get(
+        "date_to", ""
+    ).strip()
 
     if not title or not date_from_text or not date_to_text:
         flash(
-            "Title, Date From aur Date To teeno bharna zaroori hai.",
+            "Title, Date From aur Date To bharna zaroori hai.",
             "error"
         )
-
         return redirect("/admin-dcea-notifications")
 
     if len(title) > 250:
@@ -28036,7 +28585,13 @@ def admin_dcea_notifications_add():
             "Title 250 characters se zyada nahi hona chahiye.",
             "error"
         )
+        return redirect("/admin-dcea-notifications")
 
+    if dcea_notification_word_count(description) > 250:
+        flash(
+            "Description maximum 250 words ka ho sakta hai.",
+            "error"
+        )
         return redirect("/admin-dcea-notifications")
 
     try:
@@ -28048,7 +28603,6 @@ def admin_dcea_notifications_add():
             "Please valid dates select karein.",
             "error"
         )
-
         return redirect("/admin-dcea-notifications")
 
     if date_from > date_to:
@@ -28056,7 +28610,6 @@ def admin_dcea_notifications_add():
             "Date From, Date To se baad ki nahi ho sakti.",
             "error"
         )
-
         return redirect("/admin-dcea-notifications")
 
     admin_id = str(
@@ -28066,21 +28619,31 @@ def admin_dcea_notifications_add():
     conn = get_connection()
 
     try:
+        dcea_notifications_create_table()
+
         cur = conn.cursor()
 
         cur.execute("""
             INSERT INTO dcea_notifications
-                (title, date_from, date_to, admin_id)
-            VALUES (%s, %s, %s, %s)
+                (
+                    title,
+                    description,
+                    date_from,
+                    date_to,
+                    admin_id
+                )
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING id
         """, (
             title,
+            description,
             date_from,
             date_to,
             admin_id
         ))
 
         inserted_row = cur.fetchone()
+
         notification_id = (
             inserted_row["id"]
             if isinstance(inserted_row, dict)
@@ -28089,22 +28652,24 @@ def admin_dcea_notifications_add():
 
         conn.commit()
 
-        # If the event starts within the next 10 days, email faculty now.
-        # If it is farther away, the daily reminder job emails them 10 days before.
         today = dcea_india_today()
         days_until_event = (date_from - today).days
 
+        # If the event is within 10 days, send the email now.
+        # Otherwise the daily reminder job handles it later.
         if 0 <= days_until_event <= 10:
             email_sent = dcea_send_notification_email(
                 notification_id=notification_id,
                 title=title,
+                description=description,
                 date_from=date_from,
                 date_to=date_to,
                 email_type="created"
             )
+
             if not email_sent:
                 app.logger.warning(
-                    "Notification saved, but immediate faculty email did not send."
+                    "Notification saved, but immediate email failed."
                 )
 
         flash(
@@ -28116,7 +28681,7 @@ def admin_dcea_notifications_add():
         conn.rollback()
 
         app.logger.exception(
-            "Error adding DCEA notification"
+            "Error adding DCEA notification."
         )
 
         flash(
@@ -28130,6 +28695,10 @@ def admin_dcea_notifications_add():
     return redirect("/admin-dcea-notifications")
 
 
+# ============================================================
+# ADMIN: EDIT NOTIFICATION
+# ============================================================
+
 @app.route(
     "/admin-dcea-notifications/edit/<int:notification_id>",
     methods=["GET", "POST"]
@@ -28141,18 +28710,31 @@ def admin_dcea_notifications_edit(notification_id):
     if access_result is not None:
         return access_result
 
+    dcea_notifications_create_table()
+
     if request.method == "POST":
 
-        title = request.form.get("title", "").strip()
-        date_from_text = request.form.get("date_from", "").strip()
-        date_to_text = request.form.get("date_to", "").strip()
+        title = request.form.get(
+            "title", ""
+        ).strip()
+
+        description = request.form.get(
+            "description", ""
+        ).strip()
+
+        date_from_text = request.form.get(
+            "date_from", ""
+        ).strip()
+
+        date_to_text = request.form.get(
+            "date_to", ""
+        ).strip()
 
         if not title or not date_from_text or not date_to_text:
             flash(
-                "Title, Date From aur Date To teeno bharna zaroori hai.",
+                "Title, Date From aur Date To bharna zaroori hai.",
                 "error"
             )
-
             return redirect(
                 f"/admin-dcea-notifications/edit/{notification_id}"
             )
@@ -28162,7 +28744,15 @@ def admin_dcea_notifications_edit(notification_id):
                 "Title 250 characters se zyada nahi hona chahiye.",
                 "error"
             )
+            return redirect(
+                f"/admin-dcea-notifications/edit/{notification_id}"
+            )
 
+        if dcea_notification_word_count(description) > 250:
+            flash(
+                "Description maximum 250 words ka ho sakta hai.",
+                "error"
+            )
             return redirect(
                 f"/admin-dcea-notifications/edit/{notification_id}"
             )
@@ -28176,7 +28766,6 @@ def admin_dcea_notifications_edit(notification_id):
                 "Please valid dates select karein.",
                 "error"
             )
-
             return redirect(
                 f"/admin-dcea-notifications/edit/{notification_id}"
             )
@@ -28186,7 +28775,6 @@ def admin_dcea_notifications_edit(notification_id):
                 "Date From, Date To se baad ki nahi ho sakti.",
                 "error"
             )
-
             return redirect(
                 f"/admin-dcea-notifications/edit/{notification_id}"
             )
@@ -28198,12 +28786,15 @@ def admin_dcea_notifications_edit(notification_id):
 
             cur.execute("""
                 UPDATE dcea_notifications
-                SET title = %s,
+                SET
+                    title = %s,
+                    description = %s,
                     date_from = %s,
                     date_to = %s
                 WHERE id = %s
             """, (
                 title,
+                description,
                 date_from,
                 date_to,
                 notification_id
@@ -28217,20 +28808,23 @@ def admin_dcea_notifications_edit(notification_id):
                 email_sent = dcea_send_notification_email(
                     notification_id=notification_id,
                     title=title,
+                    description=description,
                     date_from=date_from,
                     date_to=date_to,
                     email_type="updated",
                     updated=True
                 )
+
                 if not email_sent:
                     app.logger.warning(
-                        "Notification updated, but faculty update email did not send."
+                        "Notification updated, but update email failed."
                     )
 
                 flash(
                     "DCEA notification successfully update ho gayi.",
                     "success"
                 )
+
             else:
                 flash(
                     "Notification nahi mili.",
@@ -28241,7 +28835,7 @@ def admin_dcea_notifications_edit(notification_id):
             conn.rollback()
 
             app.logger.exception(
-                "Error updating DCEA notification"
+                "Error updating DCEA notification."
             )
 
             flash(
@@ -28254,53 +28848,31 @@ def admin_dcea_notifications_edit(notification_id):
 
         return redirect("/admin-dcea-notifications")
 
-    # GET request: load the notification into the edit form.
     conn = get_connection()
 
     try:
         cur = conn.cursor()
 
         cur.execute("""
-            SELECT id, title, date_from, date_to
+            SELECT
+                id,
+                title,
+                description,
+                date_from,
+                date_to
             FROM dcea_notifications
             WHERE id = %s
         """, (notification_id,))
 
         row = cur.fetchone()
 
-    finally:
-        conn.close()
-
-    if row is None:
-        flash(
-            "Notification nahi mili.",
-            "error"
-        )
-
-        return redirect("/admin-dcea-notifications")
-
-    if isinstance(row, dict):
-        edit_notification = {
-            "id": row["id"],
-            "title": row["title"],
-            "date_from": row["date_from"],
-            "date_to": row["date_to"]
-        }
-    else:
-        edit_notification = {
-            "id": row[0],
-            "title": row[1],
-            "date_from": row[2],
-            "date_to": row[3]
-        }
-
-    conn = get_connection()
-
-    try:
-        cur = conn.cursor()
-
         cur.execute("""
-            SELECT id, title, date_from, date_to
+            SELECT
+                id,
+                title,
+                description,
+                date_from,
+                date_to
             FROM dcea_notifications
             ORDER BY date_from DESC, id DESC
         """)
@@ -28314,6 +28886,7 @@ def admin_dcea_notifications_edit(notification_id):
                 notifications.append({
                     "id": item["id"],
                     "title": item["title"],
+                    "description": item.get("description", ""),
                     "date_from": item["date_from"],
                     "date_to": item["date_to"]
                 })
@@ -28321,12 +28894,37 @@ def admin_dcea_notifications_edit(notification_id):
                 notifications.append({
                     "id": item[0],
                     "title": item[1],
-                    "date_from": item[2],
-                    "date_to": item[3]
+                    "description": item[2] or "",
+                    "date_from": item[3],
+                    "date_to": item[4]
                 })
 
     finally:
         conn.close()
+
+    if row is None:
+        flash(
+            "Notification nahi mili.",
+            "error"
+        )
+        return redirect("/admin-dcea-notifications")
+
+    if isinstance(row, dict):
+        edit_notification = {
+            "id": row["id"],
+            "title": row["title"],
+            "description": row.get("description", ""),
+            "date_from": row["date_from"],
+            "date_to": row["date_to"]
+        }
+    else:
+        edit_notification = {
+            "id": row[0],
+            "title": row[1],
+            "description": row[2] or "",
+            "date_from": row[3],
+            "date_to": row[4]
+        }
 
     return render_template(
         "admin_dcea_notifications.html",
@@ -28334,6 +28932,10 @@ def admin_dcea_notifications_edit(notification_id):
         edit_notification=edit_notification
     )
 
+
+# ============================================================
+# ADMIN: DELETE NOTIFICATION
+# ============================================================
 
 @app.route(
     "/admin-dcea-notifications/delete/<int:notification_id>",
@@ -28345,6 +28947,8 @@ def admin_dcea_notifications_delete(notification_id):
 
     if access_result is not None:
         return access_result
+
+    dcea_notifications_create_table()
 
     conn = get_connection()
 
@@ -28375,7 +28979,7 @@ def admin_dcea_notifications_delete(notification_id):
         conn.rollback()
 
         app.logger.exception(
-            "Error deleting DCEA notification"
+            "Error deleting DCEA notification."
         )
 
         flash(
@@ -28389,736 +28993,34 @@ def admin_dcea_notifications_delete(notification_id):
     return redirect("/admin-dcea-notifications")
 
 
-
 # ============================================================
-# EMAIL SENDER: ADMIN-ONLY TEST PAGE
-# Requires:
-# GMAIL_ADDRESS
-# GMAIL_APP_PASSWORD
+# DAILY REMINDER JOB
+# Render Cron:
+# POST /internal/dcea-notification-reminders
+# Header: X-Cron-Secret: <DCEA_REMINDER_CRON_SECRET>
 # ============================================================
 
-@app.route("/admin-email-test", methods=["GET", "POST"])
-def admin_email_test():
-    access_result = admin_required()
-
-    if access_result is not None:
-        return access_result
-
-    message = ""
-    success = False
-
-    if request.method == "POST":
-        recipient = request.form.get("recipient", "").strip()
-
-        sender = os.environ.get(
-            "GMAIL_ADDRESS", ""
-        ).strip()
-
-        app_password = os.environ.get(
-            "GMAIL_APP_PASSWORD", ""
-        ).replace(" ", "").strip()
-
-        if not sender or not app_password:
-            message = (
-                "Render Environment mein GMAIL_ADDRESS "
-                "ya GMAIL_APP_PASSWORD missing hai."
-            )
-
-        elif (
-            not recipient
-            or "@" not in recipient
-            or "." not in recipient.rsplit("@", 1)[-1]
-        ):
-            message = "Valid email address enter karein."
-
-        else:
-            email_message = EmailMessage()
-
-            email_message["Subject"] = (
-                "University Management System - Test Email"
-            )
-
-            email_message["From"] = sender
-            email_message["To"] = recipient
-
-            email_message.set_content(
-                "Namaste,\n\n"
-                "Yeh Mangalayatan University Portal se "
-                "bheja gaya test email hai.\n\n"
-                "Agar aapko yeh email mila hai, toh "
-                "Gmail SMTP connection kaam kar raha hai.\n\n"
-                "Yeh sirf connection test hai. "
-                "Automatic event reminders abhi configure "
-                "nahi hue hain."
-            )
-
-            try:
-                with smtplib.SMTP_SSL(
-                    "smtp.gmail.com",
-                    465,
-                    timeout=20
-                ) as smtp:
-
-                    smtp.login(sender, app_password)
-                    smtp.send_message(email_message)
-
-                success = True
-
-                message = (
-                    "Test email successfully send ho gaya. "
-                    "Inbox aur Spam folder check karein."
-                )
-
-            except Exception:
-                app.logger.exception(
-                    "Admin test email failed"
-                )
-
-                message = (
-                    "Email send nahi hua. Render Logs mein "
-                    "error check karein aur Gmail credentials "
-                    "verify karein."
-                )
-
-    escaped_message = (
-        message.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
-
-    notice_html = ""
-
-    if message:
-        status_color = "#166534" if success else "#b91c1c"
-
-        notice_html = (
-            f'<p style="color:{status_color};'
-            f'font-weight:bold;">'
-            f'{escaped_message}</p>'
-        )
-
-    return """
-    <!doctype html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport"
-              content="width=device-width, initial-scale=1">
-
-        <title>Email Connection Test</title>
-
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                max-width: 620px;
-                margin: 32px auto;
-                padding: 0 16px;
-                color: #172033;
-            }
-
-            .card {
-                border: 1px solid #d1d5db;
-                border-radius: 12px;
-                padding: 22px;
-            }
-
-            input, button {
-                box-sizing: border-box;
-                width: 100%;
-                padding: 12px;
-                margin-top: 8px;
-                font-size: 16px;
-            }
-
-            button {
-                background: #1d4ed8;
-                color: white;
-                border: 0;
-                border-radius: 8px;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="card">
-            <h2>University Portal — Email Test</h2>
-
-            <p>
-                Apne email address par test email bhejkar
-                Gmail connection check karein.
-            </p>
-
-            <form method="post">
-                <label for="recipient">
-                    Test recipient email address
-                </label>
-
-                <input
-                    id="recipient"
-                    name="recipient"
-                    type="email"
-                    required
-                    maxlength="254"
-                    placeholder="you@example.com"
-                >
-
-                <button type="submit">
-                    Send Test Email
-                </button>
-            </form>
-
-    """ + notice_html + """
-            <p>
-                <small>
-                    Yeh page sirf logged-in admin ke liye hai.
-                    Gmail password page par show nahi hota.
-                </small>
-            </p>
-        </div>
-    </body>
-    </html>
-    """
-
-
-
-def send_dcea_notification_email(recipients, subject, body):
-    """
-    Send a properly formatted HTML and plain-text email
-    separately to every recipient.
-    """
-    import html
-
-    sender = os.getenv("GMAIL_ADDRESS", "").strip()
-    app_password = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").strip()
-
-    if not sender or not app_password:
-        app.logger.error(
-            "DCEA email failed: Gmail environment variables missing."
-        )
-        return False
-
-    # Convert literal \n text into actual line breaks.
-    body = str(body).replace("\\r\\n", "\n").replace("\\n", "\n")
-
-    recipients = list(dict.fromkeys(
-        str(email).strip()
-        for email in recipients
-        if email and str(email).strip()
-    ))
-
-    if not recipients:
-        app.logger.warning("DCEA email skipped: no recipient addresses.")
-        return False
-
-    all_sent = True
-
-    for recipient in recipients:
-        message = EmailMessage()
-        message["From"] = sender
-        message["To"] = recipient
-        message["Subject"] = subject
-
-        # Plain-text email with proper line breaks.
-        message.set_content(body)
-
-        # HTML email with clean formatting.
-        safe_lines = [html.escape(line) for line in body.splitlines()]
-        html_lines = []
-
-        for index, line in enumerate(safe_lines):
-            if index == 0:
-                html_lines.append(
-                    '<div style="font-size:22px;font-weight:bold;'
-                    'color:#17365d;margin-bottom:8px;">'
-                    f'{line}</div>'
-                )
-            elif index == 1:
-                html_lines.append(
-                    '<div style="font-size:15px;font-weight:bold;'
-                    'letter-spacing:1px;color:#b42318;'
-                    'margin-bottom:20px;">'
-                    f'{line}</div>'
-                )
-            elif line.startswith("Title:"):
-                html_lines.append(
-                    '<p style="margin:12px 0 6px;">'
-                    '<b>Title:</b> '
-                    f'{line[len("Title:"):].strip()}</p>'
-                )
-            elif line.startswith("Date:"):
-                html_lines.append(
-                    '<p style="margin:6px 0 16px;">'
-                    '<b>Date:</b> '
-                    f'{line[len("Date:"):].strip()}</p>'
-                )
-            elif line:
-                html_lines.append(
-                    '<p style="margin:10px 0;line-height:1.6;">'
-                    f'{line}</p>'
-                )
-            else:
-                html_lines.append('<div style="height:6px;"></div>')
-
-        html_body = (
-            '<html><body style="font-family:Arial,sans-serif;'
-            'color:#222;max-width:620px;margin:auto;padding:20px;">'
-            '<div style="border-bottom:3px solid #17365d;'
-            'padding-bottom:16px;margin-bottom:16px;">'
-            + "".join(html_lines) +
-            '</div></body></html>'
-        )
-
-        message.add_alternative(html_body, subtype="html")
-
-        try:
-            with smtplib.SMTP_SSL(
-                "smtp.gmail.com", 465, timeout=20
-            ) as smtp:
-                smtp.login(sender, app_password)
-                smtp.send_message(message)
-
-            app.logger.info(
-                "DCEA notification email sent successfully."
-            )
-
-        except Exception:
-            all_sent = False
-            app.logger.exception(
-                "Failed to send DCEA notification email."
-            )
-
-    return all_sent
-
-
-def dcea_notification_email_log_create_table():
-    """
-    Persistent log prevents the daily reminder job from sending the
-    same reminder more than once for a notification.
-    """
-    conn = get_connection()
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS dcea_notification_email_log (
-                id SERIAL PRIMARY KEY,
-                notification_id INTEGER NOT NULL,
-                email_type VARCHAR(30) NOT NULL,
-                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE (notification_id, email_type)
-            )
-        """)
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        app.logger.exception("Could not create DCEA notification email log.")
-        raise
-    finally:
-        conn.close()
-
-
-def dcea_notification_email_body(title, date_from, date_to, updated=False):
-    heading = "MANGALAYATAN UNIVERSITY\\nIMPORTANT INFORMATION"
-    intro = (
-        "An event notification has been updated."
-        if updated
-        else "A university event notification is available."
-    )
-    return (
-        f"{heading}\\n\\n"
-        f"{intro}\\n\\n"
-        f"Title: {title}\\n"
-        f"Date: {date_from} - {date_to}\\n\\n"
-        "Please note the event dates.\\n\\n"
-        "Regards,\\nMangalayatan University"
-    )
-
-
-def dcea_india_today():
-    return date.today() if ZoneInfo is None else __import__("datetime").datetime.now(
-        ZoneInfo("Asia/Kolkata")
-    ).date()
-
-
-def get_dcea_faculty_emails():
-    """
-    Return all valid saved faculty email addresses across departments.
-    """
-    faculty_emails = []
-
-    if not os.path.exists(FACULTY_FILE):
-        app.logger.warning("Faculty file not found.")
-        return faculty_emails
-
-    try:
-        with open(FACULTY_FILE, "r", encoding="utf-8") as file:
-            faculty_list = json.load(file)
-
-        if not isinstance(faculty_list, list):
-            return faculty_emails
-
-        for faculty in faculty_list:
-            if not isinstance(faculty, dict):
-                continue
-
-            email = str(faculty.get("email", "")).strip()
-            if email and "@" in email and "." in email.rsplit("@", 1)[-1]:
-                faculty_emails.append(email)
-
-        # Case-insensitive deduplication while preserving the original address.
-        unique = {}
-        for email in faculty_emails:
-            unique.setdefault(email.casefold(), email)
-        return list(unique.values())
-
-    except Exception:
-        app.logger.exception("Could not load faculty email addresses.")
-        return []
-
-
-def get_dcea_student_emails():
-    """
-    Return unique, valid email addresses of DCEA students.
-    """
-    student_emails = []
-
-    if not os.path.exists(STUDENTS_FILE):
-        app.logger.warning("Students file not found.")
-        return student_emails
-
-    try:
-        with open(STUDENTS_FILE, "r", encoding="utf-8") as file:
-            students = json.load(file)
-
-        if not isinstance(students, list):
-            return student_emails
-
-        for student in students:
-            if not isinstance(student, dict):
-                continue
-
-            department = str(
-                student.get("department", "")
-            ).strip().casefold()
-
-            if department != "dcea":
-                continue
-
-            email = str(
-                student.get("email", "")
-            ).strip()
-
-            if (
-                email
-                and "@" in email
-                and "." in email.rsplit("@", 1)[-1]
-            ):
-                student_emails.append(email)
-
-        # Duplicate emails remove karein.
-        unique = {}
-
-        for email in student_emails:
-            unique.setdefault(email.casefold(), email)
-
-        return list(unique.values())
-
-    except Exception:
-        app.logger.exception(
-            "Could not load DCEA student email addresses."
-        )
-        return []
-
-
-def dcea_send_notification_email(
-    notification_id,
-    title,
-    date_from,
-    date_to,
-    email_type,
-    updated=False
-):
-    """
-    Send DCEA notifications to faculty and DCEA students.
-    For reminders, save a sent marker after successful delivery.
-    """
-
-    try:
-        dcea_notification_email_log_create_table()
-
-        # Reminder pehle bheja ja chuka hai ya nahi.
-        if email_type == "reminder":
-            conn = get_connection()
-
-            try:
-                cur = conn.cursor()
-
-                cur.execute("""
-                    SELECT id
-                    FROM dcea_notification_email_log
-                    WHERE notification_id = %s
-                      AND email_type = %s
-                """, (notification_id, email_type))
-
-                already_sent = cur.fetchone()
-
-            finally:
-                conn.close()
-
-            if already_sent:
-                app.logger.info(
-                    "DCEA reminder already sent for notification %s.",
-                    notification_id
-                )
-                return True
-
-        # Faculty aur DCEA students dono ke emails lein.
-        faculty_emails = get_dcea_faculty_emails()
-        student_emails = get_dcea_student_emails()
-
-        # Dono lists combine karke duplicate addresses remove karein.
-        recipients = []
-        seen_emails = set()
-
-        for email in faculty_emails + student_emails:
-            email = str(email).strip()
-
-            if not email:
-                continue
-
-            email_key = email.casefold()
-
-            if email_key not in seen_emails:
-                seen_emails.add(email_key)
-                recipients.append(email)
-
-        if not recipients:
-            app.logger.warning(
-                "No faculty or DCEA student emails found "
-                "for notification %s.",
-                notification_id
-            )
-            return False
-
-        subject = (
-            "Mangalayatan University - Important Information"
-        )
-
-        body = dcea_notification_email_body(
-            title,
-            date_from,
-            date_to,
-            updated=updated
-        )
-
-        # Existing email sender ko use karein.
-        sent = send_dcea_notification_email(
-            recipients,
-            subject,
-            body
-        )
-
-        # Reminder ka log tabhi save ho jab sending successful ho.
-        if sent and email_type == "reminder":
-            conn = get_connection()
-
-            try:
-                cur = conn.cursor()
-
-                cur.execute("""
-                    INSERT INTO dcea_notification_email_log
-                        (notification_id, email_type)
-                    VALUES (%s, %s)
-                    ON CONFLICT (notification_id, email_type)
-                    DO NOTHING
-                """, (notification_id, email_type))
-
-                conn.commit()
-
-            except Exception:
-                conn.rollback()
-
-                app.logger.exception(
-                    "Could not save DCEA reminder email log."
-                )
-
-                return False
-
-            finally:
-                conn.close()
-
-        return sent
-
-    except Exception:
-        app.logger.exception(
-            "DCEA notification email processing failed."
-        )
-        return False
-
-
-
-def send_student_registration_confirmation(student):
-    """
-    Send registration confirmation to a student.
-    Registration remains saved even if email delivery fails.
-    """
-
-    try:
-        import html
-
-        recipient = str(
-            student.get("email", "")
-        ).strip()
-
-        sender = os.getenv(
-            "GMAIL_ADDRESS", ""
-        ).strip()
-
-        app_password = os.getenv(
-            "GMAIL_APP_PASSWORD", ""
-        ).replace(" ", "").strip()
-
-        if not recipient:
-            app.logger.warning(
-                "Student confirmation email skipped: "
-                "student email is missing."
-            )
-            return False
-
-        if not sender or not app_password:
-            app.logger.error(
-                "Student confirmation email failed: "
-                "Gmail environment variables are missing."
-            )
-            return False
-
-        student_name = str(
-            student.get("name", "Student")
-        ).strip()
-
-        student_id = str(
-            student.get("student_id", "")
-        ).strip()
-
-        enrollment = str(
-            student.get("enrollment", "")
-        ).strip()
-
-        course = str(
-            student.get("course", "")
-        ).strip()
-
-        semester = str(
-            student.get("semester", "")
-        ).strip()
-
-        message = EmailMessage()
-
-        message["From"] = sender
-        message["To"] = recipient
-        message["Subject"] = (
-            "Mangalayatan University - "
-            "Student Registration Confirmation"
-        )
-
-        message.set_content(
-            f"Dear {student_name},\n\n"
-            "Your student registration at "
-            "Mangalayatan University has been completed "
-            "successfully.\n\n"
-            f"Student ID: {student_id}\n"
-            f"Enrollment Number: {enrollment}\n"
-            f"Course: {course}\n"
-            f"Semester: {semester}\n\n"
-            "Please keep your Student ID and Enrollment "
-            "Number safe for future reference.\n\n"
-            "Regards,\n"
-            "Mangalayatan University"
-        )
-
-        message.add_alternative(
-            f"""
-            <html>
-            <body style="font-family:Arial,sans-serif;
-                         color:#222;line-height:1.6;">
-                <h2 style="color:#17365d;">
-                    Mangalayatan University
-                </h2>
-
-                <p>Dear {html.escape(student_name)},</p>
-
-                <p>
-                    Your student registration has been
-                    completed successfully.
-                </p>
-
-                <table style="border-collapse:collapse;">
-                    <tr>
-                        <td style="padding:6px;"><b>Student ID</b></td>
-                        <td style="padding:6px;">{html.escape(student_id)}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:6px;"><b>Enrollment Number</b></td>
-                        <td style="padding:6px;">{html.escape(enrollment)}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:6px;"><b>Course</b></td>
-                        <td style="padding:6px;">{html.escape(course)}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding:6px;"><b>Semester</b></td>
-                        <td style="padding:6px;">{html.escape(semester)}</td>
-                    </tr>
-                </table>
-
-                <p>
-                    Please keep your Student ID and
-                    Enrollment Number safe.
-                </p>
-
-                <p>
-                    Regards,<br>
-                    Mangalayatan University
-                </p>
-            </body>
-            </html>
-            """,
-            subtype="html"
-        )
-
-        with smtplib.SMTP_SSL(
-            "smtp.gmail.com",
-            465,
-            timeout=20
-        ) as smtp:
-            smtp.login(sender, app_password)
-            smtp.send_message(message)
-
-        app.logger.info(
-            "Student registration confirmation email sent."
-        )
-
-        return True
-
-    except Exception:
-        app.logger.exception(
-            "Student registration confirmation email failed."
-        )
-        return False
-
-
-
-@app.route("/internal/dcea-notification-reminders", methods=["POST", "GET"])
+@app.route(
+    "/internal/dcea-notification-reminders",
+    methods=["POST", "GET"]
+)
 def dcea_notification_reminders_job():
-    """
-    Daily Render Cron Job endpoint. Configure DCEA_REMINDER_CRON_SECRET in
-    Render and send it as the X-Cron-Secret request header.
-    """
-    expected_secret = os.getenv("DCEA_REMINDER_CRON_SECRET", "").strip()
-    supplied_secret = request.headers.get("X-Cron-Secret", "").strip()
 
-    if not expected_secret or not supplied_secret or not __import__("hmac").compare_digest(
-        expected_secret, supplied_secret
+    expected_secret = os.getenv(
+        "DCEA_REMINDER_CRON_SECRET", ""
+    ).strip()
+
+    supplied_secret = request.headers.get(
+        "X-Cron-Secret", ""
+    ).strip()
+
+    if (
+        not expected_secret
+        or not supplied_secret
+        or not hmac.compare_digest(
+            expected_secret,
+            supplied_secret
+        )
     ):
         return "Forbidden", 403
 
@@ -29130,15 +29032,24 @@ def dcea_notification_reminders_job():
         reminder_date = today + timedelta(days=10)
 
         conn = get_connection()
+
         try:
             cur = conn.cursor()
+
             cur.execute("""
-                SELECT id, title, date_from, date_to
+                SELECT
+                    id,
+                    title,
+                    description,
+                    date_from,
+                    date_to
                 FROM dcea_notifications
                 WHERE date_from = %s
                 ORDER BY id
             """, (reminder_date,))
+
             rows = cur.fetchall()
+
         finally:
             conn.close()
 
@@ -29149,16 +29060,24 @@ def dcea_notification_reminders_job():
             if isinstance(row, dict):
                 notification_id = row["id"]
                 title = row["title"]
+                description = row.get("description", "")
                 date_from = row["date_from"]
                 date_to = row["date_to"]
             else:
-                notification_id, title, date_from, date_to = row
+                (
+                    notification_id,
+                    title,
+                    description,
+                    date_from,
+                    date_to
+                ) = row
 
             if dcea_send_notification_email(
-                notification_id,
-                title,
-                date_from,
-                date_to,
+                notification_id=notification_id,
+                title=title,
+                description=description,
+                date_from=date_from,
+                date_to=date_to,
                 email_type="reminder"
             ):
                 sent_count += 1
@@ -29174,9 +29093,122 @@ def dcea_notification_reminders_job():
         }, 200
 
     except Exception:
-        app.logger.exception("DCEA notification reminder job failed.")
-        return "Reminder job failed. Check server logs.", 500
+        app.logger.exception(
+            "DCEA notification reminder job failed."
+        )
+        return (
+            "Reminder job failed. Check server logs.",
+            500
+        )
 
+
+# ============================================================
+# PUBLIC IMPORTANT NOTICES
+# Show only notices whose Date From is today or in the future.
+# Important Notice number remains stable using database ID.
+# ============================================================
+
+@app.route("/important-notices")
+def important_notices():
+
+    dcea_notifications_create_table()
+
+    today = dcea_india_today()
+    conn = get_connection()
+
+    notifications = []
+
+    try:
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT
+                id,
+                title,
+                description,
+                date_from,
+                date_to
+            FROM dcea_notifications
+            WHERE date_from >= %s
+            ORDER BY date_from ASC, id ASC
+        """, (today,))
+
+        rows = cur.fetchall()
+
+        for row in rows:
+            if isinstance(row, dict):
+                notification = {
+                    "id": row["id"],
+                    "title": row["title"],
+                    "description": row.get("description", ""),
+                    "date_from": row["date_from"],
+                    "date_to": row["date_to"]
+                }
+            else:
+                notification = {
+                    "id": row[0],
+                    "title": row[1],
+                    "description": row[2] or "",
+                    "date_from": row[3],
+                    "date_to": row[4]
+                }
+
+            notifications.append(notification)
+
+    finally:
+        conn.close()
+
+    return render_template(
+        "important_notices.html",
+        notifications=notifications
+    )
+
+
+
+# ==========================================
+# OPEN A SINGLE IMPORTANT NOTICE
+# ==========================================
+
+@app.route("/important-notice/<int:notice_id>")
+def view_single_important_notice(notice_id):
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, title, description, date_from, date_to
+            FROM dcea_notifications
+            WHERE id = %s
+        """, (notice_id,))
+
+        row = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        if not row:
+            return "Important Notice not found.", 404
+
+        if isinstance(row, dict):
+            notice = row
+        else:
+            notice = {
+                "id": row[0],
+                "title": row[1],
+                "description": row[2],
+                "date_from": row[3],
+                "date_to": row[4]
+            }
+
+        return render_template(
+            "single_important_notice.html",
+            notice=notice
+        )
+
+    except Exception as e:
+        print("SINGLE NOTICE ERROR:", e)
+        return "Unable to open this notice.", 500
 
 
 # =========================

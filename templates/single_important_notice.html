@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Important Notice</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 35px auto;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            text-align: center;
+            padding: 25px 15px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 27px;
+        }
+
+        .notice-card {
+            background: white;
+            padding: 25px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 5px 18px #cbd5e1;
+        }
+
+        .notice-number {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .notice-title {
+            font-size: 25px;
+            margin: 5px 0 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .dates {
+            background: #f8fafc;
+            padding: 13px;
+            border-left: 4px solid #2563eb;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .description {
+            margin-top: 20px;
+            line-height: 1.8;
+            font-size: 16px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 17px;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .button.secondary {
+            background: #475569;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                margin: 15px auto;
+            }
+
+            .notice-card {
+                padding: 18px;
+            }
+
+            .notice-title {
+                font-size: 21px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="header">
+            <h1>📢 Important Notice</h1>
+        </header>
+
+        <article class="notice-card">
+
+            <div class="notice-number">
+                📢 Important Notice {{ notice.id }}
+            </div>
+
+            <h2 class="notice-title">
+                {{ notice.title }}
+            </h2>
+
+            <div class="dates">
+                <strong>Event Start Date:</strong>
+                {{ notice.date_from }}
+                <br>
+
+                <strong>Event End Date:</strong>
+                {{ notice.date_to }}
+            </div>
+
+            <div class="description">{% if notice.description %}{{ notice.description }}{% else %}No description provided.{% endif %}</div>
+
+            <div class="buttons">
+                <a href="/" class="button secondary">
+                    ← Back to Home
+                </a>
+
+                <a href="/important-notices" class="button">
+                    View All Notices
+                </a>
+            </div>
+
+        </article>
+
+        <footer class="footer">
+            &copy; DCEA Department, Mangalayatan University
+        </footer>
+
+    </main>
+
+</body>
+</html>

@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -11,7 +10,6 @@
     <title>University Management</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
@@ -20,7 +18,10 @@
             margin: 0;
             font-family: Arial, sans-serif;
             background: #f1f5f9;
+            color: #1e293b;
         }
+
+        /* HEADER */
 
         .header {
             background: #2563eb;
@@ -38,17 +39,52 @@
             margin-top: 10px;
         }
 
+        /* MAIN */
+
         .main {
             max-width: 1100px;
-            margin: 40px auto;
+            margin: 35px auto;
             padding: 20px;
         }
 
         .title {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             color: #1e293b;
         }
+
+        /* SMALL NOTIFICATION LINKS */
+
+        .notification-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 0 auto 28px;
+        }
+
+        .notification-link {
+            display: inline-block;
+            padding: 11px 17px;
+            background: #ffffff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(148, 163, 184, 0.15);
+            transition: background 0.2s, transform 0.2s;
+            overflow-wrap: anywhere;
+        }
+
+        .notification-link:hover {
+            background: #dbeafe;
+            transform: translateY(-2px);
+        }
+
+        /* PORTALS */
 
         .portals {
             display: flex;
@@ -90,9 +126,7 @@
             font-size: 13px;
         }
 
-        /* =====================================
-           STUDENT REGISTRATION QR CARD
-        ===================================== */
+        /* STUDENT REGISTRATION QR CARD */
 
         .qr-card {
             cursor: default;
@@ -109,7 +143,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0 auto 5px auto;
+            margin: 0 auto 5px;
         }
 
         .qr-container img {
@@ -129,9 +163,26 @@
             line-height: 1.3;
         }
 
-        /* =====================================
-           DCEA COPYRIGHT FOOTER
-        ===================================== */
+        /* DEVELOPMENT BY */
+
+        .developer-box {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            background: white;
+            border: 2px solid #2563eb;
+            border-radius: 10px;
+            padding: 10px 13px;
+            color: #1e3a8a;
+            font-size: 12px;
+            line-height: 1.6;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            z-index: 9999;
+            max-width: 230px;
+            overflow-wrap: anywhere;
+        }
+
+        /* DCEA COPYRIGHT FOOTER */
 
         .dcea-copyright {
             width: 100%;
@@ -140,7 +191,6 @@
             background: #172554;
             color: white;
             text-align: center;
-            font-family: Arial, sans-serif;
             font-size: 13px;
             line-height: 1.5;
             border-top: 3px solid #d4af37;
@@ -152,9 +202,7 @@
             overflow-wrap: anywhere;
         }
 
-        /* =====================================
-           MOBILE
-        ===================================== */
+        /* MOBILE */
 
         @media (max-width: 600px) {
 
@@ -163,8 +211,8 @@
             }
 
             .main {
-                margin: 25px auto;
-                padding: 15px;
+                margin: 20px auto;
+                padding: 12px;
             }
 
             .portals {
@@ -174,6 +222,7 @@
             .card {
                 width: 155px;
                 height: 165px;
+                padding: 15px;
             }
 
             .qr-card {
@@ -186,26 +235,55 @@
                 height: 115px;
             }
 
+            .notification-links {
+                gap: 9px;
+                margin-bottom: 24px;
+            }
+
+            .notification-link {
+                padding: 10px 13px;
+                font-size: 13px;
+            }
+
+            .developer-box {
+                right: 7px;
+                bottom: 7px;
+                padding: 7px 9px;
+                font-size: 10px;
+                max-width: 190px;
+            }
+
             .dcea-copyright {
                 padding: 12px 8px;
                 font-size: 12px;
             }
-
         }
 
+        @media (max-width: 360px) {
+
+            .card {
+                width: 100%;
+                max-width: 240px;
+            }
+
+            .qr-card {
+                height: 220px;
+            }
+
+            .developer-box {
+                max-width: 165px;
+                font-size: 9px;
+            }
+        }
     </style>
 
 </head>
 
-
 <body>
 
+    <!-- HEADER -->
 
-    <!-- =====================================
-         HEADER
-    ====================================== -->
-
-    <div class="header">
+    <header class="header">
 
         <h1>
             University Management
@@ -215,14 +293,29 @@
             Complete University Management System
         </p>
 
+    </header>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <!-- NOTIFICATION LINKS -->
+{% if notifications %}
+    <div class="notification-links">
+        {% for notice in notifications %}
+            <a
+                href="/important-notice/{{ notice.id }}"
+                class="notification-link"
+            >
+                📢 Important Notice {{ loop.index }}
+            </a>
+        {% endfor %}
     </div>
+{% endif %}
 
 
-    <!-- =====================================
-         MAIN
-    ====================================== -->
-
-    <div class="main">
+        <!-- SELECT PORTAL -->
 
         <h2 class="title">
             Select Your Portal
@@ -232,12 +325,9 @@
         <div class="portals">
 
 
-            <!-- =================================
-                 STUDENT LOGIN
-            ================================== -->
+            <!-- STUDENT LOGIN -->
 
-            <a href="/student-login"
-               class="card">
+            <a href="/student-login" class="card">
 
                 <div class="icon">
                     🎓
@@ -254,12 +344,9 @@
             </a>
 
 
-            <!-- =================================
-                 FACULTY LOGIN
-            ================================== -->
+            <!-- FACULTY LOGIN -->
 
-            <a href="/faculty-login"
-               class="card">
+            <a href="/faculty-login" class="card">
 
                 <div class="icon">
                     👨‍🏫
@@ -276,12 +363,9 @@
             </a>
 
 
-            <!-- =================================
-                 FINANCE PORTAL
-            ================================== -->
+            <!-- FINANCE PORTAL -->
 
-            <a href="/finance-login"
-               class="card">
+            <a href="/finance-login" class="card">
 
                 <div class="icon">
                     💰
@@ -292,18 +376,15 @@
                 </h3>
 
                 <p>
-                    Fee & Payment Portal
+                    Fee &amp; Payment Portal
                 </p>
 
             </a>
 
 
-            <!-- =================================
-                 OWNER PORTAL
-            ================================== -->
+            <!-- OWNER PORTAL -->
 
-            <a href="/owner-login"
-               class="card">
+            <a href="/owner-login" class="card">
 
                 <div class="icon">
                     👑
@@ -320,12 +401,9 @@
             </a>
 
 
-            <!-- =================================
-                 HEAD PORTAL
-            ================================== -->
+            <!-- HEAD PORTAL -->
 
-            <a href="/head-login"
-               class="card">
+            <a href="/head-login" class="card">
 
                 <div class="icon">
                     👨‍💼
@@ -342,12 +420,9 @@
             </a>
 
 
-            <!-- =================================
-                 ADMIN PORTAL
-            ================================== -->
+            <!-- ADMIN PORTAL -->
 
-            <a href="/admin-login"
-               class="card">
+            <a href="/admin-login" class="card">
 
                 <div class="icon">
                     🏫
@@ -364,9 +439,7 @@
             </a>
 
 
-            <!-- =================================
-                 STUDENT REGISTRATION QR
-            ================================== -->
+            <!-- STUDENT REGISTRATION QR -->
 
             <div class="card qr-card">
 
@@ -390,12 +463,9 @@
             </div>
 
 
-            <!-- =================================
-                 EXAM ARRANGEMENT
-            ================================== -->
+            <!-- EXAM ARRANGEMENT -->
 
-            <a href="/exam-arrangement-login"
-               class="card">
+            <a href="/exam-arrangement-login" class="card">
 
                 <div class="icon">
                     📝
@@ -414,67 +484,39 @@
 
         </div>
 
-    </div>
+    </main>
 
 
-    <!-- =====================================
-         DEVELOPMENT BY
-    ====================================== -->
+    <!-- DEVELOPMENT BY -->
 
-    <div style="
-        position: fixed;
-        right: 12px;
-        bottom: 12px;
+    <div class="developer-box">
 
-        background: white;
-
-        border: 2px solid #2563eb;
-        border-radius: 10px;
-
-        padding: 10px 13px;
-
-        color: #1e3a8a;
-
-        font-size: 12px;
-        line-height: 1.45;
-
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.20);
-
-        z-index: 9999;
-
-        max-width: 230px;
-
-        word-wrap: break-word;
-    ">
-
-        <b>DEVELOPED BY:-</b>
+        <b>DEVELOPED BY:</b>
 
         <br>
 
-        Name:- Prince Kumar
+        Name: Prince Kumar
 
         <br>
 
-        Enrollment No:- 20240712
+        Enrollment No: 20240712
 
         <br>
 
-        Semester:- 5th
+        Semester: 5th
 
         <br>
 
-        Course:- B.TECH CSE
+        Course: B.TECH CSE
 
         <br>
 
-        Section:- A
+        Section: A
 
     </div>
 
 
-    <!-- =====================================
-         DCEA COPYRIGHT FOOTER
-    ====================================== -->
+    <!-- DCEA COPYRIGHT FOOTER -->
 
     <footer class="dcea-copyright">
 

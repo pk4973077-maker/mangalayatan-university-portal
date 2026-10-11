@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DCEA Important Notices | Mangalayatan University</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 25px 16px;
+            margin-bottom: 25px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 14px rgba(148, 163, 184, 0.2);
+        }
+
+        .header .icon {
+            font-size: 38px;
+            margin-bottom: 8px;
+        }
+
+        .header h1 {
+            margin: 0 0 10px;
+            color: #1d4ed8;
+            font-size: clamp(24px, 5vw, 34px);
+        }
+
+        .header p {
+            margin: 0;
+            color: #64748b;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .notice {
+            margin: 18px 0;
+            padding: 24px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #2563eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(148, 163, 184, 0.15);
+            overflow-wrap: anywhere;
+        }
+
+        .notice-number {
+            display: inline-block;
+            margin-bottom: 12px;
+            padding: 7px 12px;
+            color: #1d4ed8;
+            background: #eff6ff;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+        }
+
+        .notice h2 {
+            margin: 0 0 15px;
+            color: #0f172a;
+            font-size: clamp(19px, 4vw, 24px);
+            line-height: 1.4;
+        }
+
+        .dates {
+            margin: 0 0 18px;
+            padding: 12px 14px;
+            color: #475569;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .dates strong {
+            color: #334155;
+        }
+
+        .description-heading {
+            margin: 0 0 8px;
+            color: #334155;
+            font-size: 15px;
+        }
+
+        .description {
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .no-description {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .empty {
+            padding: 35px 20px;
+            margin: 25px 0;
+            text-align: center;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+
+        .empty .empty-icon {
+            margin-bottom: 12px;
+            font-size: 40px;
+        }
+
+        .empty h2 {
+            margin: 0 0 10px;
+            color: #334155;
+            font-size: 21px;
+        }
+
+        .empty p {
+            margin: 0;
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .back {
+            display: inline-block;
+            margin: 25px 0;
+            padding: 12px 20px;
+            color: #ffffff;
+            background: #2563eb;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .back:hover {
+            background: #1d4ed8;
+        }
+
+        .back-wrapper {
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px 10px;
+            }
+
+            .header {
+                padding: 22px 14px;
+            }
+
+            .notice {
+                padding: 18px 15px;
+            }
+
+            .dates {
+                padding: 10px;
+            }
+
+            .back {
+                width: 100%;
+                max-width: 300px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+
+        <header class="header">
+            <div class="icon" aria-hidden="true">📢</div>
+
+            <h1>DCEA Important Notices</h1>
+
+            <p>
+                Mangalayatan University<br>
+                Department of Computer Engineering and Applications
+            </p>
+        </header>
+
+        {% if notifications %}
+
+            {% for notice in notifications %}
+
+                <article class="notice">
+
+                    <div class="notice-number">
+                        Important Notice {{ notice.id }}
+                    </div>
+
+                    <h2>{{ notice.title }}</h2>
+
+                    <p class="dates">
+                        <strong>📅 Event Dates:</strong><br>
+
+                        {{ notice.date_from }}
+                        &nbsp; to &nbsp;
+                        {{ notice.date_to }}
+                    </p>
+
+                    <h3 class="description-heading">
+                        Notice Details
+                    </h3>
+
+                    {% if notice.description %}
+
+                        <div class="description">{{ notice.description }}</div>
+
+                    {% else %}
+
+                        <div class="description no-description">
+                            No description provided.
+                        </div>
+
+                    {% endif %}
+
+                </article>
+
+            {% endfor %}
+
+        {% else %}
+
+            <section class="empty">
+
+                <div class="empty-icon" aria-hidden="true">📭</div>
+
+                <h2>No Important Notices</h2>
+
+                <p>
+                    There are currently no upcoming or active notices.
+                    Please check again later.
+                </p>
+
+            </section>
+
+        {% endif %}
+
+        <div class="back-wrapper">
+            <a class="back" href="/">← Back to Home</a>
+        </div>
+
+    </main>
+</body>
+</html>
