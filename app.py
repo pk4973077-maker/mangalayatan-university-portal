@@ -28320,6 +28320,13 @@ def send_dcea_notification_email(recipients, subject, body):
             subtype="html"
         )
 
+        # Render par SMTP email sending skip karo; local par chalu rahega
+        if os.environ.get("RENDER", "").lower() == "true":
+            app.logger.info(
+                "DCEA notification email skipped on Render."
+            )
+            return False
+
         try:
             with smtplib.SMTP_SSL(
                 "smtp.gmail.com",
