@@ -1577,8 +1577,17 @@ def student_register():
             )
 
 
-        # REGISTRATION CONFIRMATION EMAIL
-        send_student_registration_confirmation(student)
+                # REGISTRATION CONFIRMATION EMAIL
+        try:
+            send_student_registration_confirmation(student)
+        except NameError:
+            app.logger.warning(
+                "send_student_registration_confirmation function is not defined."
+            )
+        except Exception:
+            app.logger.exception(
+                "Student registration confirmation email failed."
+            )
 
         # -------------------------
         # SUCCESS
